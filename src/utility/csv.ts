@@ -36,15 +36,13 @@ export const trace =async (trace: Promise<string>|string|null) => {
         const t = await trace
         if(!t) return;
         const now = new Date()
-        const filename = `./files/trace${now.toDateString()}.txt`
+        const filename = `./files/trace${now.getDate()}${now.getMonth()+1}${now.getFullYear()}.md`
         if (fs.existsSync(filename))
             fs.rmSync(filename)
 
         fs.appendFile(filename, t, 'utf8', (err) => {
             if (err) {
                 console.error('Errore:', err);
-            } else {
-                console.log('File scritto con successo');
             }
         })
 

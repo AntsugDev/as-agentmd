@@ -64,7 +64,7 @@ export async function runChatSession(initialMessageInput?: string | string[]) {
     } else if (typeof initialMessageInput === 'string') {
         initialMessage = initialMessageInput.trim();
     }
-
+    trace(initialMessage);
     const activeProvider = configStore.get('activeProvider') || 'gemini';
     const providerConfig = configStore.get(`providers.${activeProvider}`) as any;
 
