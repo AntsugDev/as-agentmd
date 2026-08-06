@@ -41,7 +41,7 @@ node -v
 ## Installation
 
 ```bash
-git clone [https://github.com/your-username/agentmd.git](https://github.com/your-username/agentmd.git)
+git clone https://github.com/AntsugDev/as-agentmd.git
 cd agentmd
 npm install
 npm run build
