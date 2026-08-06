@@ -1,0 +1,47 @@
+ID;PROVIDER;NAME;DESCRIPTION;LIMIT INPUT TOKEN;LIMIT OUTPUT TOKEN
+gemini-2.5-flash;gemini;Gemini 2.5 Flash;Stable version of Gemini 2.5 Flash, our mid-size multimodal model that supports up to 1 million tokens, released in June of 2025.; 1048576; 65536
+gemini-2.5-pro;gemini;Gemini 2.5 Pro;Stable release (June 17th, 2025) of Gemini 2.5 Pro; 1048576; 65536
+gemini-2.0-flash;gemini;Gemini 2.0 Flash;Gemini 2.0 Flash; 1048576; 8192
+gemini-2.0-flash-001;gemini;Gemini 2.0 Flash 001;Stable version of Gemini 2.0 Flash, our fast and versatile multimodal model for scaling across diverse tasks, released in January of 2025.; 1048576; 8192
+gemini-2.0-flash-lite-001;gemini;Gemini 2.0 Flash-Lite 001;Stable version of Gemini 2.0 Flash-Lite; 1048576; 8192
+gemini-2.0-flash-lite;gemini;Gemini 2.0 Flash-Lite;Gemini 2.0 Flash-Lite; 1048576; 8192
+gemini-2.5-flash-preview-tts;gemini;Gemini 2.5 Flash Preview TTS;Gemini 2.5 Flash Preview TTS; 8192; 16384
+gemini-2.5-pro-preview-tts;gemini;Gemini 2.5 Pro Preview TTS;Gemini 2.5 Pro Preview TTS; 8192; 16384
+gemini-flash-latest;gemini;Gemini Flash Latest;Latest release of Gemini Flash; 1048576; 65536
+gemini-flash-lite-latest;gemini;Gemini Flash-Lite Latest;Latest release of Gemini Flash-Lite; 1048576; 65536
+gemini-pro-latest;gemini;Gemini Pro Latest;Latest release of Gemini Pro; 1048576; 65536
+gemini-2.5-flash-lite;gemini;Gemini 2.5 Flash-Lite;Stable version of Gemini 2.5 Flash-Lite, released in July of 2025; 1048576; 65536
+gemini-2.5-flash-image;gemini;Nano Banana;Gemini 2.5 Flash Preview Image; 32768; 32768
+gemini-3-pro-preview;gemini;Gemini 3 Pro Preview;Gemini 3 Pro Preview; 1048576; 65536
+gemini-3-flash-preview;gemini;Gemini 3 Flash Preview;Gemini 3 Flash Preview; 1048576; 65536
+gemini-3.1-pro-preview;gemini;Gemini 3.1 Pro Preview;Gemini 3.1 Pro Preview; 1048576; 65536
+gemini-3.1-pro-preview-customtools;gemini;Gemini 3.1 Pro Preview Custom Tools;Gemini 3.1 Pro Preview optimized for custom tool usage; 1048576; 65536
+gemini-3.1-flash-lite-preview;gemini;Gemini 3.1 Flash Lite Preview;Gemini 3.1 Flash Lite Preview; 1048576; 65536
+gemini-3.1-flash-lite;gemini;Gemini 3.1 Flash Lite;Gemini 3.1 Flash Lite; 1048576; 65536
+gemini-3-pro-image-preview;gemini;Nano Banana Pro;Gemini 3 Pro Image Preview; 131072; 32768
+gemini-3-pro-image;gemini;Nano Banana Pro;Gemini 3 Pro Image; 131072; 32768
+gemini-3.1-flash-image-preview;gemini;Nano Banana 2;Gemini 3.1 Flash Image Preview.; 65536; 65536
+gemini-3.1-flash-image;gemini;Nano Banana 2;Gemini 3.1 Flash Image.; 65536; 65536
+gemini-3.1-flash-lite-image;gemini;Nano Banana 2 Lite;Gemini 3.1 Flash Lite Image.; 65536; 65536
+gemini-3.5-flash;gemini;Gemini 3.5 Flash;Gemini 3.5 Flash; 1048576; 65536
+gemini-3.5-flash-lite;gemini;Gemini 3.5 Flash Lite;Gemini 3.5 Flash Lite; 1048576; 65536
+gemini-omni-flash-preview;gemini;Gemini Omni Flash Preview;Gemini Omni Flash Preview; 131072; 65536
+gemini-3.6-flash;gemini;Gemini 3.6 Flash;Gemini 3.6 Flash; 1048576; 65536
+gemini-3.1-flash-tts-preview;gemini;Gemini 3.1 Flash TTS Preview;Gemini 3.1 Flash TTS Preview; 8192; 16384
+gemini-robotics-er-1.5-preview;gemini;Gemini Robotics-ER 1.5 Preview;Gemini Robotics-ER 1.5 Preview; 1048576; 65536
+gemini-robotics-er-1.6-preview;gemini;Gemini Robotics-ER 1.6 Preview;Gemini Robotics-ER 1.6 Preview; 131072; 65536
+gemini-robotics-er-2-preview;gemini;Gemini Robotics-ER 2 Preview;Gemini Robotics-ER 2 Preview; 131072; 65536
+gemini-2.5-computer-use-preview-10-2025;gemini;Gemini 2.5 Computer Use Preview 10-2025;Gemini 2.5 Computer Use Preview 10-2025; 131072; 65536
+gemini-embedding-001;gemini;Gemini Embedding 001;Obtain a distributed representation of a text.; 2048; 1
+gemini-embedding-2-preview;gemini;Gemini Embedding 2 Preview;Obtain a distributed representation of multimodal content.; 8192; 1
+gemini-embedding-2;gemini;Gemini Embedding 2;Obtain a distributed representation of multimodal content.; 8192; 1
+gpt-4o-mini;openai;gpt-4o-mini;Modello openai; undefined; undefined
+gpt-4o;openai;gpt-4o;Modello openai; undefined; undefined
+o3-mini;openai;o3-mini;Modello openai; undefined; undefined
+deepseek-r1:1.5b;ollama;deepseek-r1:1.5b;Modello locale Ollama (Architettura: qwen2, Parametri: 1.8B); 8192; 4096
+qwen2.5-coder:1.5b;ollama;qwen2.5-coder:1.5b;Modello locale Ollama (Architettura: qwen2, Parametri: 1.5B); 8192; 4096
+gemma4:latest;ollama;gemma4:latest;Modello locale Ollama (Architettura: gemma4, Parametri: 8.0B); 8192; 4096
+deepseek-coder:latest;ollama;deepseek-coder:latest;Modello locale Ollama (Architettura: llama, Parametri: 1B); 8192; 4096
+nomic-embed-text:latest;ollama;nomic-embed-text:latest;Modello locale Ollama (Architettura: nomic-bert, Parametri: 137M); 8192; 4096
+minimax-m2.5:cloud;ollama;minimax-m2.5:cloud;Modello locale Ollama (Architettura: Local LLM, Parametri: N/A); 8192; 4096
+llama3:latest;ollama;llama3:latest;Modello locale Ollama (Architettura: llama, Parametri: 8.0B); 8192; 4096

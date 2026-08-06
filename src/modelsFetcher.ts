@@ -1,7 +1,7 @@
 import { configStore, ModelDetail } from './config.js';
 
 // --- 1. GOOGLE GEMINI ---
-interface RawGeminiModel {
+export interface RawGeminiModel {
     name: string;
     displayName?: string;
     description?: string;

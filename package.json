@@ -18,6 +18,7 @@
     "cli-color": "^2.0.4",
     "commander": "^12.0.0",
     "conf": "^15.1.0",
+    "csv-writer": "^1.6.0",
     "marked": "^15.0.12",
     "marked-terminal": "^7.3.0"
   },

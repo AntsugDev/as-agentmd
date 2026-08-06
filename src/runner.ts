@@ -173,8 +173,9 @@ Provide concise, well-structured answers using clean Markdown formatting.`
         });
 
         if (!response.ok) {
-            const errText = await response.text();
-            console.error(`\n❌ Errore API Gemini (${response.status}):`, errText);
+            const errText = await response.json();
+            console.error(`\n❌ Errore API Gemini (${response.status}):`, errText?.error?.message ?? "La chat è andata in errore, riprovare più tardi o a cambiare model");
+            process.exit(1)
             return '';
         }
 

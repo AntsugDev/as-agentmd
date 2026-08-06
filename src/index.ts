@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 
-import { Command } from 'commander';
-import { getAllModelsFlat, selectUnifiedModel, configStore } from './config.js';
-import { syncModelsIfExpired } from './modelsFetcher.js';
-import { runChatSession } from './runner.js';
+import {Command} from 'commander';
+import {getAllModelsFlat, selectUnifiedModel, configStore} from './config.js';
+import {syncModelsIfExpired} from './modelsFetcher.js';
+import {runChatSession} from './runner.js';
 import readline from 'readline';
+import {csv} from "./utility/csv.js";
 
 const program = new Command();
 
@@ -45,7 +46,7 @@ program
     .description('Mostra le configurazioni correnti e la lista dei modelli')
     .action(() => {
         console.log('\n⚙️  Configurazione Attuale:\n');
-        console.dir(configStore.store, { depth: null });
+        console.dir(configStore.store, {depth: null});
     });
 
 // Comando per forzare la sincronizzazione dei modelli
@@ -116,6 +117,8 @@ program
             console.log(`👉 Esegui prima: \x1b[36magentmd sync-models\x1b[0m per sincronizzare le liste!\n`);
             return;
         }
+        if (!modelOrIndex)
+            csv(allModels)
 
         // Caso 1: L'utente ha passato l'argomento diretto (es: agentmd set-model 2 o agentmd set-model gemini-2.5-flash)
         if (modelOrIndex) {
