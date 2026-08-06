@@ -8,8 +8,9 @@ export interface Params {
     apiKey: string | null
 }
 
-export const callbackApi: Promise<T | T[] | null> = (D: Params) => {
-    return new Promise<T | T[] | null>(async (resolve, reject) => {
+// @ts-ignore
+export const callbackApi: Promise<any| any[] | null> = (D: Params) => {
+    return new Promise<any | any[]| null>(async (resolve, reject) => {
         try {
             const config: AxiosRequestConfig = {
                 url: D.url,

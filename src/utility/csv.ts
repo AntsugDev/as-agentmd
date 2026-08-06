@@ -1,5 +1,4 @@
 import fs from 'fs';
-import {UnifiedModelInfo} from "../config.js";
 
 const dirPath = 'files';
 const createDirectory = async () => {
@@ -10,14 +9,14 @@ const createDirectory = async () => {
     }
 }
 
-export const csv = (record: UnifiedModelInfo[]) => {
+export const csv = (record: any[]) => {
     try {
         createDirectory();
         const filename = './files/model.csv';
         if (fs.existsSync(filename))
             fs.rmSync(filename)
         let row = "ID;PROVIDER;NAME;DESCRIPTION;LIMIT INPUT TOKEN;LIMIT OUTPUT TOKEN\n";
-        record.map((e: UnifiedModelInfo) => {
+        record.map((e: any) => {
             row += `${e.id};${e.provider};${e.displayName};${e.description}; ${e.inputTokenLimit}; ${e.outputTokenLimit}\n`;
         });
         fs.writeFile(filename, row, 'utf8', (err) => {
