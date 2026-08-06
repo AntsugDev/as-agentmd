@@ -3,6 +3,7 @@ import { stdin as input, stdout as output } from 'process';
 import { marked } from 'marked';
 import markedTerminal from 'marked-terminal';
 import { configStore } from './config.js';
+import {trace} from "./utility/csv.js";
 
 marked.setOptions({
     renderer: new markedTerminal({
@@ -43,10 +44,13 @@ function renderMarkdownOutput(rawText: string) {
     try {
         const formatted = marked.parse(rawText);
         // Pulizia terminale e sovrascrittura con la versione formattata pulita
+        trace(formatted)
         process.stdout.write(`\r${formatted}`);
     } catch {
         // Fallback in testo semplice se il parser incontra un errore
         process.stdout.write(rawText);
+        trace(rawText)
+
     }
 }
 

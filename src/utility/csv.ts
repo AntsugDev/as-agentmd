@@ -31,3 +31,26 @@ export const csv = (record: UnifiedModelInfo[]) => {
         console.error(`In fase di creazione del csv model, qualcosa è andato storto(${(err.message || err.text())})`)
     }
 }
+export const trace =async (trace: Promise<string>|string|null) => {
+    try {
+        const t = await trace
+        if(!t) return;
+        const now = new Date()
+        const filename = `./files/trace${now.toDateString()}.txt`
+        if (fs.existsSync(filename))
+            fs.rmSync(filename)
+
+        fs.appendFile(filename, t, 'utf8', (err) => {
+            if (err) {
+                console.error('Errore:', err);
+            } else {
+                console.log('File scritto con successo');
+            }
+        })
+
+
+    } catch (err: any) {
+        console.error(`In fase di creazione del csv model, qualcosa è andato storto(${(err.message || err.text())})`)
+    }
+
+}
