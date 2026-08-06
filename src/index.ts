@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
-import { configStore } from './config.js';
+import { getAllModelsFlat, selectUnifiedModel, configStore } from './config.js';
 import { syncModelsIfExpired } from './modelsFetcher.js';
+import { runChatSession } from './runner.js';
+import readline from 'readline';
 
 const program = new Command();
 
@@ -94,5 +96,81 @@ program
             console.log('\n💡 Tip: Lancia "agentmd sync-models" per scaricare i dettagli aggiornati.');
         }
     });
+program
+    .command('run-chat')
+    .argument('[message...]', 'Messaggio di testo iniziale per la chat')
+    .description('Avvia una sessione di chat interattiva nel terminale')
+    .action(async (message) => {
+        await runChatSession(message);
+    });
+
+program
+    .command('set-model')
+    .argument('[modelOrIndex]', 'Numero dalla lista o ID del modello (opzionale)')
+    .description('Seleziona il modello attivo da una lista unificata di tutti i provider')
+    .action(async (modelOrIndex) => {
+        const allModels = getAllModelsFlat();
+
+        if (allModels.length === 0) {
+            console.log(`\n⚠️ Nessun modello trovato nelle configurazioni.`);
+            console.log(`👉 Esegui prima: \x1b[36magentmd sync-models\x1b[0m per sincronizzare le liste!\n`);
+            return;
+        }
+
+        // Caso 1: L'utente ha passato l'argomento diretto (es: agentmd set-model 2 o agentmd set-model gemini-2.5-flash)
+        if (modelOrIndex) {
+            const numChoice = parseInt(modelOrIndex, 10);
+            let selected = !isNaN(numChoice)
+                ? allModels.find((m) => m.index === numChoice)
+                : allModels.find((m) => m.id.toLowerCase() === modelOrIndex.toLowerCase());
+
+            if (selected) {
+                selectUnifiedModel(selected);
+                printSelectionSuccess(selected);
+                return;
+            } else {
+                console.log(`\n❌ Modello o numero "${modelOrIndex}" non valido.`);
+            }
+        }
+
+        // Caso 2: Nessun parametro passato -> Mostra lista numerata ed entra in modalità interattiva!
+        console.log(`\n🤖 \x1b[36mSeleziona il Modello di Default (Tutti i Provider):\x1b[0m\n`);
+
+        allModels.forEach((m) => {
+            const badgeDefault = m.isCurrentDefault ? ' \x1b[33m[ATTIVO ⭐]\x1b[0m' : '';
+            const inLimit = m.inputTokenLimit ? `${m.inputTokenLimit.toLocaleString()} in` : 'N/A';
+            const outLimit = m.outputTokenLimit ? `${m.outputTokenLimit.toLocaleString()} out` : 'N/A';
+
+            console.log(`\x1b[36m[${m.index}]\x1b[0m \x1b[1m${m.id}\x1b[0m (\x1b[35m${m.provider.toUpperCase()}\x1b[0m)${badgeDefault}`);
+            console.log(`    └─ ${m.description}`);
+            console.log(`    └─ 📊 Limiti: 📥 ${inLimit} | 📤 ${outLimit}\n`);
+        });
+
+        // Prompt di input
+        const rl = readline.createInterface({
+            input: process.stdin,
+            output: process.stdout
+        });
+
+        rl.question('👉 Inserisci il numero del modello desiderato: ', (answer) => {
+            rl.close();
+            const choice = parseInt(answer.trim(), 10);
+            const selected = allModels.find((m) => m.index === choice);
+
+            if (selected) {
+                selectUnifiedModel(selected);
+                printSelectionSuccess(selected);
+            } else {
+                console.log(`\n❌ Scelta non valida. Operazione annullata.\n`);
+            }
+        });
+    });
+
+function printSelectionSuccess(selected: any) {
+    console.log(`\n✅ Modello attivo aggiornato con successo!`);
+    console.log(`📌 Modello:  \x1b[32m${selected.id}\x1b[0m`);
+    console.log(`🌐 Provider: \x1b[35m${selected.provider.toUpperCase()}\x1b[0m`);
+    console.log(`📝 Info:     ${selected.description}\n`);
+}
 
 program.parse(process.argv);

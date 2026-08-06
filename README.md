@@ -115,6 +115,8 @@ agentmd list-models --provider openai
    └─ 📥 Max Input Context:  2,097,152 token
    └─ 📤 Max Output Response: 65,536 token
 ```
+---
 
-
+## 📄 License
+MIT © 2026
 
