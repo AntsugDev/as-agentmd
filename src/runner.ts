@@ -1,9 +1,10 @@
 import readlinePromises from 'readline/promises';
-import { stdin as input, stdout as output } from 'process';
-import { marked } from 'marked';
+import {stdin as input, stdout as output} from 'process';
+import {marked} from 'marked';
 import markedTerminal from 'marked-terminal';
-import { configStore } from './config.js';
+import {configStore} from './config.js';
 import {trace} from "./utility/csv.js";
+import {ChatMessage} from "./interface/myInterface.js";
 
 marked.setOptions({
     renderer: new markedTerminal({
@@ -17,10 +18,7 @@ marked.setOptions({
     })
 });
 
-export interface ChatMessage {
-    role: 'user' | 'model';
-    text: string;
-}
+
 
 /**
  * Stampa formattata dell'intestazione risposta dell'Agente
@@ -43,12 +41,11 @@ function printAgentFooter() {
 function renderMarkdownOutput(rawText: string) {
     try {
         const formatted = marked.parse(rawText);
-        // Pulizia terminale e sovrascrittura con la versione formattata pulita
         process.stdout.write(`\r${formatted}`);
     } catch {
-        // Fallback in testo semplice se il parser incontra un errore
         process.stdout.write(rawText);
-
+    } finally {
+        trace(rawText,false)
     }
 }
 
@@ -62,7 +59,6 @@ export async function runChatSession(initialMessageInput?: string | string[]) {
     } else if (typeof initialMessageInput === 'string') {
         initialMessage = initialMessageInput.trim();
     }
-    trace(initialMessage);
     const activeProvider = configStore.get('activeProvider') || 'gemini';
     const providerConfig = configStore.get(`providers.${activeProvider}`) as any;
 
@@ -93,14 +89,15 @@ async function startInteractiveSession(
     provider: string,
     providerConfig: any
 ) {
-    const rl = readlinePromises.createInterface({ input, output });
+    const rl = readlinePromises.createInterface({input, output});
     const history: ChatMessage[] = [];
 
     let nextInput: string | null = initialPrompt;
-
+    trace(`------------------ModelId:${model}------------------------------`)
+    trace(`Init:\t${initialPrompt}`)
     while (true) {
         if (nextInput) {
-            history.push({ role: 'user', text: nextInput });
+            history.push({role: 'user', text: nextInput});
 
             printAgentHeader(model);
 
@@ -116,7 +113,7 @@ async function startInteractiveSession(
             }
 
             if (responseText) {
-                history.push({ role: 'model', text: responseText });
+                history.push({role: 'model', text: responseText});
             }
 
             printAgentFooter();
@@ -136,7 +133,7 @@ async function startInteractiveSession(
         }
 
         nextInput = userInput.trim();
-        trace(nextInput)
+        trace(`Next:\t${nextInput}`)
     }
 }
 
@@ -153,7 +150,7 @@ async function runGeminiChat(history: ChatMessage[], model: string, apiKey: stri
 
     const contents = history.map(msg => ({
         role: msg.role === 'model' ? 'model' : 'user',
-        parts: [{ text: msg.text }]
+        parts: [{text: msg.text}]
     }));
 
     const body = {
@@ -171,7 +168,7 @@ Provide concise, well-structured answers using clean Markdown formatting.`
     try {
         const response = await fetch(endpoint, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(body)
         });
 
@@ -190,10 +187,10 @@ Provide concise, well-structured answers using clean Markdown formatting.`
         let fullResponse = '';
 
         while (true) {
-            const { done, value } = await reader.read();
+            const {done, value} = await reader.read();
             if (done) break;
 
-            buffer += decoder.decode(value, { stream: true });
+            buffer += decoder.decode(value, {stream: true});
             const lines = buffer.split('\n');
             buffer = lines.pop() || '';
 
@@ -219,10 +216,8 @@ Provide concise, well-structured answers using clean Markdown formatting.`
         if (fullResponse) {
             console.clear();
             printAgentHeader(model);
-            trace(fullResponse)
             renderMarkdownOutput(fullResponse);
         }
-
         return fullResponse;
     } catch (error: any) {
         console.error('❌ Errore durante la connessione a Gemini:', error.message);
@@ -244,7 +239,7 @@ async function runOllamaChat(history: ChatMessage[], model: string, baseUrl: str
     try {
         const response = await fetch(endpoint, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
                 model: model,
                 messages: messages,
@@ -264,10 +259,10 @@ async function runOllamaChat(history: ChatMessage[], model: string, baseUrl: str
         let fullResponse = '';
 
         while (true) {
-            const { done, value } = await reader.read();
+            const {done, value} = await reader.read();
             if (done) break;
 
-            const chunk = decoder.decode(value, { stream: true });
+            const chunk = decoder.decode(value, {stream: true});
             const lines = chunk.split('\n');
 
             for (const line of lines) {

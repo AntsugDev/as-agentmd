@@ -1,13 +1,9 @@
-import { configStore, ModelDetail } from './config.js';
+import { configStore } from './config.js';
+import {ModelDetail} from "./interface/myInterface.js";
+import {RawGeminiModel} from "./interface/myInterface.js";
 
 // --- 1. GOOGLE GEMINI ---
-export interface RawGeminiModel {
-    name: string;
-    displayName?: string;
-    description?: string;
-    inputTokenLimit?: number;
-    outputTokenLimit?: number;
-}
+
 
 async function fetchGeminiModelsDetails(apiKey: string): Promise<ModelDetail[]> {
     try {

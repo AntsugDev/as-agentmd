@@ -1,38 +1,5 @@
 import Conf from 'conf';
-
-export interface ModelDetail {
-    id: string;
-    displayName: string;
-    description: string;
-    inputTokenLimit?: number;
-    outputTokenLimit?: number;
-}
-
-export interface ProviderConfig {
-    apiKey?: string;
-    baseUrl?: string;
-    defaultModel: string;
-    models: string[];
-    modelsDetails?: ModelDetail[];
-}
-
-export interface AgentConfig {
-    activeProvider: string;
-    lastUpdated?: number;
-    providers: Record<string, ProviderConfig>;
-}
-
-export interface UnifiedModelInfo {
-    index: number;
-    provider: string;
-    id: string;
-    displayName: string;
-    description: string;
-    inputTokenLimit?: number;
-    outputTokenLimit?: number;
-    isCurrentDefault: boolean;
-}
-
+import {AgentConfig, UnifiedModelInfo} from "./interface/myInterface.js";
 const schemaDefaults: AgentConfig = {
     activeProvider: 'gemini',
     lastUpdated: 0,
@@ -41,6 +8,11 @@ const schemaDefaults: AgentConfig = {
             apiKey: '',
             defaultModel: 'gemini-2.5-flash',
             models: ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-1.5-flash']
+        },
+        deepseek:{
+            apiKey: '',
+            defaultModel: '',
+            models: []
         },
         openai: {
             apiKey: '',

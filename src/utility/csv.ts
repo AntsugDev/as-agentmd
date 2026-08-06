@@ -31,26 +31,22 @@ export const csv = (record: UnifiedModelInfo[]) => {
         console.error(`In fase di creazione del csv model, qualcosa è andato storto(${(err.message || err.text())})`)
     }
 }
-export const trace =async (trace: Promise<string>|string|null) => {
+export const trace = (trace: string | null, status: boolean = true) => {
     try {
-        let t = await trace
-        if(!t) return;
+        let t = trace
+        if (!t) return;
         const now = new Date()
-        const filename = `./files/trace${now.getDate()}${now.getMonth()+1}${now.getFullYear()}.txt`
-        if (fs.existsSync(filename))
-            fs.rmSync(filename)
-
-        t = `[${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}] ${t}`
-
+        const dateFile: string = `${now.getDate().toString().padStart(2, '0')}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getFullYear()}`
+        const filename = `./files/trace_${dateFile}.txt`
+        const time: string = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`
+        const fileStatus = fs.statSync(filename)
+        t = `${fileStatus.size > 0 ? "\n" : ''}${(status ? 'USER' : 'AGENT')}\t-\t[${time}]\t${t}`
         fs.appendFile(filename, t, 'utf8', (err) => {
             if (err) {
                 console.error('Errore:', err);
             }
         })
-
-
     } catch (err: any) {
         console.error(`In fase di creazione del csv model, qualcosa è andato storto(${(err.message || err.text())})`)
     }
-
 }
