@@ -44,12 +44,10 @@ function renderMarkdownOutput(rawText: string) {
     try {
         const formatted = marked.parse(rawText);
         // Pulizia terminale e sovrascrittura con la versione formattata pulita
-        trace(formatted)
         process.stdout.write(`\r${formatted}`);
     } catch {
         // Fallback in testo semplice se il parser incontra un errore
         process.stdout.write(rawText);
-        trace(rawText)
 
     }
 }
@@ -138,6 +136,7 @@ async function startInteractiveSession(
         }
 
         nextInput = userInput.trim();
+        trace(nextInput)
     }
 }
 
@@ -220,6 +219,7 @@ Provide concise, well-structured answers using clean Markdown formatting.`
         if (fullResponse) {
             console.clear();
             printAgentHeader(model);
+            trace(fullResponse)
             renderMarkdownOutput(fullResponse);
         }
 

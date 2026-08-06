@@ -33,12 +33,14 @@ export const csv = (record: UnifiedModelInfo[]) => {
 }
 export const trace =async (trace: Promise<string>|string|null) => {
     try {
-        const t = await trace
+        let t = await trace
         if(!t) return;
         const now = new Date()
-        const filename = `./files/trace${now.getDate()}${now.getMonth()+1}${now.getFullYear()}.md`
+        const filename = `./files/trace${now.getDate()}${now.getMonth()+1}${now.getFullYear()}.txt`
         if (fs.existsSync(filename))
             fs.rmSync(filename)
+
+        t = `[${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}] ${t}`
 
         fs.appendFile(filename, t, 'utf8', (err) => {
             if (err) {
