@@ -2,7 +2,6 @@ import {Command, program} from "commander";
 import readline from "node:readline";
 import {configStore, providers} from "../config.js";
 import {AbstractProgram} from "../utility/abstractProgram.js";
-import {ProviderConfig} from "../interface/myInterface.js";
 
 
 export class ApiKey extends AbstractProgram {
@@ -11,22 +10,18 @@ export class ApiKey extends AbstractProgram {
         super(program);
     }
 
-    public getData(key: string): any | null | undefined {
-        try {
-            return null;
-        } catch (err: any) {
-            throw new Error("set data key error:" + err.toString())
-        }
+    public getData(): void {
+
     }
     public getDataAll(){
         try{
-            this.program.name('get-key').description('View provider with insert apiKey').action(() => {
+            this.program.command('get-key').description('View provider with insert apiKey').action(() => {
                 this.providers.map((e:string) => {
                     if(e === 'ollama')
                         console.log("❗ Ollama is not neccessary apiKey")
                     const apiKey = this.config.get(`providers.${e}.apiKey`)
                     if(apiKey)
-                        console.log(`👌 ${e} you have register apiKey ${apiKey.toString().replace(apiKey.substring(4,apiKey.toString().length),'***')}`)
+                        console.log(`👌 ${e} you have register apiKey ${apiKey.toString().replace(apiKey.substring(0,apiKey.toString().length),('*').toString().repeat(apiKey.toString().length))}`)
                 })
             })
 

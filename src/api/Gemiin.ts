@@ -1,28 +1,30 @@
 import {callbackApi, Params} from "../utility/api.js";
-import {configStore, } from "../config.js";
+import {configStore,} from "../config.js";
 import {RawGeminiModel} from "../interface/myInterface.js"
 
-const endpointStream = `https://generativelanguage.googleapis.com/v1beta/models/@model:streamGenerateContent?alt=sse&key=@apiKey`;
-const endpointModel = `https://generativelanguage.googleapis.com/v1beta/models?key=@apiKey`
+const endpointStream = `https://generativelanguage.googleapis.com/v1beta/models/@model:streamGenerateContent?alt=sse&key=`;
+const endpointModel = `https://generativelanguage.googleapis.com/v1beta/models?key=`
 const config = configStore
 const apiKeyGemini = () => {
-    if (config.get('providers.gemini.apiKey'))
+    if (config.has('providers.gemini.apiKey'))
         return config.get('providers.gemini.apiKey')
-    else throw new Error("ApyKey for Gemini not found")
+    else{
+        console.warn('Api key not found for gemini')
+        return;
+    }
 }
 export const GeminiSincro = async () => {
     try {
-        
-        const url = endpointModel.toString().replace('@apiKey', apiKeyGemini())
-        // @ts-ignore
-        const r = await callbackApi<any[]>({
+        const key = apiKeyGemini()
+        const url = `${endpointModel}${key}`
+        const r = await callbackApi({
             url: url,
             method: 'GET'
         } as Params)
         let $models: RawGeminiModel[] = []
         console.log("Api response 👍, continue an create or replace gemini models")
-        if (r && r?.models) {
-            r.models.map((e: any) => {
+        if (r && r?.data?.models) {
+            r.data.models.map((e: any) => {
                 const name = e.name
                 const displayName = e.displayName
                 const description = e.description
@@ -41,7 +43,7 @@ export const GeminiSincro = async () => {
         }
         if ($models.length > 0)
             config.set('providers.gemini.models', $models)
-    } catch (err:any) {
+    } catch (err: any) {
         throw new Error(`Api extract model gemini error: ${err.toString()}`)
     }
 

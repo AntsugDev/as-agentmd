@@ -1,4 +1,4 @@
-import axios, {AxiosHeaders, AxiosRequestConfig} from "axios";
+import axios, {AxiosHeaders, AxiosRequestConfig, AxiosResponse} from "axios";
 
 export interface Params {
     url: string,
@@ -9,16 +9,16 @@ export interface Params {
 }
 
 // @ts-ignore
-export const callbackApi: Promise<any| any[] | null> = (D: Params) => {
+export const callbackApi = (D: Params): Promise<any| any[] | null> => {
     return new Promise<any | any[]| null>(async (resolve, reject) => {
         try {
             const config: AxiosRequestConfig = {
-                url: D.url,
-                method: D.url
+                url: D.url.trim(),
+                method: D.method.trim()
             }
             if (D.payload)
                 config.data = D.payload
-            const response = await axios.request(config)
+            const response:AxiosResponse = await axios.request(config)
             if (response) {
                 resolve(response)
             } else reject(response)

@@ -16,7 +16,7 @@ export abstract class AbstractProgram {
 
     public abstract setData():void;
 
-    public abstract getData(key:string):any|null|undefined;
+    public abstract getData():void;
 
     public abstract getDataAll():void;
 }
