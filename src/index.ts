@@ -4,6 +4,7 @@ import {Command} from 'commander';
 import {configStore, providers} from "./config.js";
 import * as readline from "node:readline";
 import {ApiKey} from "./command/apiKey.js";
+import {Sync} from "./command/sync.js";
 
 const program = new Command();
 const p = providers();
@@ -16,5 +17,8 @@ const apiKey = new ApiKey(program)
 apiKey.setData()
 apiKey.getDataAll()
 
+//---------command for sync--------------------
+const sync = new Sync(program)
+sync.setData()
 
 program.parse(process.argv);

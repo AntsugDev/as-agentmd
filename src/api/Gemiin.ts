@@ -6,12 +6,13 @@ const endpointStream = `https://generativelanguage.googleapis.com/v1beta/models/
 const endpointModel = `https://generativelanguage.googleapis.com/v1beta/models?key=@apiKey`
 const config = configStore
 const apiKeyGemini = () => {
-    if (config.get('providers.gemini?.apiKey'))
-        return config.get('providers.gemini?.apiKey')
+    if (config.get('providers.gemini.apiKey'))
+        return config.get('providers.gemini.apiKey')
     else throw new Error("ApyKey for Gemini not found")
 }
 export const GeminiSincro = async () => {
     try {
+        
         const url = endpointModel.toString().replace('@apiKey', apiKeyGemini())
         // @ts-ignore
         const r = await callbackApi<any[]>({
@@ -19,6 +20,7 @@ export const GeminiSincro = async () => {
             method: 'GET'
         } as Params)
         let $models: RawGeminiModel[] = []
+        console.log("Api response 👍, continue an create or replace gemini models")
         if (r && r?.models) {
             r.models.map((e: any) => {
                 const name = e.name
