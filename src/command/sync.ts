@@ -4,6 +4,7 @@ import {GeminiSincro} from "../api/Gemiin.js";
 import {RawGeminiModel} from "../interface/myInterface.js";
 import fs from "fs";
 import {OllamaSync} from "../api/Ollama.js";
+import dayjs from "dayjs";
 
 export class Sync extends AbstractProgram {
 
@@ -16,7 +17,7 @@ export class Sync extends AbstractProgram {
             this.program.command('get-models').description("With this command search and view list from providers selected, the list data models.").option("-p, --providers <string>", "Providers from the list config")
                 .action((options) => {
                     const p = options.providers
-                    if(!p) {
+                    if (!p) {
                         console.error(`4️⃣0️⃣0️⃣ - Option --providers or -p is required.`)
                         process.exit(1)
                     }
@@ -27,10 +28,10 @@ export class Sync extends AbstractProgram {
 
                     const models = this.config.get(`providers.${p}.models`);
 
-                    fs.writeFile(`./files/${p}.models.json`, JSON.stringify(models, null,2),'utf-8', (error) => {
-                        if(error)
-                            console.error("Exception created file json ",error)
-                    } )
+                    fs.writeFile(`./files/${p}.models.json`, JSON.stringify(models, null, 2), 'utf-8', (error) => {
+                        if (error)
+                            console.error("Exception created file json ", error)
+                    })
                     console.log(`🔭 For this ${p},the system create files json into directory "files"`);
                 })
 
@@ -44,9 +45,15 @@ export class Sync extends AbstractProgram {
 
     private async sync() {
         try {
-            await GeminiSincro();
-            await OllamaSync()
+            let sync: number = 0;
+            if (await GeminiSincro()) sync++
+            if (await OllamaSync()) sync++;
+
+            if (sync > 0)
+                this.config.get('lastUpdated', dayjs().format('YYYYMMDD'));
+
         } catch (err: any) {
+
             throw new Error(`Exception set syncro ${err.toString()}`)
         }
     }

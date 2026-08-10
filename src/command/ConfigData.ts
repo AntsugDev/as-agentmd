@@ -1,6 +1,7 @@
 import {AbstractProgram} from "../utility/abstractProgram.js";
 import {Command} from "commander";
 import fs from 'fs';
+import dayjs from "dayjs";
 
 export class ConfigData extends AbstractProgram {
 
@@ -9,7 +10,14 @@ export class ConfigData extends AbstractProgram {
     }
 
     getData(): void {
-
+        this.program.command('config-last-update').description("Verify last update models").action(() => {
+            const data = this.config.get('lastUpdated')
+            if (data) {
+                const format = dayjs(data).format('YYYY-MM-DD')
+                console.log(`Last update ${format}`)
+            }
+            else console.log("Last update not found ")
+        })
     }
 
     getDataAll(): void {
@@ -18,10 +26,12 @@ export class ConfigData extends AbstractProgram {
             .action(() => {
                 try {
                     const providers = this.config.get('providers')
+                    const lastUpdate = this.config.get('lastUpdated')
+                    const selectedModel = this.config.get('modelSelected')
                     if (fs.existsSync('./files/config.json'))
                         fs.rmSync('./files/config.json')
 
-                    fs.writeFile('./files/config.json', JSON.stringify(providers, null, 2), 'utf8', (error) => {
+                    fs.writeFile('./files/config.json',`//model selected: ${selectedModel} and last update: ${lastUpdate}\n${JSON.stringify(providers, null, 2)}`, 'utf8', (error) => {
                         if (error) {
                             console.log('File not created')
                         }

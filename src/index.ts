@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 
 import {Command} from 'commander';
-import {configStore, providers} from "./config.js";
+import { providers} from "./config.js";
 import {ApiKey} from "./command/apiKey.js";
 import {Sync} from "./command/sync.js";
 import {ConfigData} from "./command/ConfigData.js";
+import {SelectMode} from "./command/SelectMode.js";
+import {Chat} from "./command/Chat.js";
 
 const program = new Command();
 const p = providers();
@@ -16,6 +18,7 @@ program
 //---------command for data config--------------------
 const c = new ConfigData(program)
 c.getDataAll()
+c.getData()
 
 //---------command for api key--------------------
 const apiKey = new ApiKey(program)
@@ -26,5 +29,13 @@ apiKey.getDataAll()
 const sync = new Sync(program)
 sync.setData()
 sync.getData()
+
+//------------select models------
+const select = new SelectMode(program)
+select.setData()
+
+//----chat----
+const chat = new Chat(program)
+chat.setData()
 
 program.parse(process.argv);

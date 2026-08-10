@@ -3,14 +3,14 @@ import axios, {AxiosHeaders, AxiosRequestConfig, AxiosResponse} from "axios";
 export interface Params {
     url: string,
     method: 'GET' | 'POST' | string,
-    payload: any | null,
-    headers: AxiosHeaders | null,
-    apiKey: string | null
+    payload?: any | null,
+    headers?: AxiosHeaders | null,
+    apiKey?: string | null
 }
 
 // @ts-ignore
-export const callbackApi = (D: Params): Promise<any| any[] | null> => {
-    return new Promise<any | any[]| null>(async (resolve, reject) => {
+export const callbackApi = (D: Params): Promise<any| any[] | null|boolean|undefined> => {
+    return new Promise<any | any[]| null|boolean|undefined>(async (resolve, reject) => {
         try {
             const config: AxiosRequestConfig = {
                 url: D.url.trim(),
