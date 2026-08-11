@@ -30,7 +30,7 @@ export const csv = (record: any[]) => {
         console.error(`In fase di creazione del csv model, qualcosa è andato storto(${(err.message || err.text())})`)
     }
 }
-export const trace = (trace: string | null, status: boolean = true) => {
+export const trace = (trace: string | null) => {
     try {
         let t = trace
         if (!t) return;
@@ -38,7 +38,7 @@ export const trace = (trace: string | null, status: boolean = true) => {
         const dateFile: string = `${now.getDate().toString().padStart(2, '0')}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getFullYear()}`
         const filename = `./files/trace_${dateFile}.txt`
         const time: string = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`
-        t = `${fs.existsSync(filename) ? "\n" : ''}${(status ? 'USER' : 'AGENT')}\t-\t[${time}]\t${t}`
+        t = `\n[${time}]\t${t}`
         fs.appendFile(filename, t, 'utf8', (err) => {
             if (err) {
                 console.error('Errore:', err);

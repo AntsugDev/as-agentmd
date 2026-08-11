@@ -1,73 +1,118 @@
 import {callbackApi} from "../utility/api.js";
-import {RawGeminiModel} from "../interface/myInterface.js";
+import {AgentConfig, ChatText, RawGeminiModel} from "../interface/myInterface.js";
+import {ApiAbstract} from "./ApiAbstract.js";
+import ollama, {Message} from "ollama";
 import {configStore} from "../config.js";
-import {clearModels, getProvider, preProviderInstance, setModels} from "../utility/utility.js";
+import Conf from "conf";
 
-export const baseUrlOllama = "http://localhost:11434"
-export const endpointOllama = "http://localhost:11434/api/tags"
-const config = configStore
 
-export const OllamaRun = async () :Promise<boolean|undefined> => {
-    try {
-        const response = await callbackApi({
-            url: baseUrlOllama.toString(),
-            method: 'GET'
-        })
-        if(response && parseInt(response.status) === 200)
-            return true;
+export class Ollama extends ApiAbstract {
 
-        return false;
+    private config: Conf<AgentConfig>;
 
-    } catch (err: any) {
-        console.log(`Ollama check runnig error ${err.toString()}`)
+    constructor() {
+        super('ollama', "http://localhost:11434", null);
+        this.config = configStore
     }
-}
 
-export const OllamaSync = async () => {
-    try {
-        // @ts-ignore
-        preProviderInstance('ollama')
-        if(await OllamaRun()) {
-            // @ts-ignore
+    // @ts-ignore
+    async chat(text: any[]): Message | ChatText | null {
+        try {
+            let model = null;
+            const modelData = this.config.get('modelSelected');
+            if (!modelData) {
+                console.error("Model not selected")
+                return null;
+            }else {
+                model = modelData.toString().split('|')[1]
+            }
+
+            if(!model){
+                console.error("Impossibile estrarre il modello da utilizzare")
+                return null;
+            }
+            let response = await ollama.chat({
+                model: model,
+                messages: text,
+                stream: false,
+                options: {
+                    temperature: 0.5,
+                },
+            });
+
+            if (response && response.message)
+                return response.message;
+            return null;
+
+        } catch (err: any) {
+            console.error(`chat sync runnig error ${err.toString()}`)
+            return null;
+        }
+    }
+
+    OllamaRun = async (): Promise<boolean | undefined> => {
+        try {
+            if (this.endPointChat === null) return false;
             const response = await callbackApi({
-                url: endpointOllama.toString(),
+                url: this.endPointChat.toString(),
                 method: 'GET'
             })
-            if (response.data && response.data?.models) {
-                clearModels('ollama')
-                const $models: RawGeminiModel[] = [];
-                response.data.models.map((e: any) => {
-                    const name = e.name
-                    const displayName = e.model
-                    const description = null
-                    const limitIn = null
-                    const limitOut = null
-                    const v = e.modified_at
-                    $models.push({
-                        name: name,
-                        displayName: displayName,
-                        description: description,
-                        inputTokenLimit: limitIn,
-                        outputTokenLimit: limitOut,
-                        version: v
-                    })
-                })
-                if ($models.length > 0) {
-                    setModels($models, 'ollama')
-                    console.log("Ollama models update")
-                    return true;
-                }else {
-                    console.log("Ollama models not found or exception system")
-                    return  false;
-                }
-            }
-        }else{
-            console.warn("Ollama or is not installed or not running")
-            return  false;
-        }
+            if (response && parseInt(response.status) === 200)
+                return true;
 
-    } catch (err: any) {
-        console.log(`Ollama sync runnig error ${err.toString()}`)
-        return  false;
+            return false;
+
+        } catch (err: any) {
+            console.log(`Ollama check runnig error ${err.toString()}`)
+        }
     }
+
+// @ts-ignore
+    async sincro(): boolean {
+        try {
+            // @ts-ignore
+            this.preProviderInstance()
+            if (await this.OllamaRun()) {
+                // @ts-ignore
+                const response = await ollama.list()
+                if (response?.models) {
+                    this.clearModels()
+                    const $models: RawGeminiModel[] = [];
+                    response.models.map((e: any) => {
+                        const name = e.name
+                        const displayName = e.model
+                        const description = null
+                        const limitIn = null
+                        const limitOut = null
+                        const v = e.modified_at
+                        $models.push({
+                            name: name,
+                            displayName: displayName,
+                            description: description,
+                            inputTokenLimit: limitIn,
+                            outputTokenLimit: limitOut,
+                            version: v
+                        })
+                    })
+                    if ($models.length > 0) {
+                        this.setModels($models)
+                        console.log("Ollama models update")
+                        return true;
+                    } else {
+                        console.log("Ollama models not found or exception system")
+                        return false;
+                    }
+                }
+            } else {
+                console.warn("Ollama or is not installed or not running")
+                return false;
+            }
+
+        } catch (err: any) {
+            console.log(`Ollama sync runnig error ${err.toString()}`)
+            return false;
+        }
+    }
+
 }
+

@@ -22,7 +22,9 @@
     "csv-writer": "^1.6.0",
     "dayjs": "^1.11.21",
     "marked": "^15.0.12",
-    "marked-terminal": "^7.3.0"
+    "marked-terminal": "^7.3.0",
+    "ollama": "^0.6.3",
+    "ora": "^9.4.1"
   },
   "devDependencies": {
     "@types/marked-terminal": "^6.1.1",

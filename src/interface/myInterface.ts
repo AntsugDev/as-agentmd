@@ -1,4 +1,5 @@
 import {AxiosHeaders} from "axios";
+import {ToolCall} from "ollama";
 
 export interface ProviderConfig {
     apiKey?: string;
@@ -49,4 +50,13 @@ export interface ProvidersInt {
     }|null,
     models?:RawGeminiModel[]| null
 
+}
+
+export interface ChatText{
+    role: 'system'|'user'|'assistant',
+    content: string,
+    images?: []| null,
+    thinking?: string;
+    tool_calls?: ToolCall[];
+    tool_name?: string;
 }

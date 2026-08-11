@@ -1,9 +1,9 @@
 import {AbstractProgram} from "../utility/abstractProgram.js";
 import {Command} from "commander";
-import {GeminiSincro} from "../api/Gemiin.js";
+import {Gemini} from "../api/Gemiin.js";
 import {RawGeminiModel} from "../interface/myInterface.js";
 import fs from "fs";
-import {OllamaSync} from "../api/Ollama.js";
+import {Ollama} from "../api/Ollama.js";
 import dayjs from "dayjs";
 
 export class Sync extends AbstractProgram {
@@ -46,8 +46,8 @@ export class Sync extends AbstractProgram {
     private async sync() {
         try {
             let sync: number = 0;
-            if (await GeminiSincro()) sync++
-            if (await OllamaSync()) sync++;
+            if (await new Gemini().sincro()) sync++
+            if (await new Ollama().sincro()) sync++;
 
             if (sync > 0)
                 this.config.get('lastUpdated', dayjs().format('YYYYMMDD'));
