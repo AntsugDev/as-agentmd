@@ -1,39 +1,59 @@
 import {ChatText} from "../interface/myInterface.js";
 import {instruction} from "./utility.js";
 import {Message} from "ollama";
+import {configStore} from "../config.js";
 
 export class ChatClass {
 
-    private _msg: ChatText[] | Message[];
+    private _msg: ChatText[] | Message[] | any;
+    private provider: string | null;
 
-    constructor() {
+    constructor(provider: string | null) {
         this._msg = [];
+        // @ts-ignore
+        this.provider = provider
     }
 
-    public init() {
-        this._msg.push({
-            role: 'system',
-            content: instruction
-        })
+    private _is() {
+        if (this.provider) {
+            return this.provider === 'ollama'
+        }
+        throw new Error("Impossibile conoscere il provider")
+    }
+
+    public init(): void | null | object {
+        if (this._is())
+            this._msg.push({
+                role: 'system',
+                content: instruction
+            })
+
     }
 
     public pUser(text: string) {
-        this._msg.push({
-            role: 'user',
-            content: text
-        })
+        if (this._is())
+            this._msg.push({
+                role: 'user',
+                content: text
+            })
+
     }
 
     public pAgent(text: string | null) {
-        if (text)
-            this._msg.push({
-                role: 'assistant',
-                content: text
-            })
+        if (text) {
+            if (this._is())
+                this._msg.push({
+                    role: 'assistant',
+                    content: text
+                })
+
+        }
     }
 
 
-    get msg(): ChatText[] | Message[] {
+
+
+    get msg(): ChatText[] | Message[] | any[] {
         return this._msg;
     }
 }

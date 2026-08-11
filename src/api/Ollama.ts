@@ -8,25 +8,15 @@ import Conf from "conf";
 
 export class Ollama extends ApiAbstract {
 
-    private config: Conf<AgentConfig>;
 
     constructor() {
         super('ollama', "http://localhost:11434", null);
-        this.config = configStore
     }
 
     // @ts-ignore
-    async chat(text: any[]): Message | ChatText | null {
+    async chat(text: any[]):  null|string|object {
         try {
-            let model = null;
-            const modelData = this.config.get('modelSelected');
-            if (!modelData) {
-                console.error("Model not selected")
-                return null;
-            }else {
-                model = modelData.toString().split('|')[1]
-            }
-
+            let model = this.getModelSelect()
             if(!model){
                 console.error("Impossibile estrarre il modello da utilizzare")
                 return null;
@@ -40,8 +30,8 @@ export class Ollama extends ApiAbstract {
                 },
             });
 
-            if (response && response.message)
-                return response.message;
+            if (response && response?.message && response?.message?.content)
+                return response.message.content.toString();
             return null;
 
         } catch (err: any) {
