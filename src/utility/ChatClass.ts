@@ -8,6 +8,7 @@ export class ChatClass {
     private _msg: ChatText[] | Message[] | any;
     private provider: string | null;
 
+
     constructor(provider: string | null) {
         this._msg = [];
         // @ts-ignore

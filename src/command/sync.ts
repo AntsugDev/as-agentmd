@@ -5,6 +5,7 @@ import {RawGeminiModel} from "../interface/myInterface.js";
 import fs from "fs";
 import {Ollama} from "../api/Ollama.js";
 import dayjs from "dayjs";
+import {OpenAi} from "../api/OpenAi.js";
 
 export class Sync extends AbstractProgram {
 
@@ -48,12 +49,13 @@ export class Sync extends AbstractProgram {
             let sync: number = 0;
             if (await new Gemini().sincro()) sync++
             if (await new Ollama().sincro()) sync++;
+            if (await new OpenAi().sincro()) sync++;
 
             if (sync > 0)
                 this.config.get('lastUpdated', dayjs().format('YYYYMMDD'));
+            return;
 
         } catch (err: any) {
-
             throw new Error(`Exception set syncro ${err.toString()}`)
         }
     }
@@ -65,7 +67,7 @@ export class Sync extends AbstractProgram {
                 this.sync()
             })
         } catch (err: any) {
-            throw new Error(`Exception set syncro ${err.toString()}`)
+           console.error(`Exception set syncro ${err.toString()}`)
         }
     }
 

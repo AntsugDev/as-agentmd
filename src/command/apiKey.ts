@@ -24,6 +24,7 @@ export class ApiKey extends AbstractProgram {
                     const apiKey = this.config.get(`providers.${e}.apiKey`)
                     if (apiKey)
                         console.log(`👌 ${e} you have register apiKey ${apiKey.toString().replace(apiKey.substring(0, apiKey.toString().length), ('*').toString().repeat(apiKey.toString().length))}`)
+                    process.exit(1)
                 })
             })
 

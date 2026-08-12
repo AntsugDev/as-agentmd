@@ -8,7 +8,8 @@ const schemaDefaults: AgentConfig = {
     lastUpdated: dayjs().format('YYYYMMDD'),
     providers: {
         "gemini":null,
-        "ollama":null
+        "ollama":null,
+        "openai": null
     }
 };
 export const configStore = new Conf<AgentConfig>({

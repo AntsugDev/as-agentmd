@@ -14,7 +14,8 @@ export interface AgentConfig {
     lastUpdated?: string;
     providers: {
         gemini: ProvidersInt|null,
-        ollama: ProvidersInt|null
+        ollama: ProvidersInt|null,
+        openai: ProvidersInt|null
     }
 }
 

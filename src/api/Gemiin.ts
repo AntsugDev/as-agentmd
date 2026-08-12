@@ -121,7 +121,6 @@ export class Gemini extends ApiAbstract {
             }
         } catch (err: any) {
             throw new Error(`Api extract model gemini error: ${err.toString()}`)
-            return false;
         }
 
     }
