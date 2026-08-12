@@ -9,7 +9,9 @@ const schemaDefaults: AgentConfig = {
     providers: {
         "gemini":null,
         "ollama":null,
-        "openai": null
+        "openai": null,
+        "claude":null,
+        "deep-seek": null
     }
 };
 export const configStore = new Conf<AgentConfig>({

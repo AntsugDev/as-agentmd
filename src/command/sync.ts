@@ -6,6 +6,8 @@ import fs from "fs";
 import {Ollama} from "../api/Ollama.js";
 import dayjs from "dayjs";
 import {OpenAi} from "../api/OpenAi.js";
+import {Claude} from "../api/Claude.js";
+import {DeepSeek} from "../api/DeepSeek.js";
 
 export class Sync extends AbstractProgram {
 
@@ -50,6 +52,8 @@ export class Sync extends AbstractProgram {
             if (await new Gemini().sincro()) sync++
             if (await new Ollama().sincro()) sync++;
             if (await new OpenAi().sincro()) sync++;
+            if (await new Claude().sincro()) sync++;
+            if (await new DeepSeek().sincro()) sync++;
 
             if (sync > 0)
                 this.config.get('lastUpdated', dayjs().format('YYYYMMDD'));

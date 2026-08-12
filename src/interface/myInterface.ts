@@ -10,12 +10,14 @@ export interface ProviderConfig {
 
 export interface AgentConfig {
     activeProvider: string;
-    modelSelected: string|null;
+    modelSelected: string | null;
     lastUpdated?: string;
     providers: {
-        gemini: ProvidersInt|null,
-        ollama: ProvidersInt|null,
-        openai: ProvidersInt|null
+        gemini: ProvidersInt | null,
+        ollama: ProvidersInt | null,
+        openai: ProvidersInt | null,
+        claude: ProvidersInt | null,
+        "deep-seek": ProvidersInt | null
     }
 }
 
@@ -42,21 +44,20 @@ export interface getApi {
 }
 
 
-
 export interface ProvidersInt {
     apiKey?: string | null,
     api?: {
         get_models: getApi,
         get_chat: getApi
-    }|null,
-    models?:RawGeminiModel[]| null
+    } | null,
+    models?: RawGeminiModel[] | null
 
 }
 
-export interface ChatText{
-    role: 'system'|'user'|'assistant',
+export interface ChatText {
+    role: 'system' | 'user' | 'assistant',
     content: string,
-    images?: []| null,
+    images?: [] | null,
     thinking?: string;
     tool_calls?: ToolCall[];
     tool_name?: string;

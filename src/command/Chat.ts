@@ -9,6 +9,8 @@ import  {Ora} from "ora";
 import {Gemini} from "../api/Gemiin.js";
 import {wait, wClear, wStop} from "../utility/utility.js";
 import {OpenAi} from "../api/OpenAi.js";
+import {Claude} from "../api/Claude.js";
+import {DeepSeek} from "../api/DeepSeek.js";
 
 export class Chat extends AbstractProgram {
 
@@ -37,27 +39,31 @@ export class Chat extends AbstractProgram {
     }
 
 
-    private getProviderModel(p: string | null, msg: string | any[] | any, input: string | null): any | null {
+    private async getProviderModel(p: string | null, msg: string | any[] | any, input: string | null): Promise<any | null> {
         try {
 
             let _class: any | null = null;
             if (p) {
-                switch (p) {
-                    case 'ollama' :
-                        _class = new Ollama();
-                    case 'gemini':
-                        _class = new Gemini()
-                    case 'openai':
-                        _class = new OpenAi();
-                    default:
-                        throw new Error("Provider not found")
+                if(p.toString().indexOf('ollama') !== -1)
+                    _class = new Ollama();
+                else  if(p.toString().indexOf('gemini') !== -1)
+                    _class = new Gemini();
+                else  if(p.toString().indexOf('openai') !== -1)
+                    _class = new OpenAi();
+                else  if(p.toString().indexOf('claude') !== -1)
+                    _class = new Claude();
+                else  if(p.toString().indexOf('deep-seek') !== -1)
+                    _class = new DeepSeek();
+                else {
+                    console.error(`Provider not found (${p})`);
+                    return;
                 }
             }
             if (_class) {
                 if (p !== 'gemini')
-                    return _class.chat(msg)
+                    return await _class.chat(msg)
                 else
-                    return _class.chat(input)
+                    return await _class.chat(input)
             }
 
             return null;
@@ -131,7 +137,7 @@ export class Chat extends AbstractProgram {
                             trace(`User > ${inTrim}`)
 
                         let msg: any[] = chat.msg
-                        let agent = this.getProviderModel(p, msg, inTrim);
+                        let agent = await this.getProviderModel(p, msg, inTrim);
 
                         if (agent) {
                             this._s()

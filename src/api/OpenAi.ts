@@ -13,40 +13,40 @@ export class OpenAi extends ApiAbstract {
 
 // @ts-ignore
     async chat(text: any[]): string | object | null {
-       try{
-           const key = this.extraApiKey()
-           const model = this.getModelSelect()
-           const headers: AxiosHeaders = new AxiosHeaders();
-           headers.set('Authorization', `Bearer ${key}`)
-           headers.set('Content-Type', `application/json`)
-           const response = await callbackApi({
-               url: this.endPointChat,
-               method: 'POST',
-               headers: headers,
-               payload:{
-                   model:model,
-                   messages: text
-               }
-           } as Params)
+        try {
+            const key = this.extraApiKey()
+            const model = this.getModelSelect()
+            const headers: AxiosHeaders = new AxiosHeaders();
+            headers.set('Authorization', `Bearer ${key}`)
+            headers.set('Content-Type', `application/json`)
+            const response = await callbackApi({
+                url: this.endPointChat,
+                method: 'POST',
+                headers: headers,
+                payload: {
+                    model: model,
+                    messages: text
+                }
+            } as Params)
 
-           const usage = response.data.usage
-           if(usage){
-               const input = usage.prompt_tokens;
-               const output = usage.completion_tokens;
-               console.log(`---Utilizzo dei token-----`)
-               console.log(`Input(user): ${input}`)
-               console.log(`Output(Agent): ${output}`)
-               console.log('--------------------------------------------')
-           }
+            const usage = response.data.usage
+            if (usage) {
+                const input = usage.prompt_tokens;
+                const output = usage.completion_tokens;
+                console.log(`---Utilizzo dei token-----`)
+                console.log(`Input(user): ${input}`)
+                console.log(`Output(Agent): ${output}`)
+                console.log('--------------------------------------------')
+            }
 
-           if (response && response?.data && response?.data?.choices)
-               return response.data.choices[0]?.message?.content?.toString() ?? "Errore di sistema";
-           return null;
+            if (response && response?.data && response?.data?.choices)
+                return response.data.choices[0]?.message?.content?.toString() ?? "Errore di sistema";
+            return null;
 
-       }catch (err){
-           console.error(err.toString())
-           return null;
-       }
+        } catch (err: any) {
+            console.error(err.toString())
+            return null;
+        }
     }
 
     async sincro(): Promise<boolean> {
@@ -90,7 +90,8 @@ export class OpenAi extends ApiAbstract {
             }
 
         } catch (err: any) {
-            throw new Error(`Api extract model openai error: ${err.toString()}`)
+            console.error(`Api extract model openai error: ${err.toString()}`)
+            return false;
         }
     }
 
