@@ -11,19 +11,15 @@ import {wait, wClear, wStop} from "../utility/utility.js";
 import {OpenAi} from "../api/OpenAi.js";
 import {Claude} from "../api/Claude.js";
 import {DeepSeek} from "../api/DeepSeek.js";
+import {MistralClass} from "../api/MistralClass.js";
 
 export class Chat extends AbstractProgram {
 
     private spinner: Ora | null;
-    private r: Interface;
 
     constructor(program: Command) {
         super(program);
         this.spinner = null;
-        this.r = readline.createInterface({
-            input: process.stdin,
-            output: process.stdout,
-        })
     }
 
     private _w() {
@@ -54,6 +50,9 @@ export class Chat extends AbstractProgram {
                     _class = new Claude();
                 else  if(p.toString().indexOf('deep-seek') !== -1)
                     _class = new DeepSeek();
+                else  if(p.toString().indexOf('mistral') !== -1)
+                    _class = new MistralClass();
+
                 else {
                     console.error(`Provider not found (${p})`);
                     return;
@@ -97,6 +96,12 @@ export class Chat extends AbstractProgram {
         try {
             this.program.command('chat').description("Chat")
                 .action(async () => {
+
+                   const r = readline.createInterface({
+                        input: process.stdin,
+                        output: process.stdout,
+                    })
+
                     const gemini = new Gemini();
                     if (gemini.prevousGemini) gemini.prevousGemini = null;
                     let model = this.config.get('modelSelected')
@@ -108,27 +113,27 @@ export class Chat extends AbstractProgram {
                     console.log(`👋 Welcome back, chat with ${model}`)
                     console.log("-------------------------")
 
-                    this.r.setPrompt('User > ')
-                    this.r.prompt();
+                    r.setPrompt('User > ')
+                    r.prompt();
                     const p = this.selectedProvider();
                     const chat = new ChatClass(p)
                     chat.init()
                     trace(` ---- INIT NEW CHAT IN DATE ${dayjs().format('YYYY-MM-DD HH:MI:SS')} --- \n\r`)
 
-                    this.r.on('line', async (input) => {
+                    r.on('line', async (input) => {
                         let inTrim = input.trim()
                         if (inTrim === 'exit' || inTrim === 'quit' || inTrim === 'q') {
                             trace(`--- CHAT TERMINATED IN DATE ${dayjs().format('YYYY-MM-DD HH:MI:SS')} ----\n\r`)
                             console.log("Chat terminated")
                             setTimeout(() => {
-                                this.r.close()
+                                r.close()
                                 process.exit(1)
                             }, 2000)
                             return;
                         }
 
                         if (inTrim === '') {
-                            this.r.prompt();
+                            r.prompt();
                             return;
                         }
                         this._w()
@@ -150,12 +155,12 @@ export class Chat extends AbstractProgram {
                             console.log(`Agent > Ho avuto problemi, chiudo la chat riprova più tardi o cambia modello`)
                             trace(`--- CHAT TERMINATED(Problemi model) IN DATE ${dayjs().format('YYYY-MM-DD HH:MI:SS')} ----\n\r`)
                             this._s()
-                            this.r.close()
+                            r.close()
                             process.exit(1)
                         }
 
                         this._c()
-                        this.r.prompt();
+                        r.prompt();
                     })
                 })
 

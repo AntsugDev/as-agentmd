@@ -17,7 +17,8 @@ export interface AgentConfig {
         ollama: ProvidersInt | null,
         openai: ProvidersInt | null,
         claude: ProvidersInt | null,
-        "deep-seek": ProvidersInt | null
+        "deep-seek": ProvidersInt | null,
+        mistral: ProvidersInt | null
     }
 }
 

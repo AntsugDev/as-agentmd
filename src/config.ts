@@ -11,7 +11,8 @@ const schemaDefaults: AgentConfig = {
         "ollama":null,
         "openai": null,
         "claude":null,
-        "deep-seek": null
+        "deep-seek": null,
+        "mistral": null,
     }
 };
 export const configStore = new Conf<AgentConfig>({

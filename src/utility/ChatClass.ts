@@ -15,43 +15,51 @@ export class ChatClass {
         this.provider = provider
     }
 
-    private _is() {
+    private _is(): boolean {
         if (this.provider) {
-            return this.provider === 'ollama'
+            return new Boolean(this.provider !== 'gemini').valueOf()
         }
         throw new Error("Impossibile conoscere il provider")
     }
 
     public init(): void | null | object {
-        if (this._is())
-            this._msg.push({
-                role: 'system',
-                content: instruction
-            })
-
+        try {
+            if (this._is())
+                this._msg.push({
+                    role: 'system',
+                    content: instruction
+                })
+        } catch (e) {
+            console.log("eccezione", e)
+        }
     }
 
     public pUser(text: string) {
-        if (this._is())
-            this._msg.push({
-                role: 'user',
-                content: text
-            })
+        try {
+            if (this._is())
+                this._msg.push({
+                    role: 'user',
+                    content: text
+                })
+        } catch (e) {
+            console.log("eccezione", e)
+        }
 
     }
 
     public pAgent(text: string | null) {
-        if (text) {
-            if (this._is())
-                this._msg.push({
-                    role: 'assistant',
-                    content: text
-                })
-
+        try {
+            if (text) {
+                if (this._is())
+                    this._msg.push({
+                        role: 'assistant',
+                        content: text
+                    })
+            }
+        } catch (e) {
+            console.log("eccezione", e)
         }
     }
-
-
 
 
     get msg(): ChatText[] | Message[] | any[] {

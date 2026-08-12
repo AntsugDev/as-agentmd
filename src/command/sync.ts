@@ -8,6 +8,7 @@ import dayjs from "dayjs";
 import {OpenAi} from "../api/OpenAi.js";
 import {Claude} from "../api/Claude.js";
 import {DeepSeek} from "../api/DeepSeek.js";
+import {MistralClass} from "../api/MistralClass.js";
 
 export class Sync extends AbstractProgram {
 
@@ -54,6 +55,7 @@ export class Sync extends AbstractProgram {
             if (await new OpenAi().sincro()) sync++;
             if (await new Claude().sincro()) sync++;
             if (await new DeepSeek().sincro()) sync++;
+            if (await new MistralClass().sincro()) sync++;
 
             if (sync > 0)
                 this.config.get('lastUpdated', dayjs().format('YYYYMMDD'));
