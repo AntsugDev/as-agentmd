@@ -7,6 +7,7 @@ import {Sync} from "./command/sync.js";
 import {ConfigData} from "./command/ConfigData.js";
 import {SelectMode} from "./command/SelectMode.js";
 import {Chat} from "./command/Chat.js";
+import {Server} from "./command/Server.js";
 
 const program = new Command();
 const p = providers();
@@ -37,5 +38,9 @@ select.setData()
 //----chat----
 const chat = new Chat(program)
 chat.setData()
+
+//----server----
+const server = new Server(program)
+server.getData()
 
 program.parse(process.argv);

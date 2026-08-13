@@ -22,12 +22,15 @@
     "conf": "^15.1.0",
     "csv-writer": "^1.6.0",
     "dayjs": "^1.11.21",
+    "express": "^5.2.1",
     "marked": "^15.0.12",
     "marked-terminal": "^7.3.0",
     "ollama": "^0.6.3",
+    "open": "^11.0.0",
     "ora": "^9.4.1"
   },
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "@types/marked-terminal": "^6.1.1",
     "@types/node": "^22.0.0",
     "tsx": "^4.0.0",

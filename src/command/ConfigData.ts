@@ -51,6 +51,20 @@ export class ConfigData extends AbstractProgram {
     }
 
     setData(): void {
+        this.program.command('refresh-config').description("refresh-config").action(() => {
+            this.config.clear()
+            this.config.set('activeProvider', 'gemini')
+            this.config.set('modelSelected', null)
+            this.config.set('lastUpdated', dayjs().format('YYYYMMDD'))
+            this.config.set('providers', {
+                "gemini":null,
+                "ollama":null,
+                "openai": null,
+                "claude":null,
+                "deep-seek": null,
+                "mistral": null,
+            })
+        })
     }
 
 }
