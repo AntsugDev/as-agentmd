@@ -47,7 +47,7 @@ export class Sync extends AbstractProgram {
     getDataAll(): void {
     }
 
-    private async sync() {
+    public async sync() {
         try {
             let sync: number = 0;
             if (await new Gemini().sincro()) sync++

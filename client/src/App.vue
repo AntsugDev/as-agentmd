@@ -1,15 +1,58 @@
 <script setup lang="ts">
-import Home from "./components/Home.vue";
+import { computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+
+const route = useRoute()
+const router = useRouter()
+const { t, locale } = useI18n()
+
+const isSettings = computed(() => route.name === 'settings')
+
+const goToHome = () => {
+  router.push({ name: 'home' })
+}
+
+const goToSettings = () => {
+  router.push({ name: 'settings' })
+}
+
+const toggleLocale = () => {
+  locale.value = locale.value === 'it' ? 'en' : 'it'
+}
 </script>
 
 <template>
-  <v-card class="d-flex flex-column pa-5 justify-center align-center mt-5 mb-5 elevation-3">
-    <v-card-title style="background: #9ca3af;border: 0.15vw solid #000;" class="mb-3 w-100 d-flex flex-row justify-space-between">
-      <h3 class="text-center" style="color: #ffffff">AgentMd</h3>
-      <v-icon icon="mdi-cog" size="35" end class="mb-3"></v-icon>
-    </v-card-title>
-    <v-card-text class="d-flex flex-column justify-center align-content-center pa-3 mb-3">
-      <Home />
-    </v-card-text>
-  </v-card>
+  <v-app>
+    <v-main class="app-shell">
+      <v-container class="py-6 py-md-8" fluid>
+        <section class="page-frame">
+          <header class="app-header">
+            <button class="brand-button" type="button" @click="goToHome">
+              <span class="brand-mark">A</span>
+              <span>
+                <strong>AgentMd</strong>
+                <small>{{ t('app.subtitle') }}</small>
+              </span>
+            </button>
+
+            <div class="header-actions">
+              <v-btn
+                :variant="isSettings ? 'flat' : 'text'"
+                :color="isSettings ? 'primary' : undefined"
+                icon="mdi-cog-outline"
+                :aria-label="t('navigation.settings')"
+                @click="goToSettings"
+              />
+              <v-btn variant="tonal" color="primary" size="small" @click="toggleLocale">
+                {{ locale.toUpperCase() }}
+              </v-btn>
+            </div>
+          </header>
+
+          <router-view />
+        </section>
+      </v-container>
+    </v-main>
+  </v-app>
 </template>

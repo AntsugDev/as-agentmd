@@ -5,6 +5,8 @@ import open from 'open';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import {randomInt} from "node:crypto";
+import {ApiFe} from "../fe/ApiFe.js";
+import listEndpoints from 'express-list-endpoints';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,10 +15,12 @@ export class Server extends AbstractProgram {
     private app: any | null;
     private port:number;
     private server:any|null;
+    private router:any|null;
 
     constructor(program: Command) {
         super(program);
         this.app = express()
+        this.router = express.Router()
         this.port = 1010
         this.server = null;
     }
@@ -26,6 +30,9 @@ export class Server extends AbstractProgram {
             this.app.use(express.json());
             this.app.use(express.static(path.join(__dirname, '../public')));
             this.getDataAll()
+            console.log('-----------------ROUTER--------------------')
+            console.log(listEndpoints(this.router))
+            console.log('-------------------------------------')
         } catch (e: any) {
             throw e;
         }
@@ -39,11 +46,6 @@ export class Server extends AbstractProgram {
                     const actualPort = this.server.address().port;
                     const url = `http://localhost:${actualPort}`;
                     console.log(`Dashboard avviata con successo su: ${url}`);
-                    try {
-                        await open(url);
-                    } catch (err) {
-                        console.log('Impossibile aprire il browser automaticamente. Apri questo link manualmente:', url);
-                    }
                 })
                 this.server.on('error', (err:any) => {
                     if (err.code === 'EADDRINUSE') {
@@ -68,6 +70,9 @@ export class Server extends AbstractProgram {
                 status:'ok'
             })
         })
+        const api = new ApiFe(this.app,this.router)
+        console.log('api',api)
+        api.api()
         //set api key
         // get config
         // get models
