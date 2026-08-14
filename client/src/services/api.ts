@@ -1,121 +1,67 @@
-import axios from 'axios'
-import type { AiModel, ChatRequest, ChatResponse, UserSettings } from '../types/chat'
+import axios, {AxiosHeaders, type AxiosRequestConfig} from "axios";
+import {inject} from "vue";
 
-const MOCK_DELAY = 450
-
-export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? '/api',
-  timeout: 30000,
-})
-
-apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('agentmd_token')
-
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-
-  return config
-})
-
-const wait = (ms = MOCK_DELAY) => new Promise((resolve) => window.setTimeout(resolve, ms))
-
-const mockModels: AiModel[] = [
-  {
-    name: 'openai/gpt-5-mini',
-    displayName: 'GPT-5 Mini',
-    description: 'Fast assistant for everyday chat and document workflows.',
-    inputTokenLimit: 128000,
-    outputTokenLimit: 16000,
-    version: '2026-08',
-    provider: 'OpenAI',
-  },
-  {
-    name: 'anthropic/claude-sonnet-4',
-    displayName: 'Claude Sonnet 4',
-    description: 'Balanced model for reasoning and structured writing.',
-    inputTokenLimit: 200000,
-    outputTokenLimit: 32000,
-    version: '2026-05',
-    provider: 'Anthropic',
-  },
-  {
-    name: 'google/gemini-2.5-pro',
-    displayName: 'Gemini 2.5 Pro',
-    description: 'Large context model for multimodal analysis.',
-    inputTokenLimit: 1000000,
-    outputTokenLimit: 64000,
-    version: '2026-06',
-    provider: 'Google',
-  },
-]
-
-let mockSettings: UserSettings = {
-  modelSelected: 'openai/gpt-5-mini',
-  lastUpdated: new Date().toISOString(),
-  providers: [
-    {
-      name: 'OpenAI',
-      apiKey: 'sk-live-demo-openai-key',
-      models: mockModels.filter((model) => model.provider === 'OpenAI'),
-    },
-    {
-      name: 'Anthropic',
-      apiKey: 'sk-ant-demo-anthropic-key',
-      models: mockModels.filter((model) => model.provider === 'Anthropic'),
-    },
-    {
-      name: 'Google',
-      apiKey: '',
-      models: mockModels.filter((model) => model.provider === 'Google'),
-    },
-  ],
+export interface Payload {
+    url: string,
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    body: any | null,
+    headers: Map<string, any> | null,
+    queryString: any | null
 }
 
-export const getModels = async (): Promise<AiModel[]> => {
-  await wait()
-  return mockModels
+const isSession = (url: string): boolean => {
+    return url.toString() === 'session';
 }
 
-export const sendChatMessage = async (request: ChatRequest): Promise<ChatResponse> => {
-  await wait(700)
+export const api = async (p: Payload): Promise<any | null> => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            let session = sessionStorage.getItem('apikey')
+            let config: AxiosRequestConfig = {
+                baseURL: 'http://localhost:1010/api',
+                url: p.url,
+                method: p.method
+            }
+            const h: AxiosHeaders = new AxiosHeaders();
+            const sCheck = isSession(p.url)
+            if (!sCheck && session) {
+                h.set('x-api-key', session)
+            }
 
-  const fileNote = request.file ? ` File ricevuto: ${request.file.name}.` : ''
-  return {
-    answer: `Risposta fittizia da ${request.model}: ho ricevuto "${request.prompt}".${fileNote}`,
-  }
-}
+            if (p.headers)
+                p.headers.forEach((e, i) => {
+                    h.set(i, e)
+                })
+            config.headers = h
+            if (p.queryString)
+                config.params = p.queryString
+            if (p.body)
+                config.data = p.body
 
-export const getSettings = async (): Promise<UserSettings> => {
-  await wait()
-  return structuredClone(mockSettings)
-}
+            const response = await axios.request(config)
+            if (response) {
+                if (sCheck) {
+                    sessionStorage.setItem('apikey', response?.data?.apiKey)
+                    resolve(true)
+                }
+                resolve(response)
+            }
+        } catch (err: any) {
+            console.log(err)
+            const snack = inject('snack')
+            if (snack) {
+                let m = null;
+                if (err?.response?.data?.error)
+                    m = err.response.data.error
+                else
+                    m = err.toString()
+                snack.value = {
+                    view: true, msg: m, error: true
+                }
+            }
+            reject(false)
+        }
 
-export const updateProviderApiKey = async (providerName: string, apiKey: string): Promise<UserSettings> => {
-  await wait()
-  mockSettings = {
-    ...mockSettings,
-    providers: mockSettings.providers.map((provider) =>
-      provider.name === providerName ? { ...provider, apiKey } : provider,
-    ),
-  }
-  return structuredClone(mockSettings)
-}
 
-export const syncModels = async (): Promise<UserSettings> => {
-  await wait(900)
-  mockSettings = {
-    ...mockSettings,
-    lastUpdated: new Date().toISOString(),
-  }
-  return structuredClone(mockSettings)
-}
-
-export const updateDefaultModel = async (modelSelected: string): Promise<UserSettings> => {
-  await wait()
-  mockSettings = {
-    ...mockSettings,
-    modelSelected,
-  }
-  return structuredClone(mockSettings)
+    })
 }

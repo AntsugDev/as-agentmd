@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { getModels, sendChatMessage } from '../services/api'
 import type { AiModel, ChatMessage } from '../types/chat'
 
 const { t } = useI18n()
@@ -32,7 +31,7 @@ const attachedFile = computed(() => {
 const canSend = computed(() => Boolean(selectedModel.value && prompt.value.trim()) && !isLoading.value)
 
 const loadModels = async () => {
-  models.value = await getModels()
+  models.value = []
   selectedModel.value = models.value[0]?.name ?? null
 }
 
@@ -63,17 +62,18 @@ const submitMessage = async () => {
   isLoading.value = true
 
   try {
-    const response = await sendChatMessage({
-      model: selectedModel.value,
-      prompt: text,
-      file,
-    })
+    const response = null;
+    // const response = await sendChatMessage({
+    //   model: selectedModel.value,
+    //   prompt: text,
+    //   file,
+    // })
 
-    messages.value.push({
-      id: crypto.randomUUID(),
-      role: 'agent',
-      text: response.answer,
-    })
+    // messages.value.push({
+    //   id: crypto.randomUUID(),
+    //   role: 'agent',
+    //   text: response.answer,
+    // })
   } finally {
     isLoading.value = false
   }

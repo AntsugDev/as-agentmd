@@ -1,4 +1,6 @@
-export default {
+﻿export default {
+  exception:"Eccezione",
+  success: "Successo",
   app: {
     subtitle: 'Chat AI operativa',
   },
@@ -33,10 +35,13 @@ export default {
     providers: 'Provider',
     apiKey: 'API key',
     saveApiKey: 'Salva API key',
+    delApiKey: 'Cancella API key',
     models: 'Modelli',
     noModels: 'Nessun modello disponibile',
     tokens: 'Token',
-    saved: 'Configurazione aggiornata',
+    saved: 'Configurazione aggiornata per {provider}',
+    deleted: 'ApiKey rimossa per {provider}',
     synced: 'Modelli aggiornati',
+    up_model: "Modello aggiornato con {model}"
   },
 }
