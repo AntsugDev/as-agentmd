@@ -1,12 +1,13 @@
 import {AbstractProgram} from "../utility/abstractProgram.js";
 import {Command} from "commander";
-import express, {response} from "express";
-import open from 'open';
+import express from "express";
+import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import {randomInt} from "node:crypto";
 import {ApiFe} from "../fe/ApiFe.js";
 import listEndpoints from 'express-list-endpoints';
+import fs from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -28,15 +29,32 @@ export class Server extends AbstractProgram {
     private init() {
         try {
             this.app.use(express.json());
+            this.app.use(cors({
+                origin: 'http://localhost:5173',
+                methods: ['GET', 'POST', 'PUT','DELETE', 'PATH', 'OPTIONS'],
+                allowedHeaders:['x-api-key','Content-Type', 'Authorization'],
+                exposedHeaders:['x-api-key'],
+            }))
             this.app.use(express.static(path.join(__dirname, '../public')));
             this.getDataAll()
-            console.log('-----------------ROUTER--------------------')
-            console.log(listEndpoints(this.router))
-            console.log('-------------------------------------')
+            this.getRouter()
         } catch (e: any) {
             throw e;
         }
     }
+    private getRouter(){
+        try{
+            const l = listEndpoints(this.router);
+            fs.writeFile('./files/router.json', JSON.stringify(l,null,2),'utf-8',(e) => {
+                if(e)
+                    console.log(`Eccezione nella creazione delle rotte`, e)
+            })  ;
+            console.log(`Rotte aggiornate vedi il file into files/router.json`)
+        }catch (err:any){
+            console.error(`Lista rotte errore ${err.toString()}`)
+        }
+    }
+
 
     getData(): void {
         this.program.command('server').description("Start server").action(() => {
@@ -71,7 +89,6 @@ export class Server extends AbstractProgram {
             })
         })
         const api = new ApiFe(this.app,this.router)
-        console.log('api',api)
         api.api()
         //set api key
         // get config

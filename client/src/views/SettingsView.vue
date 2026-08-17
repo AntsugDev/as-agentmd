@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {computed, inject, onMounted, reactive, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
-import type {AiModel, ProviderConfig, UserSettings} from '../types/chat'
+import type {AiModel,  UserSettings} from '../types/chat'
 import {api, type Payload} from "../services/api.ts";
 
 const {t, locale} = useI18n()

@@ -20,6 +20,7 @@
     "cli-color": "^2.0.4",
     "commander": "^12.0.0",
     "conf": "^15.1.0",
+    "cors": "^2.8.6",
     "csv-writer": "^1.6.0",
     "dayjs": "^1.11.21",
     "express": "^5.2.1",
@@ -31,6 +32,7 @@
     "ora": "^9.4.1"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/marked-terminal": "^6.1.1",
     "@types/node": "^22.0.0",

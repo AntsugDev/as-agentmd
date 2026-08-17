@@ -1,10 +1,12 @@
 import dayjs from "dayjs";
 import {configStore, providers} from "../config.js";
-import {AgentConfig, ProvidersInt} from "../interface/myInterface.js";
+import {AgentConfig, ProvidersInt, RawGeminiModel} from "../interface/myInterface.js";
 import Conf from "conf";
 import {Request, NextFunction, Response} from "express"
 import {exec} from 'child_process';
 import {ChildProcess} from "node:child_process";
+import {getProviderModelUtility} from "../utility/utility.js";
+import {ChatFe} from "./ChatFe.js";
 
 export class ApiFe {
 
@@ -99,6 +101,23 @@ export class ApiFe {
         })
     }
 
+    protected api_model_select() {
+
+        this.router.get('/settings/model', [this.isUser, this.isConfig], (req: Request, resp: Response) => {
+            try {
+                if (this.config) {
+                    const modelSelect = this.config.get('modelSelected')
+                    return resp.json({
+                        modelSelected: modelSelect,
+                    })
+                }
+            } catch (err: any) {
+                return this.exception(resp, err.toString())
+            }
+        })
+    }
+
+
     protected api_put_config() {
         this.router.put('/settings/:provider', [this.isUser, this.isConfig], (req: Request<{
             provider: string
@@ -178,15 +197,92 @@ export class ApiFe {
         })
     }
 
+    protected select_model() {
+        this.router.get('/select_models/:model', [this.isUser, this.isConfig], (req: Request<{
+            model: string
+        }>, resp: Response) => {
+            try {
+                if (this.config) {
+                    const model = req.params.model
+                    this.config.set('modelSelected', model)
+                    return resp.sendStatus(204)
+                }
+            } catch (err: any) {
+                return this.exception(resp, err.toString())
+            }
+        })
+    }
+
+    protected get_models() {
+        this.router.get('/models', [this.isUser, this.isConfig], (req: Request<{ model: string }>, resp: Response) => {
+            try {
+                const models: any[] = []
+                if (this.config) {
+                    Object.entries(this.config.get('providers')).map(([provider, data]) => {
+                        if (data?.models) {
+                            data.models.map((e: RawGeminiModel) => {
+                                models.push({
+                                    value: `${provider}|${e.name.toString().replace('models/', '')}`,
+                                    text: `${provider} - ${e.displayName}`
+                                })
+                            })
+                        }
+                    })
+                    return resp.json(models)
+                }
+            } catch (err: any) {
+                return this.exception(resp, err.toString())
+            }
+        })
+    }
+
+    protected chat() {
+        this.router.post('/chat/:status', [this.isUser, this.isConfig], async (req: Request<{ status: 'init' | 'next' }, any, {
+            message: string,
+            uuid:string|null
+        }>, resp: Response) => {
+            try {
+                const status = req.params.status
+                const msg = req.body.message
+                const provider = configStore.get('modelSelected')
+                const uuid =(req.body.uuid ? req.body.uuid: Math.random().toString(36).substring(0, 10)).toString().replaceAll('.','')
+                if (status === 'init' && provider?.toString().indexOf('gemini') === -1) {
+                    ChatFe.init(uuid,msg, (status === 'init'))
+                }
+                else if (status === 'next' && provider?.toString().indexOf('gemini') === -1)
+                    ChatFe.user(msg, uuid)
+                const globalMsg:string|any[] = await ChatFe.getFile(uuid)
+                const agent = await getProviderModelUtility(provider, globalMsg, msg)
+                if (!agent) {
+                    ChatFe.delStorage(uuid)
+                    return resp.status(422).json({
+                        error: "Errore della chat"
+                    })
+                }
+                ChatFe.assistant(agent, uuid)
+                return resp.status(200).json({
+                    agent: agent, uuid:uuid, global: globalMsg
+                })
+
+            } catch (err: any) {
+                return this.exception(resp, err.toString())
+            }
+        })
+    }
+
 
     public api() {
         try {
             this.app.use('/api', this.router);
             this.api_login();
-            this.api_config()
+            this.api_config();
+            this.api_model_select();
             this.api_put_config()
             this.api_del_config()
             this.sincro()
+            this.select_model()
+            this.get_models()
+            this.chat()
         } catch (err: any) {
             throw err;
         }
