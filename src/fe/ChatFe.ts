@@ -1,13 +1,10 @@
-import {stat, unlink, writeFile, appendFile, readFile} from "fs/promises";
-import os from 'os';
-import path from 'path';
 import {instruction} from "../utility/utility.js";
 
-const tmpSO = os.tmpdir();
 
 interface ChatMessage {
     role: string,
-    content: string
+    content: string,
+    order: number
 }
 
 export class ChatFe {
@@ -19,7 +16,7 @@ export class ChatFe {
             const histoy = this.storage.get(uuid)
             if (histoy) {
                 histoy.push({
-                    role: role, content: content
+                    role: role, content: content, order: (histoy.length + 1)
                 } as ChatMessage)
                 this.storage.set(uuid, histoy)
             }
@@ -28,10 +25,13 @@ export class ChatFe {
         }
     }
 
-    public static init(uuid: string, msg: string | null, status: boolean): void {
+    public static init(uuid: string, msg: string | null,role:'user'|'system', status: boolean): void {
         try {
-            const i: ChatMessage[] =[ {
-                role: "system", content: instruction
+            let content = instruction
+            if(role === 'user')
+                content = msg ? msg : ""
+            const i: ChatMessage[] = [{
+                role: role, content: content, order: 1
             }]
             this.storage.set(uuid, i)
             if (status && msg)
@@ -66,11 +66,11 @@ export class ChatFe {
         }
     }
 
-    public static delStorage(uuid: string):void {
+    public static delStorage(uuid: string): void {
         this.storage.delete(uuid)
     }
 
-    public static clearAll():void {
+    public static clearAll(): void {
         this.storage.clear()
     }
 }

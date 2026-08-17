@@ -47,7 +47,6 @@ export const api = async (p: Payload): Promise<any | null> => {
                 resolve(response)
             }
         } catch (err: any) {
-            console.log(err)
             const snack = inject('snack')
             if (snack) {
                 let m = null;
@@ -59,7 +58,7 @@ export const api = async (p: Payload): Promise<any | null> => {
                     view: true, msg: m, error: true
                 }
             }
-            reject(false)
+            reject(err)
         }
 
 

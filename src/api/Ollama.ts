@@ -14,10 +14,10 @@ export class Ollama extends ApiAbstract {
     }
 
     // @ts-ignore
-    async chat(text: any[]):  null|string|object {
+    async chat(text: any[]): null | string | object {
         try {
             let model = this.getModelSelect()
-            if(!model){
+            if (!model) {
                 console.error("Impossibile estrarre il modello da utilizzare")
                 return null;
             }
@@ -29,7 +29,6 @@ export class Ollama extends ApiAbstract {
                     temperature: 0.5,
                 },
             });
-
             if (response && response?.message && response?.message?.content)
                 return response.message.content.toString();
             return null;

@@ -22,6 +22,8 @@
         user: 'User',
         agent: 'Agent',
         fileAttached: 'Attached file',
+        file: 'Attaching file',
+        archivia: "Archive",
         modelRequired: 'Select a model',
         messageRequired: 'Write a message',
     },

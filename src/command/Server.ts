@@ -65,16 +65,7 @@ export class Server extends AbstractProgram {
                     const url = `http://localhost:${actualPort}`;
                     console.log(`Dashboard avviata con successo su: ${url}`);
                 })
-                this.server.on('error', (err:any) => {
-                    if (err.code === 'EADDRINUSE') {
-                        console.log(`La porta ${this.port} è già occupata. Ne cerco una casuale libera...`);
-                        this.port = randomInt(4)
-                        this.getData();
-                        return;
-                    } else {
-                        console.error('Errore imprevisto nell\'avvio del server:', err);
-                    }
-                });
+
             }catch (err:any){
                 console.error("Server not started",err)
             }
@@ -90,11 +81,6 @@ export class Server extends AbstractProgram {
         })
         const api = new ApiFe(this.app,this.router)
         api.api()
-        //set api key
-        // get config
-        // get models
-        // chat
-
     }
 
     setData(): void {

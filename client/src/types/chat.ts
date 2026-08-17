@@ -21,10 +21,9 @@ export interface UserSettings {
 }
 
 export interface ChatMessage {
-  id: string
-  role: 'user' | 'agent'
-  text: string
-  fileName?: string
+  role: 'user' | 'assistant'
+  content: string
+  order:number
 }
 
 export interface ChatRequest {

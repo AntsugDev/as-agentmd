@@ -4,7 +4,6 @@ import {AgentConfig, ProvidersInt, RawGeminiModel} from "../interface/myInterfac
 import Conf from "conf";
 import {Request, NextFunction, Response} from "express"
 import {exec} from 'child_process';
-import {ChildProcess} from "node:child_process";
 import {getProviderModelUtility} from "../utility/utility.js";
 import {ChatFe} from "./ChatFe.js";
 
@@ -237,31 +236,37 @@ export class ApiFe {
     }
 
     protected chat() {
-        this.router.post('/chat/:status', [this.isUser, this.isConfig], async (req: Request<{ status: 'init' | 'next' }, any, {
+        this.router.post('/chat/:status', [this.isUser, this.isConfig], async (req: Request<{
+            status: 'init' | 'next'
+        }, any, {
             message: string,
-            uuid:string|null
+            uuid: string | null
         }>, resp: Response) => {
             try {
                 const status = req.params.status
                 const msg = req.body.message
                 const provider = configStore.get('modelSelected')
-                const uuid =(req.body.uuid ? req.body.uuid: Math.random().toString(36).substring(0, 10)).toString().replaceAll('.','')
-                if (status === 'init' && provider?.toString().indexOf('gemini') === -1) {
-                    ChatFe.init(uuid,msg, (status === 'init'))
-                }
-                else if (status === 'next' && provider?.toString().indexOf('gemini') === -1)
+                const uuid = (req.body.uuid ? req.body.uuid : Math.random().toString(36).substring(0, 10)).toString().replaceAll('.', '')
+
+                if (status === 'init') {
+                    const role = provider?.toString().indexOf('gemini') === -1 ? 'system': 'user'
+                    let s = (status === 'init')
+                    if(role === 'user') s = false
+                    ChatFe.init(uuid, msg,role,s)
+                } else if (status === 'next')
                     ChatFe.user(msg, uuid)
-                const globalMsg:string|any[] = await ChatFe.getFile(uuid)
+
+                const globalMsg: string | any[] = await ChatFe.getFile(uuid)
                 const agent = await getProviderModelUtility(provider, globalMsg, msg)
                 if (!agent) {
                     ChatFe.delStorage(uuid)
-                    return resp.status(422).json({
-                        error: "Errore della chat"
-                    })
+                    return resp.status(422).json(agent)
                 }
-                ChatFe.assistant(agent, uuid)
+                ChatFe.assistant(agent.m, uuid)
                 return resp.status(200).json({
-                    agent: agent, uuid:uuid, global: globalMsg
+                    uuid: uuid, global: globalMsg.filter(e => {
+                        return e.role !== 'system'
+                    }), t: (agent.c?.token ?? null)
                 })
 
             } catch (err: any) {

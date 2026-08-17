@@ -23,12 +23,11 @@ export const wClear = (w: Ora | null): void => {
         w.clear()
 }
 
-export const getProviderModelUtility = async (p: string | null, msg: string | any[], input:string| null): Promise<any | null> => {
+export const getProviderModelUtility = async (p: string | null, msg: string | any[], input: string | null): Promise<any | null> => {
     try {
 
         let _class: any | null = null;
         if (p) {
-            console.log('cazzo', p)
             if (p.toString().indexOf('ollama') !== -1)
                 _class = new Ollama();
             else if (p.toString().indexOf('gemini') !== -1)
@@ -47,8 +46,11 @@ export const getProviderModelUtility = async (p: string | null, msg: string | an
                 return;
             }
         }
-        if (_class) {
-            return await _class.chat((p.toString().indexOf('gemini') !== -1 ? input : msg) )
+        if (_class && p) {
+            const chat = await _class.chat((p.toString().indexOf('gemini') !== -1 ? input : msg))
+            if (typeof chat === 'object' && chat?.message)
+                throw new Error(chat.message)
+            return {m:chat,c:_class}
         }
         return null;
     } catch (err) {
@@ -57,3 +59,4 @@ export const getProviderModelUtility = async (p: string | null, msg: string | an
     }
 
 }
+

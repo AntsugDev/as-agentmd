@@ -4,13 +4,21 @@ import {ApiAbstract} from "./ApiAbstract.js";
 import {AxiosHeaders} from "axios";
 import {instruction} from "../utility/utility.js";
 
+
 export class Gemini extends ApiAbstract {
 
     public prevousGemini:string|null;
+    public token:{input:number,output:number};
+
     constructor() {
         super('gemini',  `https://generativelanguage.googleapis.com/v1beta/models?key=`,`https://generativelanguage.googleapis.com/v1beta/interactions?key=`);
         this.prevousGemini = null;
+        this.token = {
+            input :0, output: 0
+        }
     }
+
+
 
     // @ts-ignore
     async chat(text: any): null | string| object {
@@ -59,6 +67,9 @@ export class Gemini extends ApiAbstract {
                 console.log(`---Utilizzo dei token-----`)
                 console.log(`Input(user): ${input}`)
                 console.log(`Output(Agent): ${output}`)
+                this.token = {
+                    input:output, output: input
+                }
                 if (select && select.inputTokenLimit && select.outputTokenLimit) {
                     rInput = select.inputTokenLimit - input
                     rOutput = select.outputTokenLimit - output
@@ -76,6 +87,9 @@ export class Gemini extends ApiAbstract {
             }
             return null;
         } catch (err: any) {
+            if(err?.response?.data && err?.response?.data?.error){
+                return err?.response?.data.error
+            }
             console.error(err.toString())
             return null;
         }
