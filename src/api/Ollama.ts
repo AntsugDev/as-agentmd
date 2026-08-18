@@ -9,8 +9,18 @@ import Conf from "conf";
 export class Ollama extends ApiAbstract {
 
 
-    constructor() {
-        super('ollama', "http://localhost:11434", null);
+    constructor(files:any|null) {
+        super('ollama', "http://localhost:11434", null,files);
+    }
+
+    // @ts-ignore
+    async uri_file(): Promise<any|null>{
+        try{
+
+            return null;
+        }catch (err:any){
+            return null;
+        }
     }
 
     // @ts-ignore

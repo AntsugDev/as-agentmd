@@ -108,19 +108,21 @@ const openArchive = (data: any[]) => {
             <div class="header-actions">
 
 
-              <v-menu location="bottom" v-if="archive.length > 0" open-on-hover>
+              <v-menu location="bottom" v-if="archive.length > 0">
                 <template v-slot:activator="{ props }">
                   <v-badge :content="archive.length" color="info" v-bind="props">
                     <v-icon icon="mdi-archive" @click="openArchive"></v-icon>
                   </v-badge>
                 </template>
-                <v-list density="compact">
+                <v-list  :lines="false"
+                         density="compact"
+                         nav>
                   <v-list-item
                       v-for="(item, index) in archive"
                       :key="index"
                       @click="openArchive(item)"
                   >
-                    <v-list-item-title>{{ item.title }}</v-list-item-title>
+                    <v-list-item-title>&blacktriangleright; {{ item.time }} - {{ item.title }}</v-list-item-title>
                   </v-list-item>
                 </v-list>
 

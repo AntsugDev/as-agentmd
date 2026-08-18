@@ -17,7 +17,7 @@ const props = defineProps({
 const models = ref<AiModel[]>([])
 const selectedModel = ref<string | null>(null)
 const prompt = ref('')
-const selectedFile = ref<any[]>([])
+const selectedFile = ref([])
 const isLoading = ref(false)
 const messages = ref<any[]>([])
 const formError = ref('')
@@ -56,30 +56,37 @@ const settingsModel = async () => {
 }
 const status = ref<string>('init')
 const uuid = ref<string | null>(null)
-const nameFile = ref<string|null>(null)
+const nameFile = ref<string | null>(null)
+const token = ref<{ input: number, output: number }>({
+  input: 0, output: 0
+})
 const submitMessage = async () => {
   isLoading.value = true
   formError.value = ''
+  const form = new FormData()
 
   if (!selectedModel.value) {
     formError.value = t('home.modelRequired')
     return
   }
-
   const text = prompt.value.trim()
   if (!text) {
     formError.value = t('home.messageRequired')
     return
   }
+  form.append('message', text)
+  if (uuid.value)
+    form.append('uuid', uuid.value)
+  selectedFile.value.forEach(e => {
+    form.append('files', e)
+  })
+  console.log('form', form)
   try {
     const response = await api({
       url: `chat/${status.value}`,
       method: 'POST',
-      body: {
-        message: prompt.value,
-        uuid: uuid.value
-      },
-      queryString:{
+      body:form,
+      queryString: {
         name_file: nameFile.value
       }
     } as Payload)
@@ -97,6 +104,7 @@ const submitMessage = async () => {
       }) : []
       uuid.value = response.data.uuid
       status.value = 'next'
+      token.value = response.data.t
     }
   } catch (e: any) {
     if (e?.response?.data && e?.response?.data?.error)
@@ -113,7 +121,7 @@ const openDialog = () => {
 
 
 const closeDialog = () => {
-  console.log('selectedFile.value', selectedFile.value)
+  console.log('selectedFile.value', selectedFile.value[0], JSON.stringify(selectedFile.value[0], null, 2))
   dialog.value = false
 }
 
@@ -131,20 +139,13 @@ const changeModel = async () => {
 const archivia = async () => {
   try {
     isLoading.value = true
-    const response = await api({
-      url: `archive/${uuid.value}`,
-      method: 'GET'
-    } as Payload)
-    if (parseInt(response.status) === 201) {
-      snack.value = {
-        error: false,
-        msg: t('home.archiviata'),
-        view: true
-      }
-      messages.value = []
-      prompt.value = ''
+    messages.value = []
+    uuid.value = null
+    status.value = 'init'
+    nameFile.value = null
+    token.value = {
+      input: 0, output: 0
     }
-
   } catch (err: any) {
     console.error("Archiviazione fallita", err)
   } finally {
@@ -153,10 +154,19 @@ const archivia = async () => {
 }
 watch(() => props.recupera, (v) => {
   if (v) {
-    messages.value = v?.data_content ?? []
+    let content = []
+    const m = new MarkdownIt({html: true})
+    if (v?.data_content)
+      content = v.data_content.map((e: { role: string, content: string }) => {
+        return {role: e.role, content: m.render(e.content)}
+      })
+    messages.value = content
     uuid.value = v?.uuid ?? null
     status.value = 'next'
     nameFile.value = v?.name ?? null
+    token.value = {
+      input: 0, output: 0
+    }
   }
 })
 
@@ -257,7 +267,6 @@ onMounted(() => {
                   color="secondary"
                   :loading="isLoading"
                   @click="openDialog"
-                  :disabled="true"
                   append-icon="mdi-plus"
                   variant="elevated"
                   :alt="t('home.file')"
@@ -268,20 +277,25 @@ onMounted(() => {
               </v-btn>
 
               <v-btn
-                  color="warning"
+                  color="error"
                   :loading="isLoading"
                   append-icon="mdi-archive"
                   @click="archivia"
                   :disabled="messages.length === 0"
                   density="compact"
                   variant="elevated"
-                  :alt=" t('home.archivia')"
-                  :title=" t('home.archivia')"
+                  :alt=" t('home.clear')"
+                  :title=" t('home.clear')"
 
               >
-                {{ t('home.archivia') }}
+                {{ t('home.clear') }}
               </v-btn>
-
+              <div class="d-flex flex-row justify-space-around mt-3 pa-2"
+                   v-if="(token?.input && token?.output &&token.input > 0 && token.output > 0)">
+                <v-chip color="#CAD5E2" class="mr-2" variant="flat" label>{{ t('home.tokenIn', {t: token.input}) }}
+                </v-chip>
+                <v-chip color="#90A1B9" variant="flat" label>{{ t('home.tokenOut', {t: token.output}) }}</v-chip>
+              </div>
 
             </div>
           </div>
@@ -315,6 +329,7 @@ onMounted(() => {
               multiple
               show-size
               v-model="selectedFile"
+              @update:modelValue="closeDialog"
           >
             <template #browse>
               <v-btn size="30" icon="mdi-upload" color="success" @click="closeDialog"></v-btn>

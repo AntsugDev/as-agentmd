@@ -7,8 +7,18 @@ import dayjs from "dayjs";
 export class OpenAi extends ApiAbstract {
 
 
-    constructor() {
-        super('openai', 'https://api.openai.com/v1/models', 'https://api.openai.com/v1/chat/completions');
+    constructor(files:any|null) {
+        super('openai', 'https://api.openai.com/v1/models', 'https://api.openai.com/v1/chat/completions',files);
+    }
+
+    // @ts-ignore
+    async uri_file(): Promise<any|null> {
+        try{
+
+            return null;
+        }catch (err:any){
+            return null;
+        }
     }
 
 // @ts-ignore
@@ -37,6 +47,9 @@ export class OpenAi extends ApiAbstract {
                 console.log(`Input(user): ${input}`)
                 console.log(`Output(Agent): ${output}`)
                 console.log('--------------------------------------------')
+                this.token = {
+                    input:input, output: output
+                }
             }
 
             if (response && response?.data && response?.data?.choices)

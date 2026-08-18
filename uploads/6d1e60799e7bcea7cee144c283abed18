@@ -1,0 +1,45 @@
+Per il rientro delle ferie
+
+- PDS:
+	- Fatture:
+	 
+	 le fatture sono terminate ho sistemato tutto quello che c'era, riscontro un problema solo in test in quanto se creo una movimentazione si rompe 
+	 rispondendo non autorizzato e le icone dell'head si vedono troppo a destra.
+	 Da una prima analisi fatta, questi problemi non si capisce perchè?
+
+    - Agenda
+		- Vista mese:
+			Restyling quasi terminato
+			Mancante:
+				> opacità funziona in modo non corretto
+				> manca click modifica
+				> manca accessione pulsante settimana quando si seleziona un evento lato dettagli
+				> manca evidenzazione al contrario del punto sopra
+				> controllo generale
+				
+		- Vista giorno:
+			Da rivedere completamente
+		- Vista settimana:
+			Da rivedere completamente
+			
+	- Riepilogo incontro con Giulia
+	  - vista mese
+		> ha tolto in alto i tre pulsanti (mese,settimana, giorno)
+		> ha aggiunto il pulsante aggiungi
+		> evidenziazione evento quando si clicca sopra e del relativo box a destra
+		> eventi partono con opacità bassa
+		> evidenziazione del nr. della settimana alla selezione di un evento contenuto in essa
+	  - vista giorno
+		> restyling con gli eventi non più lunghi su tutta la fascia, ma più piccoli e oridinati per ù
+		  orario di inzio e per durata
+      - vista week
+    	> restyling, ma resta da capire come verrà
+	  - generale
+		> i box lato destro, saranno visibili sempre e la lista dovrà essere rivista in base 
+		  alla vista
+		  
+- SEGNALAZIONI:
+	> stato attuale sistemata con la mail paracadute e sistemato il  batch per inserimento in tabella interna 
+	degli user su service manager
+	> delegato a Valentino l'esecuzione dei test
+	> nessun feedback

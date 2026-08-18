@@ -1,93 +1,99 @@
 import {callbackApi, Params} from "../utility/api.js";
-import { RawGeminiModel} from "../interface/myInterface.js"
+import {RawGeminiModel} from "../interface/myInterface.js"
 import {ApiAbstract} from "./ApiAbstract.js";
-import {AxiosHeaders} from "axios";
 import {instruction} from "../utility/utility.js";
-
+import {GoogleGenAI} from "@google/genai";
+import mime from 'mime-types';
+import fs from "fs/promises";
 
 export class Gemini extends ApiAbstract {
 
-    public prevousGemini:string|null;
-    public token:{input:number,output:number};
+    public prevousGemini: string | null;
 
-    constructor() {
-        super('gemini',  `https://generativelanguage.googleapis.com/v1beta/models?key=`,`https://generativelanguage.googleapis.com/v1beta/interactions?key=`);
+    protected ai: any;
+    protected model: any;
+
+
+    constructor(files: any | null) {
+        super('gemini', `https://generativelanguage.googleapis.com/v1beta/models?key=`, `https://generativelanguage.googleapis.com/v1beta/interactions?key=`, files);
         this.prevousGemini = null;
-        this.token = {
-            input :0, output: 0
+        this.ai = new GoogleGenAI({
+            apiKey: this.extraApiKey()
+        })
+        this.model = this.getModelSelect()
+    }
+
+    // @ts-ignore
+    async uri_file(): Promise<any | null> {
+        try {
+            const fileData: any[] = []
+            if (this.files && Array.isArray(this.files)) {
+                for (let i = 0; i < this.files.length; i++) {
+                    const ele = this.files[i]
+                    const uploadResult = await this.ai.files.upload({
+                        file: ele.path,
+                        config: {
+                            displayName: ele.originalname,
+                            mimeType: ele.mimetype
+                        }
+                    })
+                    let computedMimeType = ele.mimetype;
+                    if (!computedMimeType || computedMimeType === 'application/octet-stream') {
+                        computedMimeType = mime.lookup(ele.originalname) || 'application/pdf';
+                    }
+                    if (uploadResult) {
+                        const fileType = computedMimeType.startsWith('image/') ? 'image' : 'document';
+                        fileData.push({
+                            type: fileType,
+                            uri: uploadResult.uri,
+                            mime_type: uploadResult.mimeType
+                        })
+                    }
+                }
+            }
+            return fileData;
+        } catch (err: any) {
+            return null;
         }
     }
 
 
-
     // @ts-ignore
-    async chat(text: any): null | string| object {
+    async chat(text: any): null | string | object {
         try {
-            const model = this.getModelSelect()
-            const key = this.extraApiKey()
-            if (!model) {
-                console.error("Impossibile estrarre il modello da utilizzare")
-                return null;
-            }
-            if (!key) {
-                console.error("Impossibile estrarre la chiave per le chiamate")
-                return null;
-            }
-            let url = `${this.endPointChat}`
-            url +=`${key}`
-
-            if (!url) {
-                console.error("Impossibile procedere non si dispone dell'url di richiesta")
-                return null;
-            }
-            const headers = new AxiosHeaders();
-            headers.set('Content-Type', 'application/json',)
-            const response = await callbackApi({
-                url: url?.toString(),
-                method: 'POST',
-                payload: {
-                    model: model.toString().replace('models/',''),
-                    system_instruction: instruction,
-                    input: text,
-                    previous_interaction_id: this.prevousGemini
-                },
-                headers: headers
+            const fileData = await this.uri_file();
+            let input = [];
+            input.push({
+                type: 'text', text: text
             })
-            if (response && response.data) {
-                const contents = response.data.steps[1].content[0].text
-                this.prevousGemini = response.data.id
-                const usage = response.data.usage
-                const select: RawGeminiModel | null | undefined = this.getModels()?.find((e: RawGeminiModel) => {
-                    return e.name.toString().toUpperCase().trim() === model.toString().toUpperCase().trim()
-                })
-                const input = usage.total_input_tokens;
-                const output = usage.total_output_tokens;
-                let rInput = null;
-                let rOutput = null;
-                console.log(`---Utilizzo dei token-----`)
-                console.log(`Input(user): ${input}`)
-                console.log(`Output(Agent): ${output}`)
+            if (fileData.length > 0)
+                input.push(...fileData)
+            console.log('input', input)
+            const response = await this.ai.interactions.create({
+                model: this.model, system_instruction: instruction,
+                input: input,
+                previous_interaction_id: this.prevousGemini,
+                generation_config: {
+                    temperature: 0.6,
+                },
+            })
+            if (response) {
+                const contents = response.output_text
+                this.prevousGemini = response.id
+                const usage = response.usage
+                const input = usage.prompt_tokens;
+                const output = usage.completion_tokens;
                 this.token = {
-                    input:output, output: input
+                    input: input, output: output
                 }
-                if (select && select.inputTokenLimit && select.outputTokenLimit) {
-                    rInput = select.inputTokenLimit - input
-                    rOutput = select.outputTokenLimit - output
-                    console.warn(`Token residui in input ${rInput}`)
-                    console.warn(`Token residui in output ${rOutput}`)
-                }
-                console.log('--------------------------------------------')
                 if (contents) {
-                    if (rInput === 0 || rOutput === 0) {
-                        throw new Error("Token terminati, cambiare modello")
-                    }
-                    return  contents;
+                    return contents;
                 }
 
             }
             return null;
         } catch (err: any) {
-            if(err?.response?.data && err?.response?.data?.error){
+            if (err?.response?.data && err?.response?.data?.error) {
                 return err?.response?.data.error
             }
             console.error(err.toString())

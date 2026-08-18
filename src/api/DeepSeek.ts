@@ -4,9 +4,19 @@ import {callbackApi, Params} from "../utility/api.js";
 import {RawGeminiModel} from "../interface/myInterface.js";
 
 export class DeepSeek extends ApiAbstract{
-    constructor() {
-        super('deep-seek', 'https://api.deepseek.com/v1/models?provider=deepseek', 'https://api.deepseek.com/v1/chat/completions');
+    constructor(files:any|null) {
+        super('deep-seek', 'https://api.deepseek.com/v1/models?provider=deepseek', 'https://api.deepseek.com/v1/chat/completions',files);
     }
+    // @ts-ignore
+    async uri_file(): Promise<any|null>{
+        try{
+
+            return null;
+        }catch (err:any){
+            return null;
+        }
+    }
+
     // @ts-ignore
     async chat(text: any[]): string | object | null {
        try{
@@ -45,6 +55,9 @@ export class DeepSeek extends ApiAbstract{
                    console.log(`Input(user): ${input}`)
                    console.log(`Output(Agent): ${output}`)
                    console.log('--------------------------------------------')
+                   this.token = {
+                       input:input, output: output
+                   }
                }
                return response.data.choices[0].message.content
            }

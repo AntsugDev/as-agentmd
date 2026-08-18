@@ -27,7 +27,10 @@
         archivia: "Archive",
         modelRequired: 'Select a model',
         messageRequired: 'Write a message',
-        archiviata: "Chat successfully archived"
+        archiviata: "Chat successfully archived",
+        clear:"Clear fields",
+        tokenIn:"Input token {t}",
+        tokenOut:"Output token {t}"
     },
     settings: {
         title: 'Settings',

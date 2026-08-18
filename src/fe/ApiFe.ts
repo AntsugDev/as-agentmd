@@ -9,13 +9,15 @@ import {ChatFe} from "./ChatFe.js";
 import * as os from "node:os";
 import path from "path";
 import fs from "fs/promises";
+import multer from "multer";
 
 
 interface Archive {
     uuid: string,
-    name:string,
+    name: string,
     title: string,
-    data_content: []
+    data_content: [],
+    time: string
 }
 
 export class ApiFe {
@@ -23,6 +25,8 @@ export class ApiFe {
     protected app: any;
     protected router: any;
     protected config: Conf<AgentConfig> | null;
+    protected upload:any|null;
+    protected uploadMiddleware:any|null;
 
     constructor(app: any, router: any) {
         this.app = app
@@ -31,6 +35,9 @@ export class ApiFe {
 
         this.isConfig = this.isConfig.bind(this);
         this.isUser = this.isUser.bind(this);
+
+        this.upload = multer({ dest: 'uploads/' });
+        this.uploadMiddleware = this.upload.array('files');
     }
 
     protected session() {
@@ -247,13 +254,13 @@ export class ApiFe {
     }
 
     protected chat() {
-        this.router.post('/chat/:status', [this.isUser, this.isConfig], async (req: Request<{
+        this.router.post('/chat/:status', [this.isUser, this.isConfig, this.uploadMiddleware], async (req: Request<{
             status: 'init' | 'next'
         }, any, {
             message: string,
             uuid: string | null
-        },any,{
-            name_file:string|null
+        }, any, {
+            name_file: string | null
         }>, resp: Response) => {
             try {
                 const status = req.params.status
@@ -261,9 +268,9 @@ export class ApiFe {
                 const provider = configStore.get('modelSelected')
                 const uuid = (req.body.uuid ? req.body.uuid : Math.random().toString(36).substring(0, 10)).toString().replaceAll('.', '')
 
+                const files = req.files as Express.Multer.File[] || [];
+
                 const nameFile = req.query.name_file
-
-
                 if (status === 'init') {
                     const role = provider?.toString().indexOf('gemini') === -1 ? 'system' : 'user'
                     let s = (status === 'init')
@@ -273,17 +280,18 @@ export class ApiFe {
                     await ChatFe.user(msg, uuid)
 
                 const globalMsg: string | any[] = ChatFe.getFile(uuid)
-                const agent = await getProviderModelUtility(provider, globalMsg, msg)
+                const agent = await getProviderModelUtility(provider, globalMsg, msg,files)
                 if (!agent) {
                     ChatFe.delStorage(uuid)
                     return resp.status(422).json(agent)
                 }
                 ChatFe.assistant(agent.m, uuid)
-                await ChatFe._archive(globalMsg, uuid,nameFile)
+                const time = await ChatFe._archive(globalMsg, uuid, nameFile)
                 return resp.status(200).json({
                     uuid: uuid, global: globalMsg.filter(e => {
                         return e.role !== 'system'
-                    }), t: (agent.c?.token ?? null)
+                    }), t: (agent.c?.token ?? null),
+                    time: time
                 })
 
             } catch (err: any) {
@@ -320,6 +328,8 @@ export class ApiFe {
                 let response: Archive[] = []
                 for (let r = 0; r < files.length; r++) {
                     const e = files[r]
+                    const time = dayjs(e.toString().split('_')[1].toString().replace('.json', ''), 'YYYYMMDD')
+                    const now = dayjs()
                     const filePath = path.join(directory, e);
                     const content = await fs.readFile(filePath, 'utf8');
                     if (content) {
@@ -327,14 +337,24 @@ export class ApiFe {
                         parser = parser.filter((i: { role: string, content: string }) => {
                             return i.role !== 'system'
                         })
-                        response.push({
-                            uuid: e.toString().split('_')[0],
-                            name: e,
-                            title: `${parser[0].content.toString().substring(0, 30)} ...`,
-                            data_content: parser
-                        })
+                        if (now.diff(time, 'day') <= 3)
+                            response.push({
+                                uuid: e.toString().split('_')[0],
+                                name: e,
+                                title: `${parser[0].content.toString().substring(0, 30)} ...`,
+                                data_content: parser,
+                                time: time.format('YYYY-MM-DD')
+                            })
                     }
                 }
+                response = response.sort((a:Archive, b:Archive):number => {
+                    const tA = dayjs(a.time, 'YYYY-MM-DD')
+                    const tB = dayjs(b.time, 'YYYY-MM-DD')
+
+                    if (tB.isAfter(tA)) return 1
+                    if (tA.isAfter(tB)) return -1
+                    return 0
+                })
                 return resp.json(response)
 
             } catch (err: any) {

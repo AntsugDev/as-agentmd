@@ -50,12 +50,12 @@ export class Sync extends AbstractProgram {
     public async sync() {
         try {
             let sync: number = 0;
-            if (await new Gemini().sincro()) sync++
-            if (await new Ollama().sincro()) sync++;
-            if (await new OpenAi().sincro()) sync++;
-            if (await new Claude().sincro()) sync++;
-            if (await new DeepSeek().sincro()) sync++;
-            if (await new MistralClass().sincro()) sync++;
+            if (await new Gemini(null).sincro()) sync++
+            if (await new Ollama(null).sincro()) sync++;
+            if (await new OpenAi(null).sincro()) sync++;
+            if (await new Claude(null).sincro()) sync++;
+            if (await new DeepSeek(null).sincro()) sync++;
+            if (await new MistralClass(null).sincro()) sync++;
 
             if (sync > 0)
                 this.config.get('lastUpdated', dayjs().format('YYYYMMDD'));

@@ -7,8 +7,17 @@ import {instruction} from "../utility/utility.js";
 
 export class Claude extends ApiAbstract {
 
-    constructor() {
-        super('claude', 'https://api.anthropic.com/v1/models', 'https://api.anthropic.com/v1/messages');
+    constructor(files:any|null) {
+        super('claude', 'https://api.anthropic.com/v1/models', 'https://api.anthropic.com/v1/messages',files);
+    }
+// @ts-ignore
+    async uri_file(): Promise<any|null>{
+        try{
+
+            return null;
+        }catch (err:any){
+            return null;
+        }
     }
 
     // @ts-ignore
@@ -44,6 +53,9 @@ export class Claude extends ApiAbstract {
                     console.log(`Input(user): ${input}`)
                     console.log(`Output(Agent): ${output}`)
                     console.log('--------------------------------------------')
+                    this.token = {
+                        input:input, output: output
+                    }
                 }
                 let t = ""
                 if (response?.content) {

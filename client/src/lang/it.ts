@@ -27,7 +27,10 @@
     archivia: "Archivia",
     modelRequired: 'Seleziona un modello',
     messageRequired: 'Scrivi un messaggio',
-    archiviata: "Chat archiviata con successo"
+    archiviata: "Chat archiviata con successo",
+    clear:"Pulisci campi",
+    tokenIn:"Input token {t}",
+    tokenOut:"Output token {t}"
   },
   settings: {
     title: 'Settings',

@@ -5,9 +5,19 @@ import {UsageInfo} from "@mistralai/mistralai/models/components";
 
 export class MistralClass extends ApiAbstract{
 
-    constructor() {
-        super('mistral', '','');
+    constructor(files:any|null) {
+        super('mistral', '','',files);
     }
+    // @ts-ignore
+    async uri_file(): Promise<any|null> {
+        try{
+
+            return null;
+        }catch (err:any){
+            return null;
+        }
+    }
+
     // @ts-ignore
     async chat(text: any[]): string | object | null {
         try {
@@ -38,6 +48,9 @@ export class MistralClass extends ApiAbstract{
                     console.log(`Input(user): ${input}`)
                     console.log(`Output(Agent): ${output}`)
                     console.log('--------------------------------------------')
+                    this.token = {
+                        input:input, output: output
+                    }
                 }
                 return response?.choices[0]?.message?.content ?? "Error"
             }

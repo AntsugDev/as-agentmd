@@ -35,23 +35,23 @@ export class Chat extends AbstractProgram {
     }
 
 
-    private async getProviderModel(p: string | null, msg: string | any[] | any, input: string | null): Promise<any | null> {
+    private async getProviderModel(p: string | null, msg: string | any[] | any, input: string | null, files:any|null = null): Promise<any | null> {
         try {
 
             let _class: any | null = null;
             if (p) {
                 if(p.toString().indexOf('ollama') !== -1)
-                    _class = new Ollama();
+                    _class = new Ollama(files);
                 else  if(p.toString().indexOf('gemini') !== -1)
-                    _class = new Gemini();
+                    _class = new Gemini(files);
                 else  if(p.toString().indexOf('openai') !== -1)
-                    _class = new OpenAi();
+                    _class = new OpenAi(files);
                 else  if(p.toString().indexOf('claude') !== -1)
-                    _class = new Claude();
+                    _class = new Claude(files);
                 else  if(p.toString().indexOf('deep-seek') !== -1)
-                    _class = new DeepSeek();
+                    _class = new DeepSeek(files);
                 else  if(p.toString().indexOf('mistral') !== -1)
-                    _class = new MistralClass();
+                    _class = new MistralClass(files);
 
                 else {
                     console.error(`Provider not found (${p})`);
@@ -102,7 +102,7 @@ export class Chat extends AbstractProgram {
                         output: process.stdout,
                     })
 
-                    const gemini = new Gemini();
+                    const gemini = new Gemini(null);
                     if (gemini.prevousGemini) gemini.prevousGemini = null;
                     let model = this.config.get('modelSelected')
                     if (!model) {

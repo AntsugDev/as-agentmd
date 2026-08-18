@@ -35,8 +35,9 @@ export const api = async (p: Payload): Promise<any | null> => {
             config.headers = h
             if (p.queryString)
                 config.params = p.queryString
-            if (p.body)
+            if (p.body) {
                 config.data = p.body
+            }
 
             const response = await axios.request(config)
             if (response) {

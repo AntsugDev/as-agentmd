@@ -96,7 +96,7 @@ export class ChatFe {
             fs.writeFile(file, JSON.stringify(globalM), 'utf-8', (e) => {
                 if (e) throw e;
             })
-            return true;
+            return time;
         } catch (err: any) {
             console.error("Chat not archived ", err)
             return err.toString();
