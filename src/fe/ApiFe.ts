@@ -6,6 +6,17 @@ import {Request, NextFunction, Response} from "express"
 import {exec} from 'child_process';
 import {getProviderModelUtility} from "../utility/utility.js";
 import {ChatFe} from "./ChatFe.js";
+import * as os from "node:os";
+import path from "path";
+import fs from "fs/promises";
+
+
+interface Archive {
+    uuid: string,
+    name:string,
+    title: string,
+    data_content: []
+}
 
 export class ApiFe {
 
@@ -241,6 +252,8 @@ export class ApiFe {
         }, any, {
             message: string,
             uuid: string | null
+        },any,{
+            name_file:string|null
         }>, resp: Response) => {
             try {
                 const status = req.params.status
@@ -248,26 +261,81 @@ export class ApiFe {
                 const provider = configStore.get('modelSelected')
                 const uuid = (req.body.uuid ? req.body.uuid : Math.random().toString(36).substring(0, 10)).toString().replaceAll('.', '')
 
-                if (status === 'init') {
-                    const role = provider?.toString().indexOf('gemini') === -1 ? 'system': 'user'
-                    let s = (status === 'init')
-                    if(role === 'user') s = false
-                    ChatFe.init(uuid, msg,role,s)
-                } else if (status === 'next')
-                    ChatFe.user(msg, uuid)
+                const nameFile = req.query.name_file
 
-                const globalMsg: string | any[] = await ChatFe.getFile(uuid)
+
+                if (status === 'init') {
+                    const role = provider?.toString().indexOf('gemini') === -1 ? 'system' : 'user'
+                    let s = (status === 'init')
+                    if (role === 'user') s = false
+                    await ChatFe.init(uuid, msg, role, s)
+                } else if (status === 'next')
+                    await ChatFe.user(msg, uuid)
+
+                const globalMsg: string | any[] = ChatFe.getFile(uuid)
                 const agent = await getProviderModelUtility(provider, globalMsg, msg)
                 if (!agent) {
                     ChatFe.delStorage(uuid)
                     return resp.status(422).json(agent)
                 }
                 ChatFe.assistant(agent.m, uuid)
+                await ChatFe._archive(globalMsg, uuid,nameFile)
                 return resp.status(200).json({
                     uuid: uuid, global: globalMsg.filter(e => {
                         return e.role !== 'system'
                     }), t: (agent.c?.token ?? null)
                 })
+
+            } catch (err: any) {
+                return this.exception(resp, err.toString())
+            }
+        })
+    }
+
+    protected archive() {
+        this.router.get('/archive/:uuid', [this.isUser, this.isConfig], async (req: Request<{
+            uuid: string
+        }>, resp: Response) => {
+            try {
+                const uuid: string = req.params.uuid
+                const globalMsg: string | any[] = await ChatFe.getFile(uuid)
+                if (globalMsg) {
+                    const c = await ChatFe._archive(globalMsg, uuid)
+                    if (c) return resp.sendStatus(201)
+                    else throw c
+                } else
+                    throw new Error("Chat not archived")
+            } catch (err: any) {
+                return this.exception(resp, err.toString())
+            }
+        })
+    }
+
+    protected get_archive() {
+        this.router.get('/archive', [this.isUser, this.isConfig], async (req: Request, resp: Response) => {
+            try {
+                const tmp = os.tmpdir()
+                const directory = path.join(tmp, 'chat')
+                const files: string[] = await fs.readdir(directory)
+                let response: Archive[] = []
+                for (let r = 0; r < files.length; r++) {
+                    const e = files[r]
+                    const filePath = path.join(directory, e);
+                    const content = await fs.readFile(filePath, 'utf8');
+                    if (content) {
+                        let parser = JSON.parse(content)
+                        parser = parser.filter((i: { role: string, content: string }) => {
+                            return i.role !== 'system'
+                        })
+                        response.push({
+                            uuid: e.toString().split('_')[0],
+                            name: e,
+                            title: `${parser[0].content.toString().substring(0, 30)} ...`,
+                            data_content: parser
+                        })
+                    }
+                }
+                return resp.json(response)
 
             } catch (err: any) {
                 return this.exception(resp, err.toString())
@@ -288,6 +356,8 @@ export class ApiFe {
             this.select_model()
             this.get_models()
             this.chat()
+            this.archive()
+            this.get_archive()
         } catch (err: any) {
             throw err;
         }

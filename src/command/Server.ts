@@ -3,20 +3,21 @@ import {Command} from "commander";
 import express from "express";
 import cors from 'cors';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import {fileURLToPath} from 'url';
 import {randomInt} from "node:crypto";
 import {ApiFe} from "../fe/ApiFe.js";
 import listEndpoints from 'express-list-endpoints';
 import fs from "fs";
+import {ChatFe} from "../fe/ChatFe.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export class Server extends AbstractProgram {
     private app: any | null;
-    private port:number;
-    private server:any|null;
-    private router:any|null;
+    private port: number;
+    private server: any | null;
+    private router: any | null;
 
     constructor(program: Command) {
         super(program);
@@ -31,9 +32,9 @@ export class Server extends AbstractProgram {
             this.app.use(express.json());
             this.app.use(cors({
                 origin: 'http://localhost:5173',
-                methods: ['GET', 'POST', 'PUT','DELETE', 'PATH', 'OPTIONS'],
-                allowedHeaders:['x-api-key','Content-Type', 'Authorization'],
-                exposedHeaders:['x-api-key'],
+                methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATH', 'OPTIONS'],
+                allowedHeaders: ['x-api-key', 'Content-Type', 'Authorization'],
+                exposedHeaders: ['x-api-key'],
             }))
             this.app.use(express.static(path.join(__dirname, '../public')));
             this.getDataAll()
@@ -42,15 +43,16 @@ export class Server extends AbstractProgram {
             throw e;
         }
     }
-    private getRouter(){
-        try{
+
+    private getRouter() {
+        try {
             const l = listEndpoints(this.router);
-            fs.writeFile('./files/router.json', JSON.stringify(l,null,2),'utf-8',(e) => {
-                if(e)
+            fs.writeFile('./files/router.json', JSON.stringify(l, null, 2), 'utf-8', (e) => {
+                if (e)
                     console.log(`Eccezione nella creazione delle rotte`, e)
-            })  ;
+            });
             console.log(`Rotte aggiornate vedi il file into files/router.json`)
-        }catch (err:any){
+        } catch (err: any) {
             console.error(`Lista rotte errore ${err.toString()}`)
         }
     }
@@ -58,28 +60,28 @@ export class Server extends AbstractProgram {
 
     getData(): void {
         this.program.command('server').description("Start server").action(() => {
-            try{
+            try {
                 this.init();
-                this.server = this.app.listen(this.port,async () => {
+                this.server = this.app.listen(this.port, async () => {
                     const actualPort = this.server.address().port;
                     const url = `http://localhost:${actualPort}`;
                     console.log(`Dashboard avviata con successo su: ${url}`);
+                    ChatFe.clearAll()
                 })
-
-            }catch (err:any){
-                console.error("Server not started",err)
+            } catch (err: any) {
+                console.error("Server not started", err)
             }
         })
 
     }
 
     getDataAll(): void {
-        this.app.get('/up', (req:any, resp:any) => {
+        this.app.get('/up', (req: any, resp: any) => {
             return resp.json({
-                status:'ok'
+                status: 'ok'
             })
         })
-        const api = new ApiFe(this.app,this.router)
+        const api = new ApiFe(this.app, this.router)
         api.api()
     }
 

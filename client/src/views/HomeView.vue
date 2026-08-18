@@ -1,11 +1,18 @@
 <script setup lang="ts">
-import {computed, onMounted, ref} from 'vue'
+import {computed, inject, onMounted, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import type {AiModel, ChatMessage} from '../types/chat'
 import {api, type Payload} from "../services/api.ts";
 import MarkdownIt from "markdown-it";
 
 const {t} = useI18n()
+
+const props = defineProps({
+  recupera: {
+    type: Object,
+    default: []
+  }
+})
 
 const models = ref<AiModel[]>([])
 const selectedModel = ref<string | null>(null)
@@ -17,16 +24,8 @@ const formError = ref('')
 
 const modelItems = ref([])
 const dialog = ref<boolean>(false)
+const snack = inject('snack')
 
-// const attachedFile = computed(() => {
-//   if (Array.isArray(selectedFile.value)) {
-//     return selectedFile.value[0] ?? null
-//   }
-//
-//   return selectedFile.value
-// })
-
-const canSend = computed(() => Boolean(selectedModel.value && prompt.value.trim()) && !isLoading.value)
 const loadModel = ref<boolean>(false)
 const loadModels = async () => {
   try {
@@ -57,6 +56,7 @@ const settingsModel = async () => {
 }
 const status = ref<string>('init')
 const uuid = ref<string | null>(null)
+const nameFile = ref<string|null>(null)
 const submitMessage = async () => {
   isLoading.value = true
   formError.value = ''
@@ -78,9 +78,11 @@ const submitMessage = async () => {
       body: {
         message: prompt.value,
         uuid: uuid.value
+      },
+      queryString:{
+        name_file: nameFile.value
       }
     } as Payload)
-    debugger
     if (response && parseInt(response.status) === 423) {
       formError.value = response.data.error
       return;
@@ -126,9 +128,37 @@ const changeModel = async () => {
     console.log('eccezione change model', e)
   }
 }
-const archivia = () => {
+const archivia = async () => {
+  try {
+    isLoading.value = true
+    const response = await api({
+      url: `archive/${uuid.value}`,
+      method: 'GET'
+    } as Payload)
+    if (parseInt(response.status) === 201) {
+      snack.value = {
+        error: false,
+        msg: t('home.archiviata'),
+        view: true
+      }
+      messages.value = []
+      prompt.value = ''
+    }
 
+  } catch (err: any) {
+    console.error("Archiviazione fallita", err)
+  } finally {
+    isLoading.value = false
+  }
 }
+watch(() => props.recupera, (v) => {
+  if (v) {
+    messages.value = v?.data_content ?? []
+    uuid.value = v?.uuid ?? null
+    status.value = 'next'
+    nameFile.value = v?.name ?? null
+  }
+})
 
 onMounted(() => {
   loadModels()
@@ -220,7 +250,7 @@ onMounted(() => {
                   :title="(isLoading ? t('home.waiting')  : t('home.start'))"
                   class="mb-3"
               >
-                {{t('home.start')}}
+                {{ t('home.start') }}
               </v-btn>
 
               <v-btn
@@ -234,7 +264,7 @@ onMounted(() => {
                   :title="t('home.file')"
                   class="mb-3"
               >
-                {{t('home.file')}}
+                {{ t('home.file') }}
               </v-btn>
 
               <v-btn
@@ -249,7 +279,7 @@ onMounted(() => {
                   :title=" t('home.archivia')"
 
               >
-                {{t('home.archivia')}}
+                {{ t('home.archivia') }}
               </v-btn>
 
 

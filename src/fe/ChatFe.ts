@@ -1,4 +1,9 @@
 import {instruction} from "../utility/utility.js";
+import * as os from "node:os";
+import path from "path";
+import fs from "fs";
+import * as fs_promise from "fs/promises" ;
+import dayjs from "dayjs";
 
 
 interface ChatMessage {
@@ -11,9 +16,13 @@ export class ChatFe {
 
     private static storage: Map<string, ChatMessage[]> = new Map<string, ChatMessage[]>()
 
-    private static _append(role: 'user' | 'assistant', content: string, uuid: string): void {
+    private static async _append(role: 'user' | 'assistant', content: string, uuid: string): Promise<void> {
         try {
-            const histoy = this.storage.get(uuid)
+            let histoy = this.storage.get(uuid)
+            if (!histoy) {
+                await this.recupera(uuid)
+                histoy = this.storage.get(uuid)
+            }
             if (histoy) {
                 histoy.push({
                     role: role, content: content, order: (histoy.length + 1)
@@ -25,33 +34,33 @@ export class ChatFe {
         }
     }
 
-    public static init(uuid: string, msg: string | null,role:'user'|'system', status: boolean): void {
+    public static async init(uuid: string, msg: string | null, role: 'user' | 'system', status: boolean): Promise<void> {
         try {
             let content = instruction
-            if(role === 'user')
+            if (role === 'user')
                 content = msg ? msg : ""
             const i: ChatMessage[] = [{
                 role: role, content: content, order: 1
             }]
             this.storage.set(uuid, i)
             if (status && msg)
-                this.user(msg, uuid)
+                await this.user(msg, uuid)
         } catch (err: any) {
             console.error("Init chat error", err);
         }
     }
 
-    public static user(content: string, uuid: string): void {
+    public static async user(content: string, uuid: string): Promise<void> {
         try {
-            this._append('user', content, uuid)
+            await this._append('user', content, uuid)
         } catch (err: any) {
             console.error("User chat error", err);
         }
     }
 
-    public static assistant(content: string, uuid: string): void {
+    public static async assistant(content: string, uuid: string): Promise<void> {
         try {
-            this._append('assistant', content, uuid)
+            await this._append('assistant', content, uuid)
         } catch (err: any) {
             console.error("Assistant chat error", err);
         }
@@ -72,5 +81,41 @@ export class ChatFe {
 
     public static clearAll(): void {
         this.storage.clear()
+    }
+
+    public static async _archive(globalM: any, uuid: string, nameFile:string|null = null): Promise<any> {
+        try {
+            const tmp = os.tmpdir()
+            const time = dayjs().format('YYYYMMDD')
+            const directory = path.join(tmp, `chat`)
+            await fs_promise.mkdir(directory, {recursive: true})
+            let file = path.join(directory, `${uuid}_${time}.json`)
+            if(nameFile)
+                file  = path.join(directory, nameFile)
+
+            fs.writeFile(file, JSON.stringify(globalM), 'utf-8', (e) => {
+                if (e) throw e;
+            })
+            return true;
+        } catch (err: any) {
+            console.error("Chat not archived ", err)
+            return err.toString();
+        }
+    }
+
+    public static async recupera(uuid: string): Promise<any | null> {
+        try {
+            const tmp = os.tmpdir()
+            const directory = path.join(tmp, `chat`)
+            const file = path.join(directory, `${uuid}.json`)
+            const response = await fs_promise.readFile(file, 'utf8');
+            if (response) {
+                this.storage.set(uuid, JSON.parse(response))
+            }
+            return null;
+        } catch (err: any) {
+            console.error("Chat not archived ", err)
+            return err.toString();
+        }
     }
 }

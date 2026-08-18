@@ -7,6 +7,7 @@
   navigation: {
     home: 'Home',
     settings: 'Impostazioni',
+    archivia:'Chat archiviate'
   },
   home: {
     title: 'Chat',
@@ -26,6 +27,7 @@
     archivia: "Archivia",
     modelRequired: 'Seleziona un modello',
     messageRequired: 'Scrivi un messaggio',
+    archiviata: "Chat archiviata con successo"
   },
   settings: {
     title: 'Settings',

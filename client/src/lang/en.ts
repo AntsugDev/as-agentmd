@@ -7,6 +7,7 @@
     navigation: {
         home: 'Home',
         settings: 'Settings',
+        archivia:'Archived chats'
     },
     home: {
         title: 'Chat',
@@ -26,6 +27,7 @@
         archivia: "Archive",
         modelRequired: 'Select a model',
         messageRequired: 'Write a message',
+        archiviata: "Chat successfully archived"
     },
     settings: {
         title: 'Settings',
