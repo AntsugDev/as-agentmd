@@ -25,8 +25,8 @@ export class ApiFe {
     protected app: any;
     protected router: any;
     protected config: Conf<AgentConfig> | null;
-    protected upload:any|null;
-    protected uploadMiddleware:any|null;
+    protected upload: any | null;
+    protected uploadMiddleware: any | null;
 
     constructor(app: any, router: any) {
         this.app = app
@@ -35,8 +35,9 @@ export class ApiFe {
 
         this.isConfig = this.isConfig.bind(this);
         this.isUser = this.isUser.bind(this);
-
-        this.upload = multer({ dest: 'uploads/' });
+        const tmp = os.tmpdir();
+        fs.mkdir(path.join(tmp,'uploads'),{recursive:true})
+        this.upload = multer({dest: path.join(tmp,'uploads/')});
         this.uploadMiddleware = this.upload.array('files');
     }
 
@@ -280,7 +281,7 @@ export class ApiFe {
                     await ChatFe.user(msg, uuid)
 
                 const globalMsg: string | any[] = ChatFe.getFile(uuid)
-                const agent = await getProviderModelUtility(provider, globalMsg, msg,files)
+                const agent = await getProviderModelUtility(provider, globalMsg, msg, files)
                 if (!agent) {
                     ChatFe.delStorage(uuid)
                     return resp.status(422).json(agent)
@@ -347,7 +348,7 @@ export class ApiFe {
                             })
                     }
                 }
-                response = response.sort((a:Archive, b:Archive):number => {
+                response = response.sort((a: Archive, b: Archive): number => {
                     const tA = dayjs(a.time, 'YYYY-MM-DD')
                     const tB = dayjs(b.time, 'YYYY-MM-DD')
 

@@ -2,54 +2,55 @@ import {ApiAbstract} from "./ApiAbstract.js";
 import {Mistral} from "@mistralai/mistralai";
 import {RawGeminiModel} from "../interface/myInterface.js";
 import {UsageInfo} from "@mistralai/mistralai/models/components";
+import {openAsBlob} from "node:fs";
 
-export class MistralClass extends ApiAbstract{
+export class MistralClass extends ApiAbstract {
 
-    constructor(files:any|null) {
-        super('mistral', '','',files);
+    protected client: any;
+    protected key: any | null;
+    protected models: any | null;
+
+    constructor(files: any | null) {
+        super('mistral', '', '', files);
+
+        this.key = this.extraApiKey()
+        this.models = this.getModelSelect()
+        this.client = new Mistral({
+            apiKey: this.key.trim(),
+        });
     }
-    // @ts-ignore
-    async uri_file(): Promise<any|null> {
-        try{
 
-            return null;
-        }catch (err:any){
-            return null;
-        }
+    // @ts-ignore
+    async uri_file(): Promise<any | null> {
+        return null;
+        //ocr serve per fare rag
     }
 
     // @ts-ignore
     async chat(text: any[]): string | object | null {
         try {
-            const key = this.extraApiKey()
-            const models = this.getModelSelect()
-            if (!key) {
-                console.error("Key not found")
-                return null;
-            }
-            if (!models) {
+            if (!this.models) {
                 console.error("Models not selected")
                 return null;
             }
-            const client = await new Mistral({
-                apiKey: key.trim(),
-            })
-            const response =await  client.chat.complete({
-                model: models,
+            let options = {
+                model: this.models,
                 messages: text,
-                temperature:0.5
-            })
+                temperature: 0.5,
+                documents: []
+            }
+            const files = await this.uri_file()
+            if (files)
+                options.documents = files
+            const response = await this.client.chat.complete(options)
             if (response) {
-                const usage:UsageInfo|null = response.usage
+                const usage: UsageInfo | null = response.usage
                 if (usage) {
                     const input = usage?.promptTokens ?? 0;
                     const output = usage?.completionTokens ?? 0;
-                    console.log(`---Utilizzo dei token-----`)
-                    console.log(`Input(user): ${input}`)
-                    console.log(`Output(Agent): ${output}`)
-                    console.log('--------------------------------------------')
+
                     this.token = {
-                        input:input, output: output
+                        input: input, output: output
                     }
                 }
                 return response?.choices[0]?.message?.content ?? "Error"
@@ -60,12 +61,13 @@ export class MistralClass extends ApiAbstract{
             return null;
         }
     }
+
     // @ts-ignore
     async sincro(): Promise<boolean> | boolean {
-        try{
+        try {
             this.preProviderInstance();
             const key = this.extraApiKey()
-            if(!key){
+            if (!key) {
                 console.error("Key not found")
                 return false;
             }
@@ -73,7 +75,7 @@ export class MistralClass extends ApiAbstract{
                 apiKey: key.trim(),
             }).models.list()
             let $models: RawGeminiModel[] = []
-            if(response && response?.data){
+            if (response && response?.data) {
                 response.data.map((e: any) => {
                     const name = e.id
                     const displayName = e.name
@@ -101,7 +103,7 @@ export class MistralClass extends ApiAbstract{
                 return false;
             }
 
-        }catch (err:any){
+        } catch (err: any) {
             console.error(`Api extract model mistral error: ${err.toString()}`)
             return false;
         }

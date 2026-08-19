@@ -121,7 +121,6 @@ const openDialog = () => {
 
 
 const closeDialog = () => {
-  console.log('selectedFile.value', selectedFile.value[0], JSON.stringify(selectedFile.value[0], null, 2))
   dialog.value = false
 }
 
@@ -168,6 +167,13 @@ watch(() => props.recupera, (v) => {
       input: 0, output: 0
     }
   }
+})
+
+const isAttachement = computed(() => {
+
+  if(selectedModel.value && selectedModel.value.toString().indexOf('mistral') !== -1)
+    return false;
+  return true;
 })
 
 onMounted(() => {
@@ -264,6 +270,7 @@ onMounted(() => {
               </v-btn>
 
               <v-btn
+                  v-if="isAttachement"
                   color="secondary"
                   :loading="isLoading"
                   @click="openDialog"

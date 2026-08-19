@@ -93,7 +93,7 @@ export class ChatFe {
             if(nameFile)
                 file  = path.join(directory, nameFile)
 
-            fs.writeFile(file, JSON.stringify(globalM), 'utf-8', (e) => {
+            fs.writeFile(file, JSON.stringify(globalM, null,2), 'utf-8', (e) => {
                 if (e) throw e;
             })
             return time;

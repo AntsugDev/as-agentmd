@@ -68,7 +68,6 @@ export class Gemini extends ApiAbstract {
             })
             if (fileData.length > 0)
                 input.push(...fileData)
-            console.log('input', input)
             const response = await this.ai.interactions.create({
                 model: this.model, system_instruction: instruction,
                 input: input,
