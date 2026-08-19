@@ -63,8 +63,7 @@ export class DeepSeek extends ApiAbstract{
 
            return null;
        } catch (err: any) {
-           console.error(err.toString())
-           return null;
+           throw err;
        }
     }
 // @ts-ignore

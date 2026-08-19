@@ -53,7 +53,7 @@ export class Gemini extends ApiAbstract {
             }
             return fileData;
         } catch (err: any) {
-            return null;
+            throw err;
         }
     }
 
@@ -92,11 +92,7 @@ export class Gemini extends ApiAbstract {
             }
             return null;
         } catch (err: any) {
-            if (err?.response?.data && err?.response?.data?.error) {
-                return err?.response?.data.error
-            }
-            console.error(err.toString())
-            return null;
+            throw err;
         }
     }
 

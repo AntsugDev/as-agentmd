@@ -45,7 +45,7 @@ export class OpenAiClass extends ApiAbstract {
             }
             return fileData;
         } catch (err: any) {
-            return null;
+            throw err;
         }
     }
 

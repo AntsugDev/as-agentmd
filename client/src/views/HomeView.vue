@@ -197,6 +197,8 @@ const isAttachement = computed(() => {
     return false
   else if (selectedModel.value && selectedModel.value.toString().indexOf('deep') !== -1)
     return false
+  else if (selectedModel.value && selectedModel.value.toString().indexOf('claude') !== -1)
+    return false
   return true;
 })
 

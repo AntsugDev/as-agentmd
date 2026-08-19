@@ -32,7 +32,7 @@ export class Ollama extends ApiAbstract {
                 role:'user',images:image
             };
         } catch (err: any) {
-            return null;
+            throw err;
         }
     }
 
@@ -62,8 +62,7 @@ export class Ollama extends ApiAbstract {
             return null;
 
         } catch (err: any) {
-            console.error(`chat sync runnig error ${err.toString()}`)
-            return null;
+            throw err;
         }
     }
 
