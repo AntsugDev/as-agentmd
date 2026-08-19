@@ -1,7 +1,7 @@
 import ora, {Ora} from "ora";
 import {Ollama} from "../api/Ollama.js";
 import {Gemini} from "../api/Gemiin.js";
-import {OpenAi} from "../api/OpenAi.js";
+import {OpenAiClass} from "../api/OpenAiClass.js";
 import {Claude} from "../api/Claude.js";
 import {DeepSeek} from "../api/DeepSeek.js";
 import {MistralClass} from "../api/MistralClass.js";
@@ -33,7 +33,7 @@ export const getProviderModelUtility = async (p: string | null, msg: string | an
             else if (p.toString().indexOf('gemini') !== -1)
                 _class = new Gemini(files);
             else if (p.toString().indexOf('openai') !== -1)
-                _class = new OpenAi(files);
+                _class = new OpenAiClass(files);
             else if (p.toString().indexOf('claude') !== -1)
                 _class = new Claude(files);
             else if (p.toString().indexOf('deep-seek') !== -1)

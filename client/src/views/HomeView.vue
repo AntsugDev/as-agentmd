@@ -56,6 +56,7 @@ const settingsModel = async () => {
 }
 const status = ref<string>('init')
 const uuid = ref<string | null>(null)
+const time = ref<string | null>(null)
 const nameFile = ref<string | null>(null)
 const token = ref<{ input: number, output: number }>({
   input: 0, output: 0
@@ -77,6 +78,8 @@ const submitMessage = async () => {
   form.append('message', text)
   if (uuid.value)
     form.append('uuid', uuid.value)
+  if (time.value)
+    form.append('time', time.value)
   selectedFile.value.forEach(e => {
     form.append('files', e)
   })
@@ -85,7 +88,7 @@ const submitMessage = async () => {
     const response = await api({
       url: `chat/${status.value}`,
       method: 'POST',
-      body:form,
+      body: form,
       queryString: {
         name_file: nameFile.value
       }
@@ -103,6 +106,7 @@ const submitMessage = async () => {
         return {role: e.role, content: m.render(e.content)}
       }) : []
       uuid.value = response.data.uuid
+      time.value = response.data.time
       status.value = 'next'
       token.value = response.data.t
     }
@@ -121,7 +125,22 @@ const openDialog = () => {
 
 
 const closeDialog = () => {
-  dialog.value = false
+  let stop = false;
+  errorAccept.value = false
+  if (accept.value)
+    selectedFile.value.map((e: any) => {
+      const mimeType = e.type
+      if (!accept.value.includes(mimeType)) {
+        stop = true;
+        return;
+      }
+    })
+  if (!stop)
+    dialog.value = false
+  else {
+    errorAccept.value = true
+    selectedFile.value = []
+  }
 }
 
 const changeModel = async () => {
@@ -168,11 +187,16 @@ watch(() => props.recupera, (v) => {
     }
   }
 })
-
+const accept = ref<string[]>([])
+const errorAccept = ref<boolean>(false)
 const isAttachement = computed(() => {
 
-  if(selectedModel.value && selectedModel.value.toString().indexOf('mistral') !== -1)
+  if (selectedModel.value && selectedModel.value.toString().indexOf('mistral') !== -1)
     return false;
+  else if (selectedModel.value && selectedModel.value.toString().indexOf('ollama') !== -1)
+    return false
+  else if (selectedModel.value && selectedModel.value.toString().indexOf('deep') !== -1)
+    return false
   return true;
 })
 
@@ -326,23 +350,28 @@ onMounted(() => {
           </div>
         </v-card-title>
         <v-card-text>
-          <v-file-upload
-              density="comfortable"
-              browse-text="Upload Files"
-              icon="mdi-upload"
-              title="Drag and Drop Here"
-              clearable
-              inset-file-list
-              multiple
-              show-size
-              v-model="selectedFile"
-              @update:modelValue="closeDialog"
-          >
-            <template #browse>
-              <v-btn size="30" icon="mdi-upload" color="success" @click="closeDialog"></v-btn>
-            </template>
+          <div class="d-flex flex-column justify-center align-center pa-3">
+            <v-alert variant="outlined" rounded="3" class="mb-3" density="compact" v-if="errorAccept"
+                     color="warning" type="warning">{{ t('home.accept', {format: accept}) }}
+            </v-alert>
+            <v-file-upload
+                density="comfortable"
+                browse-text="Upload Files"
+                icon="mdi-upload"
+                title="Drag and Drop Here"
+                clearable
+                inset-file-list
+                multiple
+                show-size
+                v-model="selectedFile"
+                @update:modelValue="closeDialog"
+            >
+              <template #browse>
+                <v-btn size="30" icon="mdi-upload" color="success" @click="closeDialog"></v-btn>
+              </template>
 
-          </v-file-upload>
+            </v-file-upload>
+          </div>
         </v-card-text>
       </v-card>
     </v-dialog>

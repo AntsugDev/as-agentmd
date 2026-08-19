@@ -4,6 +4,7 @@ import path from "path";
 import fs from "fs";
 import * as fs_promise from "fs/promises" ;
 import dayjs from "dayjs";
+import {unlink} from "node:fs/promises";
 
 
 interface ChatMessage {
@@ -83,23 +84,82 @@ export class ChatFe {
         this.storage.clear()
     }
 
-    public static async _archive(globalM: any, uuid: string, nameFile:string|null = null): Promise<any> {
+    public static async _archive(globalM: any, uuid: string, nameFile: string | null = null): Promise<any> {
         try {
             const tmp = os.tmpdir()
             const time = dayjs().format('YYYYMMDD')
             const directory = path.join(tmp, `chat`)
             await fs_promise.mkdir(directory, {recursive: true})
             let file = path.join(directory, `${uuid}_${time}.json`)
-            if(nameFile)
-                file  = path.join(directory, nameFile)
+            if (nameFile)
+                file = path.join(directory, nameFile)
 
-            fs.writeFile(file, JSON.stringify(globalM, null,2), 'utf-8', (e) => {
+            fs.writeFile(file, JSON.stringify(globalM, null, 2), 'utf-8', (e) => {
                 if (e) throw e;
             })
             return time;
         } catch (err: any) {
             console.error("Chat not archived ", err)
             return err.toString();
+        }
+    }
+
+    public static async del_archive(uuid: string, time: string | null) {
+        try {
+            if (this.storage.has(uuid))
+                this.storage.delete(uuid)
+            if (!time) return false;
+            const file_name = `${uuid}_${time}.json`
+            const tmp = os.tmpdir()
+            const file = path.join(tmp, `chat/${file_name}`)
+            const stat = await fs_promise.stat(file)
+            if (stat.isFile())
+                unlink(file)
+            else throw new Error(`File not found ${file}`)
+            return true;
+
+        } catch (err: any) {
+            console.error("File not deleted ", err)
+            return false
+        }
+    }
+
+    public static async clear_archive(all:boolean = true) {
+        try {
+            const tmp = os.tmpdir()
+            const directory = path.join(tmp, `chat`);
+            let allFiles: string[] = await fs_promise.readdir(directory) ?? []
+            if(!all){
+                const now = dayjs()
+                allFiles = allFiles.filter((e:string) => {
+                    const day = dayjs(e.split('_')[1].toString().replace('.json', ''),'YYYYMMDD') ?? null
+                    return now.diff(day,'days') >= 3;
+                })
+            }
+            allFiles.forEach((e: string) => {
+                unlink(path.join(directory, e))
+            })
+            return true;
+
+        } catch (err: any) {
+            console.error("File not deleted ", err)
+            return false
+        }
+    }
+
+    public static async clear_uploads() {
+        try {
+            const tmp = os.tmpdir()
+            const directory = path.join(tmp, `uploads`);
+            let allFiles: string[] = await fs_promise.readdir(directory) ?? []
+            allFiles.forEach((e: string) => {
+                unlink(path.join(directory, e))
+            })
+            return true;
+
+        } catch (err: any) {
+            console.error("File not deleted ", err)
+            return false
         }
     }
 

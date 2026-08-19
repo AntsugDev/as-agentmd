@@ -36,8 +36,8 @@ export class ApiFe {
         this.isConfig = this.isConfig.bind(this);
         this.isUser = this.isUser.bind(this);
         const tmp = os.tmpdir();
-        fs.mkdir(path.join(tmp,'uploads'),{recursive:true})
-        this.upload = multer({dest: path.join(tmp,'uploads/')});
+        fs.mkdir(path.join(tmp, 'uploads'), {recursive: true})
+        this.upload = multer({dest: path.join(tmp, 'uploads/')});
         this.uploadMiddleware = this.upload.array('files');
     }
 
@@ -259,11 +259,13 @@ export class ApiFe {
             status: 'init' | 'next'
         }, any, {
             message: string,
-            uuid: string | null
+            uuid: string | null,
+            time: string|null
         }, any, {
             name_file: string | null
         }>, resp: Response) => {
             try {
+                let time = req.body.time;
                 const status = req.params.status
                 const msg = req.body.message
                 const provider = configStore.get('modelSelected')
@@ -284,10 +286,11 @@ export class ApiFe {
                 const agent = await getProviderModelUtility(provider, globalMsg, msg, files)
                 if (!agent) {
                     ChatFe.delStorage(uuid)
+                        await ChatFe.del_archive(uuid,time)
                     return resp.status(422).json(agent)
                 }
                 ChatFe.assistant(agent.m, uuid)
-                const time = await ChatFe._archive(globalMsg, uuid, nameFile)
+                time = await ChatFe._archive(globalMsg, uuid, nameFile)
                 return resp.status(200).json({
                     uuid: uuid, global: globalMsg.filter(e => {
                         return e.role !== 'system'
@@ -355,7 +358,7 @@ export class ApiFe {
                     if (tB.isAfter(tA)) return 1
                     if (tA.isAfter(tB)) return -1
                     return 0
-                })
+                }).slice(0, 10)
                 return resp.json(response)
 
             } catch (err: any) {

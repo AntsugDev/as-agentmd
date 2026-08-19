@@ -30,7 +30,8 @@
         archiviata: "Chat successfully archived",
         clear:"Clear fields",
         tokenIn:"Input token {t}",
-        tokenOut:"Output token {t}"
+        tokenOut:"Output token {t}",
+        accept: "File format not accepted ({format})"
     },
     settings: {
         title: 'Settings',

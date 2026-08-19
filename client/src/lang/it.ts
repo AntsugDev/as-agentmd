@@ -30,7 +30,8 @@
     archiviata: "Chat archiviata con successo",
     clear:"Pulisci campi",
     tokenIn:"Input token {t}",
-    tokenOut:"Output token {t}"
+    tokenOut:"Output token {t}",
+    accept: "Formato file non accettato ({format})"
   },
   settings: {
     title: 'Settings',

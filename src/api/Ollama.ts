@@ -4,21 +4,34 @@ import {ApiAbstract} from "./ApiAbstract.js";
 import ollama, {Message} from "ollama";
 import {configStore} from "../config.js";
 import Conf from "conf";
+import fs from "fs/promises";
 
 
 export class Ollama extends ApiAbstract {
 
 
-    constructor(files:any|null) {
-        super('ollama', "http://localhost:11434", null,files);
+    constructor(files: any | null) {
+        super('ollama', "http://localhost:11434", null, files);
     }
 
     // @ts-ignore
-    async uri_file(): Promise<any|null>{
-        try{
-
-            return null;
-        }catch (err:any){
+    async uri_file(): Promise<any | null> {
+        try {
+            const image: string[] = []
+            if (this.files && Array.isArray(this.files)) {
+                for (let i = 0; i < this.files.length; i++) {
+                    const ele = this.files[i]
+                    console.log()
+                    const content = await fs.readFile(ele.path, 'utf-8')
+                    if(content){
+                        image.push(btoa(content))
+                    }
+                }
+            }
+            return {
+                role:'user',images:image
+            };
+        } catch (err: any) {
             return null;
         }
     }
@@ -31,6 +44,11 @@ export class Ollama extends ApiAbstract {
                 console.error("Impossibile estrarre il modello da utilizzare")
                 return null;
             }
+            const images = await this.uri_file()
+            if(images && images.images.length > 0)
+                text.push(images)
+            console.log(text)
+
             let response = await ollama.chat({
                 model: model,
                 messages: text,

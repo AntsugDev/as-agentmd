@@ -10,7 +10,6 @@ export class DeepSeek extends ApiAbstract{
     // @ts-ignore
     async uri_file(): Promise<any|null>{
         try{
-
             return null;
         }catch (err:any){
             return null;

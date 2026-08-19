@@ -67,6 +67,8 @@ export class Server extends AbstractProgram {
                     const url = `http://localhost:${actualPort}`;
                     console.log(`Dashboard avviata con successo su: ${url}`);
                     ChatFe.clearAll()
+                    ChatFe.clear_archive(false)
+                    ChatFe.clear_uploads()
                 })
             } catch (err: any) {
                 console.error("Server not started", err)
