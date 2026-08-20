@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, onBeforeMount, onMounted, provide, ref, watch} from 'vue'
+import { onBeforeMount, onMounted, provide, ref, watch} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {useI18n} from 'vue-i18n'
 import {api, type Payload} from "./services/api.ts";
@@ -8,7 +8,6 @@ const route = useRoute()
 const router = useRouter()
 const {t, locale} = useI18n()
 
-const isSettings = computed(() => route.name === 'settings')
 
 const goToHome = () => {
   router.push({name: 'home'})
@@ -85,6 +84,8 @@ const recupera = ref<any[]>([])
 const openArchive = (data: any[]) => {
   try {
     recupera.value = data
+    if(route.fullPath.toString().indexOf('settings') !== -1)
+      router.push({name: 'home'})
   } catch (err: any) {
     console.error("Eccezione recupero chat", err)
   }
@@ -111,7 +112,7 @@ const openArchive = (data: any[]) => {
               <v-menu location="bottom" v-if="archive.length > 0">
                 <template v-slot:activator="{ props }">
                   <v-badge :content="archive.length" color="info" v-bind="props">
-                    <v-icon icon="mdi-archive" @click="openArchive"></v-icon>
+                    <v-icon icon="mdi-archive" size="33" @click="openArchive"></v-icon>
                   </v-badge>
                 </template>
                 <v-list  :lines="false"
@@ -127,13 +128,8 @@ const openArchive = (data: any[]) => {
                 </v-list>
 
               </v-menu>
-              <v-btn
-                  :variant="isSettings ? 'flat' : 'text'"
-                  :color="isSettings ? 'primary' : undefined"
-                  icon="mdi-cog-outline"
-                  :aria-label="t('navigation.settings')"
-                  @click="goToSettings"
-              />
+              <v-icon size="33" icon="mdi-cog-outline" @click="goToSettings" class="ml-2" :alt="t('navigation.settings')" :title="t('navigation.settings')" ></v-icon>
+
               <v-btn variant="tonal" color="primary" size="small" @click="toggleLocale">
                 {{ locale.toUpperCase() }}
               </v-btn>

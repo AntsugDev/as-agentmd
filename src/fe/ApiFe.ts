@@ -10,6 +10,7 @@ import * as os from "node:os";
 import path from "path";
 import fs from "fs/promises";
 import multer from "multer";
+import {unlink} from "node:fs/promises";
 
 
 interface Archive {
@@ -260,7 +261,7 @@ export class ApiFe {
         }, any, {
             message: string,
             uuid: string | null,
-            time: string|null
+            time: string | null
         }, any, {
             name_file: string | null
         }>, resp: Response) => {
@@ -280,16 +281,16 @@ export class ApiFe {
                     if (role === 'user') s = false
                     await ChatFe.init(uuid, msg, role, s)
                 } else if (status === 'next')
-                    await ChatFe.user(msg, uuid)
+                    await ChatFe.user(msg, uuid,nameFile)
 
                 const globalMsg: string | any[] = ChatFe.getFile(uuid)
                 const agent = await getProviderModelUtility(provider, globalMsg, msg, files)
                 if (!agent) {
                     ChatFe.delStorage(uuid)
-                        await ChatFe.del_archive(uuid,time)
+                    await ChatFe.del_archive(uuid, time)
                     return resp.status(422).json(agent)
                 }
-                ChatFe.assistant(agent.m, uuid)
+                ChatFe.assistant(agent.m, uuid,nameFile)
                 time = await ChatFe._archive(globalMsg, uuid, nameFile)
                 return resp.status(200).json({
                     uuid: uuid, global: globalMsg.filter(e => {
@@ -341,11 +342,11 @@ export class ApiFe {
                         parser = parser.filter((i: { role: string, content: string }) => {
                             return i.role !== 'system'
                         })
-                        if (now.diff(time, 'day') <= 3)
+                        if (now.diff(time, 'day') <= 3 && parser.length > 0  && parser[0]?.content)
                             response.push({
                                 uuid: e.toString().split('_')[0],
                                 name: e,
-                                title: `${parser[0].content.toString().substring(0, 30)} ...`,
+                                title: `${ parser[0].content.toString().substring(0, 20)} ... `,
                                 data_content: parser,
                                 time: time.format('YYYY-MM-DD')
                             })
@@ -362,6 +363,48 @@ export class ApiFe {
                 return resp.json(response)
 
             } catch (err: any) {
+                console.log(err)
+                return this.exception(resp, err.toString())
+            }
+        })
+    }
+
+    protected download() {
+        this.router.get('/download', [this.isUser, this.isConfig], async (req: Request, resp: Response) => {
+            try {
+                const p = providers() ?? []
+                if (p.length === 0) throw new Error("List providers not found")
+                const headers = "PROVIDERS;NAME;DESCRIPTION;INPUT TOKEN;OUTPUT TOKEN"
+                const directory = path.join(os.tmpdir(), 'uploads');
+                const file = path.join(directory, 'providers_models.csv');
+                await fs.writeFile(file, headers, 'utf-8');
+                for (let r = 0; r < p.length; r++) {
+                    const e = p[r]
+                    if (!this.config) return;
+                    const models: RawGeminiModel[] = this.config.get(`providers.${e}.models`) ?? []
+                    for (let i = 0; i < models.length; i++) {
+                        const ei: RawGeminiModel = models[i]
+                        const row = `\n${e};${ei.displayName};${(ei.description ? ei.description : '')};${(ei.inputTokenLimit ? ei.inputTokenLimit : '')};${(ei.outputTokenLimit ? ei.outputTokenLimit : '')}`
+                        await fs.appendFile(file, row, 'utf-8')
+                    }
+                }
+                const stat = await fs.stat(file)
+                if (!stat.isFile()) {
+                    throw new Error("File not found")
+                }
+
+                const send = resp
+                    .setHeader('Content-Type', 'text/csv')
+                    .setHeader('Content-Disposition', `attachment; filename="providers_models.csv"`)
+                    .download(file, (e) => {
+                        if (e) throw e;
+                    })
+                resp.on('finish', () => {
+                    unlink(file)
+                })
+                return send;
+            } catch (err: any) {
+                console.log(err)
                 return this.exception(resp, err.toString())
             }
         })
@@ -382,6 +425,7 @@ export class ApiFe {
             this.chat()
             this.archive()
             this.get_archive()
+            this.download()
         } catch (err: any) {
             throw err;
         }

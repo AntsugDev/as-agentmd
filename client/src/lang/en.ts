@@ -50,6 +50,7 @@
         saved: 'Configuration updated for {provider}',
         deleted: 'Delete ApiKey for {provider}',
         synced: 'Models updated',
-        up_model: "Modello updated with {model}"
+        up_model: "Modello updated with {model}",
+        download:"Download lists provider and models"
     },
 }
