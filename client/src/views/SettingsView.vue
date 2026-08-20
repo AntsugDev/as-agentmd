@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {computed, inject, onMounted, reactive, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
-import type {AiModel,  UserSettings} from '../types/chat'
+import type {AiModel, UserSettings} from '../types/chat'
 import {api, type Payload} from "../services/api.ts";
 
 const {t, locale} = useI18n()
@@ -172,6 +172,43 @@ const viewApiKey = () => {
       icon: 'mdi-eye', type: 'password'
     }
 }
+const loadDownload = ref<boolean>(false)
+const download = async () => {
+  try {
+    loadDownload.value = true
+    const response = await api({
+      url: 'download', method: 'GET', responseType: 'blob'
+    } as Payload)
+    if (response) {
+      const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' });
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = 'download.csv';
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="?([^"]+)"?/);
+        if (match && match[1]) {
+          filename = match[1];
+        }
+      }
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+
+// Pulizia
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    }
+
+
+  } catch
+      (err: any) {
+    console.error('Eccezione download file ', err)
+  } finally {
+    loadDownload.value = false
+  }
+}
 
 
 onMounted(() => {
@@ -231,6 +268,8 @@ onMounted(() => {
       <v-sheet class="panel" rounded="lg" border>
         <div class="panel-title">
           <h2>{{ t('settings.providers') }}</h2>
+          <v-btn variant="flat" icon="mdi-file-export" size="40" :alt="t('settings.download')"
+                 :title="t('settings.download')" color="info" @click="download" :loading="loadDownload"></v-btn>
         </div>
 
         <v-expansion-panels variant="accordion">

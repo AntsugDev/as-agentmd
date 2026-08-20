@@ -6,7 +6,8 @@ export interface Payload {
     method: 'GET' | 'POST' | 'PUT' | 'DELETE',
     body: any | null,
     headers: Map<string, any> | null,
-    queryString: any | null
+    queryString: any | null,
+    responseType: null | 'blob'
 }
 
 const isSession = (url: string): boolean => {
@@ -22,6 +23,8 @@ export const api = async (p: Payload): Promise<any | null> => {
                 url: p.url,
                 method: p.method
             }
+            if (p.responseType)
+                config.responseType = p.responseType
             const h: AxiosHeaders = new AxiosHeaders();
             const sCheck = isSession(p.url)
             if (!sCheck && session) {
