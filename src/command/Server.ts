@@ -40,30 +40,10 @@ export class Server extends AbstractProgram {
             }))
             this.app.use(express.static(path.join(__dirname, '../public')));
             this.getDataAll()
-            this.getRouter()
         } catch (e: any) {
             throw e;
         }
     }
-
-    private async getRouter() {
-        try {
-            const l = listEndpoints(this.router);
-            const tmp = os.tmpdir()
-            const directory = path.join(tmp, 'files')
-            await fs_promise.mkdir(directory, {recursive: true})
-            const file = path.join(directory, 'router.json');
-            fs.writeFile(file, JSON.stringify(l, null, 2), 'utf-8', (e) => {
-                if (e)
-                    console.log(`Eccezione nella creazione delle rotte`, e)
-            });
-            console.log(`Rotte aggiornate vedi il file into files/router.json`)
-        } catch (err: any) {
-            console.error(`Lista rotte errore ${err.toString()}`)
-        }
-    }
-
-
     getData(): void {
         this.program.command('server').description("Start server").action(() => {
             try {

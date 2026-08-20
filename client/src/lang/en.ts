@@ -28,7 +28,7 @@
         modelRequired: 'Select a model',
         messageRequired: 'Write a message',
         archiviata: "Chat successfully archived",
-        clear:"Clear fields",
+        clear:"New Chat",
         tokenIn:"Input token {t}",
         tokenOut:"Output token {t}",
         accept: "File format not accepted ({format})"

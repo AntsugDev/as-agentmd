@@ -28,7 +28,7 @@
     modelRequired: 'Seleziona un modello',
     messageRequired: 'Scrivi un messaggio',
     archiviata: "Chat archiviata con successo",
-    clear:"Pulisci campi",
+    clear:"Nuova Chat",
     tokenIn:"Input token {t}",
     tokenOut:"Output token {t}",
     accept: "Formato file non accettato ({format})"
