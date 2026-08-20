@@ -23,6 +23,7 @@ The project is built with:
 Clone the repository:
 
 > git clone https://github.com/AntsugDev/as-agentmd
+> npm install
 
 Then build and link the package globally:
 
