@@ -1,0 +1,48 @@
+{
+  "name": "agentmd",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "bin": {
+    "agentmd": "./dist/index.js"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@google/genai": "^2.17.1",
+    "@mistralai/mistralai": "^2.6.1",
+    "axios": "^1.19.0",
+    "cli-color": "^2.0.4",
+    "commander": "^12.0.0",
+    "conf": "^15.1.0",
+    "cors": "^2.8.6",
+    "csv-writer": "^1.6.0",
+    "dayjs": "^1.11.21",
+    "express": "^5.2.1",
+    "express-list-endpoints": "^7.1.1",
+    "marked": "^15.0.12",
+    "marked-terminal": "^7.3.0",
+    "mime-types": "^3.0.2",
+    "multer": "^2.2.0",
+    "ollama": "^0.6.3",
+    "open": "^11.0.0",
+    "openai": "^7.5.0",
+    "ora": "^9.4.1"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/marked-terminal": "^6.1.1",
+    "@types/mime-types": "^3.0.1",
+    "@types/multer": "^2.2.0",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}
