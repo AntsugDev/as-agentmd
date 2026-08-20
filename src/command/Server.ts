@@ -4,13 +4,13 @@ import express from "express";
 import cors from 'cors';
 import path from 'path';
 import {fileURLToPath} from 'url';
-import {randomInt} from "node:crypto";
 import {ApiFe} from "../fe/ApiFe.js";
 import listEndpoints from 'express-list-endpoints';
 import fs from "fs";
 import * as fs_promise from "fs/promises";
 import {ChatFe} from "../fe/ChatFe.js";
 import * as os from "node:os";
+import {Request,  Response} from "express"
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -91,6 +91,10 @@ export class Server extends AbstractProgram {
         })
         const api = new ApiFe(this.app, this.router)
         api.api()
+        this.app.get('/{*splat}', (req:Request, resp:Response) => {
+           return resp.sendFile(path.join(__dirname, '../public/index.html'));
+        });
+
     }
 
     setData(): void {

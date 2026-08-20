@@ -52,7 +52,7 @@ export const api = async (p: Payload): Promise<any | null> => {
             }
         } catch (err: any) {
             const snack = inject('snack')
-            if (snack) {
+            if (snack && snack?.value) {
                 let m = null;
                 if (err?.response?.data?.error)
                     m = err.response.data.error

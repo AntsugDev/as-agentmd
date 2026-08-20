@@ -10,10 +10,16 @@
     "node": ">=22.0.0"
   },
   "scripts": {
-    "dev": "tsx src/index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js"
+    "clean": "rimraf dist",
+    "build:fe": "cd client && vite build",
+    "build:be": "tsc",
+    "copy:assets": "copyfiles -u 1 client/dist/**/* dist/public",
+    "build": "npm run clean && npm run build:be &&  npm run build:fe && npm run copy:assets"
   },
+  "files": [
+    "dist",
+    "bin"
+  ],
   "dependencies": {
     "@google/genai": "^2.17.1",
     "@mistralai/mistralai": "^2.6.1",
@@ -42,6 +48,8 @@
     "@types/mime-types": "^3.0.1",
     "@types/multer": "^2.2.0",
     "@types/node": "^22.0.0",
+    "copyfiles": "^2.4.1",
+    "rimraf": "^6.1.3",
     "tsx": "^4.0.0",
     "typescript": "^5.0.0"
   }

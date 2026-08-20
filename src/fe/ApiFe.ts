@@ -281,7 +281,7 @@ export class ApiFe {
                     if (role === 'user') s = false
                     await ChatFe.init(uuid, msg, role, s)
                 } else if (status === 'next')
-                    await ChatFe.user(msg, uuid)
+                    await ChatFe.user(msg, uuid,nameFile)
 
                 const globalMsg: string | any[] = ChatFe.getFile(uuid)
                 const agent = await getProviderModelUtility(provider, globalMsg, msg, files)
@@ -290,7 +290,7 @@ export class ApiFe {
                     await ChatFe.del_archive(uuid, time)
                     return resp.status(422).json(agent)
                 }
-                ChatFe.assistant(agent.m, uuid)
+                ChatFe.assistant(agent.m, uuid,nameFile)
                 time = await ChatFe._archive(globalMsg, uuid, nameFile)
                 return resp.status(200).json({
                     uuid: uuid, global: globalMsg.filter(e => {
@@ -342,11 +342,11 @@ export class ApiFe {
                         parser = parser.filter((i: { role: string, content: string }) => {
                             return i.role !== 'system'
                         })
-                        if (now.diff(time, 'day') <= 3)
+                        if (now.diff(time, 'day') <= 3 && parser.length > 0  && parser[0]?.content)
                             response.push({
                                 uuid: e.toString().split('_')[0],
                                 name: e,
-                                title: `${parser[0].content.toString().substring(0, 30)} ...`,
+                                title: `${ parser[0].content.toString().substring(0, 20)} ... `,
                                 data_content: parser,
                                 time: time.format('YYYY-MM-DD')
                             })
@@ -363,6 +363,7 @@ export class ApiFe {
                 return resp.json(response)
 
             } catch (err: any) {
+                console.log(err)
                 return this.exception(resp, err.toString())
             }
         })

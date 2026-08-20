@@ -17,11 +17,11 @@ export class ChatFe {
 
     private static storage: Map<string, ChatMessage[]> = new Map<string, ChatMessage[]>()
 
-    private static async _append(role: 'user' | 'assistant', content: string, uuid: string): Promise<void> {
+    private static async _append(role: 'user' | 'assistant', content: string, uuid: string, nameFile?:string): Promise<void> {
         try {
             let histoy = this.storage.get(uuid)
-            if (!histoy) {
-                await this.recupera(uuid)
+            if (!histoy && nameFile) {
+                await this.recupera(uuid,nameFile)
                 histoy = this.storage.get(uuid)
             }
             if (histoy) {
@@ -51,17 +51,17 @@ export class ChatFe {
         }
     }
 
-    public static async user(content: string, uuid: string): Promise<void> {
+    public static async user(content: string, uuid: string, nameFile?:string): Promise<void> {
         try {
-            await this._append('user', content, uuid)
+            await this._append('user', content, uuid,nameFile)
         } catch (err: any) {
             console.error("User chat error", err);
         }
     }
 
-    public static async assistant(content: string, uuid: string): Promise<void> {
+    public static async assistant(content: string, uuid: string, nameFile?:string): Promise<void> {
         try {
-            await this._append('assistant', content, uuid)
+            await this._append('assistant', content, uuid,nameFile)
         } catch (err: any) {
             console.error("Assistant chat error", err);
         }
@@ -163,11 +163,11 @@ export class ChatFe {
         }
     }
 
-    public static async recupera(uuid: string): Promise<any | null> {
+    public static async recupera(uuid: string, nameFile:string): Promise<any | null> {
         try {
             const tmp = os.tmpdir()
             const directory = path.join(tmp, `chat`)
-            const file = path.join(directory, `${uuid}.json`)
+            const file = path.join(directory, `${nameFile}`)
             const response = await fs_promise.readFile(file, 'utf8');
             if (response) {
                 this.storage.set(uuid, JSON.parse(response))
