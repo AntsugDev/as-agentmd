@@ -93,6 +93,9 @@ const openArchive = (data: any[]) => {
     console.error("Eccezione recupero chat", err)
   }
 }
+const goToCtrlChat = ()=>{
+  router.push({name:'double_chat'})
+}
 </script>
 
 <template>
@@ -132,6 +135,7 @@ const openArchive = (data: any[]) => {
 
               </v-menu>
               <v-icon size="33" icon="mdi-cog-outline" @click="goToSettings" class="ml-2" :alt="t('navigation.settings')" :title="t('navigation.settings')" ></v-icon>
+              <v-icon size="33" icon="mdi-compare" @click="goToCtrlChat" class="ml-2" :alt="t('navigation.compare')" :title="t('navigation.compare')" ></v-icon>
 
               <v-btn variant="tonal" color="primary" size="small" @click="toggleLocale">
                 {{ locale.toUpperCase() }}

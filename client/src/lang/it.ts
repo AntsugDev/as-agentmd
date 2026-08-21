@@ -7,7 +7,8 @@
   navigation: {
     home: 'Home',
     settings: 'Impostazioni',
-    archivia:'Chat archiviate'
+    archivia:'Chat archiviate',
+    compare:"Confronta Chat"
   },
   home: {
     title: 'Chat',
@@ -53,4 +54,10 @@
     up_model: "Modello aggiornato con {model}",
     download:"Download lista provider e models"
   },
+  double_chat:{
+    title:"Confronta Chat",
+    intro:"Seleziona più di un modello, scrivi la domanda e confronta le risposte",
+    max:"Si possono selezionare al massimo 2 modelli",
+    required:"Campo obbligatorio"
+  }
 }

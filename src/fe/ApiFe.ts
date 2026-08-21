@@ -296,7 +296,8 @@ export class ApiFe {
                     uuid: uuid, global: globalMsg.filter(e => {
                         return e.role !== 'system'
                     }), t: (agent.c?.token ?? null),
-                    time: time
+                    time: time,
+                    name_file:nameFile
                 })
 
             } catch (err: any) {

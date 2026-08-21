@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import SettingsView from '../views/SettingsView.vue'
 import DocsView from "../views/DocsView.vue";
+import DoubleChat from "../views/DoubleChat.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -10,6 +11,11 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomeView,
+    },
+    {
+      path: '/ctrl',
+      name: 'double_chat',
+      component: DoubleChat,
     },
     {
       path: '/settings',

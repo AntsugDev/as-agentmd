@@ -7,7 +7,8 @@
     navigation: {
         home: 'Home',
         settings: 'Settings',
-        archivia:'Archived chats'
+        archivia:'Archived chats',
+        compare:"Compare Chats",
     },
     home: {
         title: 'Chat',
@@ -53,4 +54,10 @@
         up_model: "Modello updated with {model}",
         download:"Download lists provider and models"
     },
+    double_chat:{
+        title:"Compare Chats",
+        intro:"Select more than one model, enter your question, and compare the answers",
+        max:"A maximum of 2 models can be selected.",
+        required:"Required field"
+    }
 }
