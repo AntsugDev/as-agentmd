@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeMount, onMounted, provide, ref, watch} from 'vue'
+import {onBeforeMount, onMounted, onUnmounted, provide, ref, watch} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {useI18n} from 'vue-i18n'
 import {api, type Payload} from "./services/api.ts";
@@ -52,6 +52,9 @@ watch(snack, (v) => {
 onMounted(() => {
   goToArchives()
 })
+onUnmounted(() => {
+  if (polling.value) clearTimeout(polling.value)
+})
 
 const closeSnack = () => {
   snack.value = {
@@ -66,13 +69,13 @@ const archive = ref<any[]>([])
 const polling = ref<any | null>(null)
 const goToArchives = async () => {
   try {
-    if (polling.value) clearInterval(polling.value)
+    if (polling.value) clearTimeout(polling.value)
     const response = await api({
       url: 'archive', method: 'GET'
     } as Payload)
     if (response) {
       archive.value = response.data
-      polling.value = setInterval(() => {
+      polling.value = setTimeout(() => {
         goToArchives()
       }, 30000)
     }
