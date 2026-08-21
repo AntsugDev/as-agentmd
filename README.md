@@ -156,3 +156,11 @@ Inside it, you will find:
 This project is licensed under the **MIT License**.
 
 Copyright (c) 2026 AntsugDev
+
+## ☕ Support This Project
+
+If you found this project useful and would like to buy me a coffee, you can do so by sending a donation via PayPal to:
+
+👉  **antonio.sugamele@gmail.com**
+
+Thank you!😄
