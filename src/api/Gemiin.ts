@@ -11,16 +11,14 @@ export class Gemini extends ApiAbstract {
     public prevousGemini: string | null;
 
     protected ai: any;
-    protected model: any;
 
-
-    constructor(files: any | null) {
-        super('gemini', `https://generativelanguage.googleapis.com/v1beta/models?key=`, `https://generativelanguage.googleapis.com/v1beta/interactions?key=`, files);
+    constructor(files: any | null,model:string|null) {
+        super('gemini', `https://generativelanguage.googleapis.com/v1beta/models?key=`, `https://generativelanguage.googleapis.com/v1beta/interactions?key=`, files,model);
         this.prevousGemini = null;
         this.ai = new GoogleGenAI({
             apiKey: this.extraApiKey()
         })
-        this.model = this.getModelSelect()
+        this.model = !model ? this.getModelSelect() :model
     }
 
     // @ts-ignore
@@ -53,7 +51,7 @@ export class Gemini extends ApiAbstract {
             }
             return fileData;
         } catch (err: any) {
-            throw err;
+            throw new Error(`Gemini exception ${JSON.stringify(err)}`);
         }
     }
 

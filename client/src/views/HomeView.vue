@@ -83,7 +83,7 @@ const submitMessage = async () => {
   selectedFile.value.forEach(e => {
     form.append('files', e)
   })
-  console.log('form', form)
+
   try {
     const response = await api({
       url: `chat/${status.value}`,

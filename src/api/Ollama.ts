@@ -10,8 +10,8 @@ import fs from "fs/promises";
 export class Ollama extends ApiAbstract {
 
 
-    constructor(files: any | null) {
-        super('ollama', "http://localhost:11434", null, files);
+    constructor(files: any | null, model:string|null) {
+        super('ollama', "http://localhost:11434", null, files,model);
     }
 
     // @ts-ignore
@@ -21,7 +21,6 @@ export class Ollama extends ApiAbstract {
             if (this.files && Array.isArray(this.files)) {
                 for (let i = 0; i < this.files.length; i++) {
                     const ele = this.files[i]
-                    console.log()
                     const content = await fs.readFile(ele.path, 'utf-8')
                     if(content){
                         image.push(btoa(content))
@@ -39,7 +38,7 @@ export class Ollama extends ApiAbstract {
     // @ts-ignore
     async chat(text: any[]): null | string | object {
         try {
-            let model = this.getModelSelect()
+            const model =!this.model ?  this.getModelSelect() : this.model
             if (!model) {
                 console.error("Impossibile estrarre il modello da utilizzare")
                 return null;
@@ -47,7 +46,6 @@ export class Ollama extends ApiAbstract {
             const images = await this.uri_file()
             if(images && images.images.length > 0)
                 text.push(images)
-            console.log(text)
 
             let response = await ollama.chat({
                 model: model,
@@ -62,7 +60,7 @@ export class Ollama extends ApiAbstract {
             return null;
 
         } catch (err: any) {
-            throw err;
+            throw new Error(`Ollama exception ${JSON.stringify(err)}`);
         }
     }
 

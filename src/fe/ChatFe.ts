@@ -9,8 +9,7 @@ import {unlink} from "node:fs/promises";
 
 interface ChatMessage {
     role: string,
-    content: string,
-    order: number
+    content: string
 }
 
 export class ChatFe {
@@ -26,7 +25,7 @@ export class ChatFe {
             }
             if (histoy) {
                 histoy.push({
-                    role: role, content: content, order: (histoy.length + 1)
+                    role: role, content: content
                 } as ChatMessage)
                 this.storage.set(uuid, histoy)
             }
@@ -41,7 +40,7 @@ export class ChatFe {
             if (role === 'user')
                 content = msg ? msg : ""
             const i: ChatMessage[] = [{
-                role: role, content: content, order: 1
+                role: role, content: content
             }]
             this.storage.set(uuid, i)
             if (status && msg)

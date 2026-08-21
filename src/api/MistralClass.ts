@@ -8,13 +8,12 @@ export class MistralClass extends ApiAbstract {
 
     protected client: any;
     protected key: any | null;
-    protected models: any | null;
 
-    constructor(files: any | null) {
-        super('mistral', '', '', files);
+    constructor(files: any | null,model:string|null) {
+        super('mistral', '', '', files,model);
 
         this.key = this.extraApiKey()
-        this.models = this.getModelSelect()
+        this.model = !model ? this.getModelSelect() : model
         this.client = new Mistral({
             apiKey: this.key.trim(),
         });
@@ -29,12 +28,12 @@ export class MistralClass extends ApiAbstract {
     // @ts-ignore
     async chat(text: any[]): string | object | null {
         try {
-            if (!this.models) {
+            if (!this.model) {
                 console.error("Models not selected")
                 return null;
             }
             let options = {
-                model: this.models,
+                model: this.model,
                 messages: text,
                 temperature: 0.5,
                 documents: []
@@ -57,7 +56,7 @@ export class MistralClass extends ApiAbstract {
             }
             return null;
         } catch (err: any) {
-            throw err;
+            throw new Error(`Mistral exception ${JSON.stringify(err)}`);
         }
     }
 

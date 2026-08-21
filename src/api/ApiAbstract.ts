@@ -12,8 +12,9 @@ export abstract class ApiAbstract extends DataUtility {
     private config: Conf<AgentConfig> | null;
     public token:{input:number,output:number};
     public files:any|null;
+    protected model:string|null;
 
-    constructor(provider: string, endPointModels: string | null, endPointChat: string | null,files:any|null) {
+    constructor(provider: string, endPointModels: string | null, endPointChat: string | null,files:any|null,model:string|null) {
         super(provider)
         this.provider = provider
         this.endPointChat = endPointChat
@@ -23,6 +24,7 @@ export abstract class ApiAbstract extends DataUtility {
             input :0, output: 0
         }
         this.files = files
+        this.model = model
     }
 
     getModelSelect(): string | null {

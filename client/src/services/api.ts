@@ -51,17 +51,7 @@ export const api = async (p: Payload): Promise<any | null> => {
                 resolve(response)
             }
         } catch (err: any) {
-            const snack = inject('snack')
-            if (snack && snack?.value) {
-                let m = null;
-                if (err?.response?.data?.error)
-                    m = err.response.data.error
-                else
-                    m = err.toString()
-                snack.value = {
-                    view: true, msg: m, error: true
-                }
-            }
+            console.log('Api error', err)
             reject(err)
         }
 

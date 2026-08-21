@@ -4,10 +4,12 @@ import {useI18n} from 'vue-i18n'
 import type {AiModel, ChatMessage} from '../types/chat'
 import {api, type Payload} from "../services/api.ts";
 import MarkdownIt from "markdown-it";
+import {filterItems} from "vuetify/lib/composables/filter";
 
 const {t} = useI18n()
 const isLoading = ref(false)
-const messages = ref([])
+let messages = ref<any>({})
+let errors = ref<any>({})
 const selectedModel = ref([])
 const formError = ref(null)
 const prompt = ref(null)
@@ -15,9 +17,7 @@ const modelItems = ref([])
 const loadModel = ref(false)
 const standard = ref({
   status: 'init',
-  name_file: null,
-  uuid: null,
-  time: null
+  next: {},
 })
 const validate = computed(() => {
   let error = 0;
@@ -41,34 +41,34 @@ const submitMessage = async () => {
     const f = new FormData()
     if (validate.value) {
 
-      const url = `chat/${standard.value.status}`
+      const url = `chat/compare/${standard.value.status}`
 
-      if (prompt.value)
-        f.append('message', prompt.value)
-      if (standard.value.uuid)
-        f.append('uuid', standard.value.uuid)
-      if (standard.value.time)
-        f.append('time', standard.value.time)
-
-      f.append('models', JSON.stringify(selectedModel.value))
+      let body = {
+        message: prompt.value,
+        models: selectedModel.value,
+        next: (Object.keys(standard.value.next).length > 0 ? standard.value.next : null)
+      }
 
       let payload = {
-        url: url, method: 'POST', body: f
+        url: url, method: 'POST', body: body
       } as Payload
-      if (standard.value.name_file) {
-        payload.queryString = {
-          name_file: standard.value.name_file
-        }
-      }
       const response = await api(payload)
       if (response) {
-        standard.value = {
-          uuid: response.data.uuid,
-          time: response.data.time,
-          status: 'next',
-          name_file: response.data.name_file
-        }
-        messages.value = response.data.global
+        standard.value.status = 'next'
+        response.data.map((e: {
+          uuid: string | null,
+          model: string,
+          name_file: string | null,
+          msg: string,
+          error:string|null
+        }) => {
+          standard.value.next[e.model] = {
+            uuid: e.uuid, nameFile: e.name_file
+          }
+          messages.value[e.model] = e.msg
+          errors.value[e.model]= e.error
+        })
+        prompt.value = null
       }
     }
 
@@ -85,6 +85,7 @@ const clearChats = () => {
   prompt.value = null
 
 }
+const filterModels = ref([])
 const loadModels = async () => {
   try {
     loadModel.value = true
@@ -93,6 +94,7 @@ const loadModels = async () => {
     } as Payload)
     if (response) {
       modelItems.value = response.data
+      filterModels.value = response.data
     }
   } catch (err) {
     console.error(err)
@@ -106,7 +108,20 @@ const aError = ref({
 const tError = ref({
   is: false, text: ""
 })
+
 const verifyModel = () => {
+  if (selectedModel.value.length === 0) {
+    filterModels.value = modelItems.value
+    return
+  }
+  ;
+  if (selectedModel.value.length === 1) {
+    const first = selectedModel.value[0]
+    let all = modelItems.value
+    filterModels.value = all.filter((e: any) => {
+      return e.value.toString().indexOf(first?.toString().split('|')[0]) === -1
+    })
+  }
   if (selectedModel.value.length > 2)
     aError.value = {
       is: true, text: t('double_chat.max')
@@ -120,6 +135,10 @@ const loading = computed(() => {
   if (aError.value.is) return true;
   else return isLoading.value
 })
+const getContentHtml = (content: string) => {
+  const m = new MarkdownIt({html: true})
+  return m.render(content)
+}
 
 onMounted(() => {
   loadModels()
@@ -141,8 +160,30 @@ onMounted(() => {
       </div>
       <v-skeleton-loader v-if="isLoading" type="article, actions"/>
       <template v-else>
-        <div class="message-list">
-          ciao
+        <div class="d-flex flex-row justify-space-between gap-3">
+          <template v-for="(data,model) in messages" :key="model">
+            <div class="d-flex flex-column justify-start align-start pa-3 ga-2 mr-3"
+                 style="width: 50%;border: 1px solid; border-radius: 6px">
+              <v-btn color="info" variant="elevated">
+                {{ model }}
+              </v-btn>
+              <v-alert color="error" v-if="errors[model]" density="compact" type="error">{{errors[model]}}</v-alert>
+              <div class="message-list mr-3" v-for="(message,idx) in data" :key="idx" v-else>
+                <div
+                    v-if="message.role !== 'system'"
+                    class="message-item"
+                    :class="`message-item--${message.role}`"
+                >
+                  <div class="message-bubble__header">
+
+                    <span class="message-author-dot"></span>
+                    <strong>{{ message.role === 'user' ? t('home.user') : t('home.agent') }}</strong>
+                  </div>
+                  <div class="message-content" v-html="getContentHtml(message.content)"></div>
+                </div>
+              </div>
+            </div>
+          </template>
         </div>
       </template>
     </v-sheet>
@@ -173,7 +214,7 @@ onMounted(() => {
                 v-model="selectedModel"
                 :model-value="selectedModel"
                 multiple
-                :items="modelItems"
+                :items="filterModels"
                 item-title="text"
                 item-value="value"
                 :label="t('home.model')"
@@ -183,6 +224,7 @@ onMounted(() => {
                 hide-details="auto"
                 :loading="loadModel"
                 chips
+                closable-chips
                 :error="aError.is"
                 :error-messages="aError.text"
                 @update:modelValue="verifyModel"

@@ -179,12 +179,8 @@ onBeforeMount(() => {
         payload: {
           type: "Array",
           data: {
-            name: {type: "string", description: "Name (id)"},
-            displayName: {type: "string | null", description: "Name"},
-            description: {type: "string | null", description: "Description"},
-            inputTokenLimit: {type: "number | null", description: "Limit input token"},
-            outputTokenLimit: {type: "number | null", description: "Limit output token"},
-            version: {type: "number | string | null", description: "version"},
+            value: {type: "string", description: "Name (id)"},
+            text: {type: "string | null", description: "Name"},
           }
         }
       }

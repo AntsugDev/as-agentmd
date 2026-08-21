@@ -9,13 +9,12 @@ import OpenAI from "openai";
 
 export class OpenAiClass extends ApiAbstract {
 
-    protected model: string | null;
     protected ai: any | null;
 
-    constructor(files: any | null) {
-        super('openai', 'https://api.openai.com/v1/models', 'https://api.openai.com/v1/chat/completions', files);
+    constructor(files: any | null, model: string | null) {
+        super('openai', 'https://api.openai.com/v1/models', 'https://api.openai.com/v1/chat/completions', files, model);
         this.model = null;
-        this.model = this.getModelSelect()
+        this.model = !model ? this.getModelSelect() : model
         this.ai = new OpenAI({
             apiKey: this.extraApiKey()
         })
@@ -125,7 +124,7 @@ export class OpenAiClass extends ApiAbstract {
             return null;
 
         } catch (err: any) {
-            throw err;
+            throw new Error(`OpenAI exception ${JSON.stringify(err)}`);
         }
     }
 

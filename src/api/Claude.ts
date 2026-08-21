@@ -7,15 +7,16 @@ import {instruction} from "../utility/utility.js";
 
 export class Claude extends ApiAbstract {
 
-    constructor(files:any|null) {
-        super('claude', 'https://api.anthropic.com/v1/models', 'https://api.anthropic.com/v1/messages',files);
+    constructor(files: any | null, model: string | null) {
+        super('claude', 'https://api.anthropic.com/v1/models', 'https://api.anthropic.com/v1/messages', files, model);
     }
+
 // @ts-ignore
-    async uri_file(): Promise<any|null>{
-        try{
+    async uri_file(): Promise<any | null> {
+        try {
 
             return null;
-        }catch (err:any){
+        } catch (err: any) {
             return null;
         }
     }
@@ -24,7 +25,7 @@ export class Claude extends ApiAbstract {
     async chat(text: any[]): string | object | null {
         try {
             const key = this.extraApiKey()
-            const model = this.getModelSelect()
+            const model = !this.model ? this.getModelSelect() : this.model;
             const headers: AxiosHeaders = new AxiosHeaders();
             headers.set('x-api-key', key)
             headers.set('anthropic-version', '2023-06-01')
@@ -49,12 +50,9 @@ export class Claude extends ApiAbstract {
                 if (usage) {
                     const input = usage.input_tokens;
                     const output = usage.output_tokens;
-                    console.log(`---Utilizzo dei token-----`)
-                    console.log(`Input(user): ${input}`)
-                    console.log(`Output(Agent): ${output}`)
-                    console.log('--------------------------------------------')
+
                     this.token = {
-                        input:input, output: output
+                        input: input, output: output
                     }
                 }
                 let t = ""
@@ -70,7 +68,7 @@ export class Claude extends ApiAbstract {
             return null;
 
         } catch (err: any) {
-          throw err;
+            throw new Error(`Claude exception ${JSON.stringify(err)}`);
         }
     }
 

@@ -4,8 +4,8 @@ import {callbackApi, Params} from "../utility/api.js";
 import {RawGeminiModel} from "../interface/myInterface.js";
 
 export class DeepSeek extends ApiAbstract{
-    constructor(files:any|null) {
-        super('deep-seek', 'https://api.deepseek.com/v1/models?provider=deepseek', 'https://api.deepseek.com/v1/chat/completions',files);
+    constructor(files:any|null,model:string|null) {
+        super('deep-seek', 'https://api.deepseek.com/v1/models?provider=deepseek', 'https://api.deepseek.com/v1/chat/completions',files,model);
     }
     // @ts-ignore
     async uri_file(): Promise<any|null>{
@@ -21,7 +21,7 @@ export class DeepSeek extends ApiAbstract{
        try{
 
            const key = this.extraApiKey()
-           const model = this.getModelSelect()
+           const model =!this.model ?  this.getModelSelect() : this.model
            if(!key) {
                console.error("Key for deep-seek not found")
                return null;
@@ -50,10 +50,7 @@ export class DeepSeek extends ApiAbstract{
                if (usage) {
                    const input = usage.prompt_tokens;
                    const output = usage.completion_tokens;
-                   console.log(`---Utilizzo dei token-----`)
-                   console.log(`Input(user): ${input}`)
-                   console.log(`Output(Agent): ${output}`)
-                   console.log('--------------------------------------------')
+
                    this.token = {
                        input:input, output: output
                    }
@@ -63,7 +60,7 @@ export class DeepSeek extends ApiAbstract{
 
            return null;
        } catch (err: any) {
-           throw err;
+           throw new Error(`DeepSeek exception ${JSON.stringify(err)}`);
        }
     }
 // @ts-ignore

@@ -4,7 +4,7 @@ import {AgentConfig, ProvidersInt, RawGeminiModel} from "../interface/myInterfac
 import Conf from "conf";
 import {Request, NextFunction, Response} from "express"
 import {exec} from 'child_process';
-import {getProviderModelUtility} from "../utility/utility.js";
+import {getProviderModelUtility, providerModels} from "../utility/utility.js";
 import {ChatFe} from "./ChatFe.js";
 import * as os from "node:os";
 import path from "path";
@@ -261,7 +261,8 @@ export class ApiFe {
         }, any, {
             message: string,
             uuid: string | null,
-            time: string | null
+            time: string | null,
+            models?: string | null
         }, any, {
             name_file: string | null
         }>, resp: Response) => {
@@ -269,6 +270,8 @@ export class ApiFe {
                 let time = req.body.time;
                 const status = req.params.status
                 const msg = req.body.message
+                const models = req.body.models ? JSON.parse(req.body.models) : null
+
                 const provider = configStore.get('modelSelected')
                 const uuid = (req.body.uuid ? req.body.uuid : Math.random().toString(36).substring(0, 10)).toString().replaceAll('.', '')
 
@@ -281,24 +284,50 @@ export class ApiFe {
                     if (role === 'user') s = false
                     await ChatFe.init(uuid, msg, role, s)
                 } else if (status === 'next')
-                    await ChatFe.user(msg, uuid,nameFile)
+                    await ChatFe.user(msg, uuid, nameFile)
 
                 const globalMsg: string | any[] = ChatFe.getFile(uuid)
-                const agent = await getProviderModelUtility(provider, globalMsg, msg, files)
+                const agent = await getProviderModelUtility(provider, globalMsg, msg, files, null);
                 if (!agent) {
                     ChatFe.delStorage(uuid)
                     await ChatFe.del_archive(uuid, time)
                     return resp.status(422).json(agent)
                 }
-                ChatFe.assistant(agent.m, uuid,nameFile)
+                ChatFe.assistant(agent.m, uuid, nameFile)
                 time = await ChatFe._archive(globalMsg, uuid, nameFile)
                 return resp.status(200).json({
                     uuid: uuid, global: globalMsg.filter(e => {
                         return e.role !== 'system'
                     }), t: (agent.c?.token ?? null),
                     time: time,
-                    name_file:nameFile
+                    name_file: nameFile
                 })
+
+            } catch (err: any) {
+                return this.exception(resp, err.toString())
+            }
+        })
+    }
+
+    protected chat_compare() {
+        this.router.post('/chat/compare/:status', [this.isUser, this.isConfig], async (req: Request<{
+            status: 'init' | 'next'
+        }, any, {
+            next: {} | null,
+            message: string,
+            models: string[]
+        }>, resp: Response) => {
+            try {
+                const status = req.params.status
+                const next = req.body.next
+                const msg = req.body.message
+                const models = req.body.models
+                const response = await providerModels(models, status, msg, next)
+                if (response)
+                    return resp.json(response)
+
+
+                return resp.sendStatus(500)
 
             } catch (err: any) {
                 return this.exception(resp, err.toString())
@@ -343,11 +372,11 @@ export class ApiFe {
                         parser = parser.filter((i: { role: string, content: string }) => {
                             return i.role !== 'system'
                         })
-                        if (now.diff(time, 'day') <= 3 && parser.length > 0  && parser[0]?.content)
+                        if (now.diff(time, 'day') <= 3 && parser.length > 0 && parser[0]?.content)
                             response.push({
                                 uuid: e.toString().split('_')[0],
                                 name: e,
-                                title: `${ parser[0].content.toString().substring(0, 20)} ... `,
+                                title: `${parser[0].content.toString().substring(0, 20)} ... `,
                                 data_content: parser,
                                 time: time.format('YYYY-MM-DD')
                             })
@@ -424,6 +453,7 @@ export class ApiFe {
             this.select_model()
             this.get_models()
             this.chat()
+            this.chat_compare()
             this.archive()
             this.get_archive()
             this.download()
