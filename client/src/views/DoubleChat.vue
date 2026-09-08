@@ -165,7 +165,6 @@ onMounted(() => {
       <div v-if="Object.keys(messages).length === 0" class="empty-state">
         {{ t('home.emptyConversation') }}
       </div>
-      <pre>errors: {{errors}}</pre>
       <v-skeleton-loader v-if="isLoading" type="article, actions"/>
       <template v-else>
         <div class="d-flex flex-row justify-space-between gap-3">

@@ -73,6 +73,7 @@ The frontend consists of two main pages:
 
 * **Home**
 * **Settings**
+* **Compare Chats**
 
 ### Settings
 
@@ -99,15 +100,25 @@ It follows a familiar AI chat interface, providing:
 
 The top navigation bar also provides additional functionality:
 
-* ![img.png](img/img.png) — opens the **Settings** page.
+* ![img\img100.png](img/img100.png) — opens the **Settings** page.
+* ![img\img99.png](img/img99.png) - opens the **Compare Chats** page.
 * ![img\_1.png](img/img_1.png) — changes the application language (**Italian** or **English**).
 * ![img\_2.png](img/img_2.png) — displays the **10 most recent chats**.
+
+### Compare Chats
+
+On this page, you can compare the response to a question by selecting two different provider-models.
+It works in a similar way to the chat feature (available on the *Home* page).
 
 Below are some screenshots of the application:
 
 ![img\_3.png](img/img_3.png)
 
 ![img\_4.png](img/img_4.png)
+
+![img101.png](img/img101.png)
+
+![img102.png](img/img102.png)
 
 ---
 
@@ -150,6 +161,9 @@ Inside it, you will find:
 - `uploads`: contains files uploaded in chats
 - `files`: a directory for temporary files that are immediately deleted
 
+## Note
+
+In some cases, the selected provider and model might fail to respond due to reasons beyond the system's control, or they might return a response indicating that the token limit has been exceeded.
 
 ## License
 
