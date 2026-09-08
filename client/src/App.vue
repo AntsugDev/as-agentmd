@@ -53,7 +53,10 @@ onMounted(() => {
   goToArchives()
 })
 onUnmounted(() => {
-  if (polling.value) clearTimeout(polling.value)
+  if (polling.value) {
+    clearTimeout(polling.value)
+    polling.value = null
+  }
 })
 
 const closeSnack = () => {
@@ -75,19 +78,20 @@ const goToArchives = async () => {
     } as Payload)
     if (response) {
       archive.value = response.data
-      polling.value = setTimeout(() => {
-        goToArchives()
-      }, 30000)
     }
   } catch (err: any) {
     console.error("Eccezione lista chat archiviate", err)
+  }finally {
+    polling.value = setTimeout(() => {
+      goToArchives()
+    }, 30000)
   }
 }
 const recupera = ref<any[]>([])
 const openArchive = (data: any[]) => {
   try {
     recupera.value = data
-    if(route.fullPath.toString().indexOf('settings') !== -1)
+    if(route.fullPath.toString().indexOf('home') === -1)
       router.push({name: 'home'})
   } catch (err: any) {
     console.error("Eccezione recupero chat", err)
@@ -118,7 +122,7 @@ const goToCtrlChat = ()=>{
               <v-menu location="bottom" v-if="archive.length > 0">
                 <template v-slot:activator="{ props }">
                   <v-badge :content="archive.length" color="info" v-bind="props">
-                    <v-icon icon="mdi-archive" size="33" @click="openArchive"></v-icon>
+                    <v-icon icon="mdi-archive" size="33"></v-icon>
                   </v-badge>
                 </template>
                 <v-list  :lines="false"
