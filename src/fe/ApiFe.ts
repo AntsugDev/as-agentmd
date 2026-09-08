@@ -4,13 +4,16 @@ import {AgentConfig, ProvidersInt, RawGeminiModel} from "../interface/myInterfac
 import Conf from "conf";
 import {Request, NextFunction, Response} from "express"
 import {exec} from 'child_process';
-import {getProviderModelUtility, providerModels} from "../utility/utility.js";
+import {getContent, getProviderModelUtility, providerModels} from "../utility/utility.js";
 import {ChatFe} from "./ChatFe.js";
 import * as os from "node:os";
 import path from "path";
 import fs from "fs/promises";
 import multer from "multer";
 import {unlink} from "node:fs/promises";
+import {SqlDb} from "../database/database.js";
+import {db} from "../index.js";
+import {Scheduler} from "../scheduler/Scheduler.js";
 
 
 interface Archive {
@@ -440,6 +443,52 @@ export class ApiFe {
         })
     }
 
+    protected rag_file() {
+        this.router.post('/rag/files', [this.isUser, this.isConfig, this.uploadMiddleware], async (req: Request<null, null, {
+            argument: string,
+            model: string,
+        }>, resp: Response) => {
+            try {
+                console.log('ok entro nell\'api rag ...')
+                const files = req.files as Express.Multer.File[] || [];
+                const argument = req.body.argument
+                const model = req.body.model
+                const keys = ['FILE_NAME', 'CONTENT', 'TAG', 'STATUS_ID', 'MODEL_USED', 'MIME_TYPE']
+                let last: any[] = []
+                const status = SqlDb._status(db);
+                for (let i = 0; i < files.length; i++) {
+                    const ele: any = files[i]
+                    const mime_type = ele.mimetype
+                    const content = await getContent(mime_type, ele.path)
+
+                    const name = ele.originalname;
+                    /*
+                     if(content && name){
+                         const values = [name,content,argument, status, model,mime_type]
+                         const l:any = SqlDb.insert(db,'FILES',keys,values)
+                         if(l) last.push(l)
+                     }
+
+                     */
+                }
+                last.forEach((ele,index) => {
+                 console.log(`Start task number ${index+1}, from api ...`)
+                 queueMicrotask(() => Scheduler.worker(db,ele))
+                })
+                // if(last.length === 0) throw  new Error("Nessuna riga creata")
+                return resp.json({
+                    last_insert: last,
+                    status_insert: 'pending',
+                    message: "Ok, in lavorazione."
+                })
+
+            } catch (err: any) {
+                console.log(err)
+                return this.exception(resp, err.toString())
+            }
+        });
+    }
+
 
     public api() {
         try {
@@ -457,6 +506,9 @@ export class ApiFe {
             this.archive()
             this.get_archive()
             this.download()
+            //----RAG---------------
+            this.rag_file()
+            //--------------------------
         } catch (err: any) {
             throw err;
         }

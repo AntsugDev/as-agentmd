@@ -5,12 +5,8 @@ import cors from 'cors';
 import path from 'path';
 import {fileURLToPath} from 'url';
 import {ApiFe} from "../fe/ApiFe.js";
-import listEndpoints from 'express-list-endpoints';
-import fs from "fs";
-import * as fs_promise from "fs/promises";
 import {ChatFe} from "../fe/ChatFe.js";
-import * as os from "node:os";
-import {Request,  Response} from "express"
+import {Request, Response} from "express"
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -36,7 +32,7 @@ export class Server extends AbstractProgram {
                 origin: 'http://localhost:5173',
                 methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATH', 'OPTIONS'],
                 allowedHeaders: ['x-api-key', 'Content-Type', 'Authorization'],
-                exposedHeaders: ['x-api-key','Content-Disposition'],
+                exposedHeaders: ['x-api-key', 'Content-Disposition'],
             }))
             this.app.use(express.static(path.join(__dirname, '../public')));
             this.getDataAll()
@@ -44,18 +40,35 @@ export class Server extends AbstractProgram {
             throw e;
         }
     }
+
     getData(): void {
         this.program.command('server').description("Start server").action(() => {
             try {
                 this.init();
+                process.on('uncaughtException', (err) => {
+                    console.error('ERRORE CRITICO NON GESTITO:', err);
+                });
+
+                process.on('unhandledRejection', (reason, promise) => {
+                    console.error('PROMISE REJECTED NON GESTITA:', reason);
+                });
                 this.server = this.app.listen(this.port, async () => {
-                    const actualPort = this.server.address().port;
-                    const url = `http://localhost:${actualPort}`;
-                    console.log(`Dashboard avviata con successo su: ${url}`);
-                    ChatFe.clearAll()
-                    ChatFe.clear_archive(false)
-                    ChatFe.clear_uploads()
-                })
+                    try {
+                        const url = `http://localhost:${this.port}`;
+                        console.log(`Dashboard avviata con successo su: ${url}`);
+                        ChatFe.clearAll()
+                        await ChatFe.clear_archive(false)
+                        await ChatFe.clear_uploads()
+                    } catch (err: any) {
+                        console.log('Server not started', err)
+                    }
+                }).on('err', (err: any) => {
+                    if (err.code === 'EADDRINUSE') {
+                        console.error(`La porta ${this.port} è già in uso! Chiudi l'altro processo.`);
+                    } else {
+                        console.error('Errore del server:', err);
+                    }
+                });
             } catch (err: any) {
                 console.error("Server not started", err)
             }
@@ -71,8 +84,8 @@ export class Server extends AbstractProgram {
         })
         const api = new ApiFe(this.app, this.router)
         api.api()
-        this.app.get('/{*splat}', (req:Request, resp:Response) => {
-           return resp.sendFile(path.join(__dirname, '../public/index.html'));
+        this.app.get('/{*splat}', (req: Request, resp: Response) => {
+            return resp.sendFile(path.join(__dirname, '../public/index.html'));
         });
 
     }

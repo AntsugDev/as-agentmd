@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
 import {Command} from 'commander';
-import { providers} from "./config.js";
 import {Server} from "./command/Server.js";
-
+import {SqlDb} from "./database/database.js";
+import {Scheduler} from "./scheduler/Scheduler.js";
+export const db = await new SqlDb().create()
 const program = new Command();
-const p = providers();
 program
     .name('agentmd')
     .description('Custom CLI for prompt automation and context engineering')

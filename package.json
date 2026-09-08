@@ -16,7 +16,7 @@
     "build:be": "tsc",
     "copy:assets": "copyfiles -u 1 client/dist/**/* dist/public",
     "build": "npm run clean && npm run build:be &&  npm run build:fe && npm run copy:assets",
-    "dev:be": "cls && npm run build:be && agentmd server"
+    "dev:be": "cls && tsc && agentmd server"
   },
   "files": [
     "dist",
@@ -25,7 +25,9 @@
   "dependencies": {
     "@google/genai": "^2.17.1",
     "@mistralai/mistralai": "^2.6.1",
+    "@types/better-sqlite3": "^9.6.0",
     "axios": "^1.19.0",
+    "better-sqlite3": "^13.0.3",
     "cli-color": "^2.0.4",
     "commander": "^12.0.0",
     "conf": "^15.1.0",
@@ -34,6 +36,7 @@
     "dayjs": "^1.11.21",
     "express": "^5.2.1",
     "express-list-endpoints": "^7.1.1",
+    "mammoth": "^1.12.2",
     "marked": "^15.0.12",
     "marked-terminal": "^7.3.0",
     "mime-types": "^3.0.2",
@@ -42,7 +45,10 @@
     "open": "^11.0.0",
     "openai": "^7.5.0",
     "ora": "^9.4.1",
-    "swagger-ui-express": "^5.0.1"
+    "pdf-parse": "^2.4.5",
+    "sqlite-vec": "^0.1.9",
+    "swagger-ui-express": "^5.0.1",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
