@@ -58,6 +58,7 @@
         title:"Compare Chats",
         intro:"Select more than one model, enter your question, and compare the answers",
         max:"A maximum of 2 models can be selected.",
-        required:"Required field"
+        required:"Required field",
+        generic:'Generic chat error'
     }
 }

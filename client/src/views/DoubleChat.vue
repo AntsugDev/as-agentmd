@@ -10,8 +10,8 @@ const {t} = useI18n()
 const isLoading = ref(false)
 let messages = ref<any>({})
 let errors = ref<any>({})
+let errorGeneral = ref<null|string>(null)
 const selectedModel = ref([])
-const formError = ref(null)
 const prompt = ref(null)
 const modelItems = ref([])
 const loadModel = ref(false)
@@ -36,7 +36,9 @@ const validate = computed(() => {
 })
 
 const submitMessage = async () => {
+  //todo
   try {
+    errorGeneral.value = null
     isLoading.value = true;
     const f = new FormData()
     if (validate.value) {
@@ -74,6 +76,7 @@ const submitMessage = async () => {
 
   } catch (err: any) {
     console.error("Form submit exc", err)
+    errorGeneral.value = err.response.data?.error ?? t('double_chat.generic')
   } finally {
     isLoading.value = false
   }
@@ -158,6 +161,11 @@ onMounted(() => {
       <div class="panel-title">
         <h2>{{ t('home.conversation') }}</h2>
       </div>
+
+      <div v-if="Object.keys(messages).length === 0" class="empty-state">
+        {{ t('home.emptyConversation') }}
+      </div>
+      <pre>errors: {{errors}}</pre>
       <v-skeleton-loader v-if="isLoading" type="article, actions"/>
       <template v-else>
         <div class="d-flex flex-row justify-space-between gap-3">
@@ -189,8 +197,8 @@ onMounted(() => {
     </v-sheet>
     <v-sheet class="panel chat-panel" rounded="lg" border>
 
-      <v-alert v-if="formError" type="error" variant="tonal" density="comfortable">
-        {{ formError }}
+      <v-alert v-if="errorGeneral" type="error" variant="tonal" density="comfortable">
+        {{ errorGeneral }}
       </v-alert>
       <v-textarea
           v-model="prompt"
@@ -320,6 +328,7 @@ onMounted(() => {
   font-size: 0.96rem;
   line-height: 1.6;
   overflow-x: auto;
+  width: 85%;
 }
 
 .message-item--assistant {
