@@ -8,9 +8,11 @@ import {MistralClass} from "../api/MistralClass.js";
 import dayjs from "dayjs";
 import {ChatFe} from "../fe/ChatFe.js";
 import fs from "fs/promises";
-import pdf from 'pdf-parse';
+import {PDFParse} from 'pdf-parse';
 import mammoth from 'mammoth';
-import * as XLSX from 'xlsx';
+import _xlsx from 'xlsx';
+
+const XLSX = (_xlsx as any).default || _xlsx;
 
 export const instruction = `You are an AI agent specializing in software development, operating in a terminal environment. CORE RULES: 1. **Language**: ALWAYS respond in the language of the user's request. 2. **Format**: Use clean, well-structured Markdown (headings, lists, code blocks). 3. **Conciseness**: Be direct and concise. Get straight to the point without digressions. 4. **Focus**: Stay focused on the original request. If the user strays too far from the initial topic, kindly ask if they prefer to: - Continue in the new direction - Return to the original topic - Start a new conversation 5. **Code**: When providing code, include: - An explanation before the code - The code in Markdown blocks with the language specified (e.g., \`\`\`python) - Usage or output examples where helpful 6. **Assumptions**: If details needed to answer are missing, make reasonable assumptions but **clearly state them** to the user. 7. **Terminal**: Keep in mind that the user is working in a terminal environment, so: - Suggest commands ready for copy-pasting - Avoid references to graphical user interfaces (GUIs) - Consider cross-platform compatibility (Linux/macOS/Windows) where appropriate 8. **Limitations**: If you do not know something or the request falls outside your expertise, admit it honestly.`
 export const wait = (): Ora => {
@@ -130,32 +132,42 @@ export const getProviderModelUtility = async (p: string | null, msg: string | an
 
 }
 
-export const getContent = async (mimeType: string, path: string) => {
+export const getContent = async (filePath: string, ext: string) => {
     try {
-        const buffer = await fs.readFile(path)
-        console.log(mimeType)
-        switch (mimeType) {
-            case 'application/pdf':
-                const pdfData = await pdf(buffer);
-                let tPdf = pdfData.text;
-                return Buffer.from(tPdf, 'utf-8');
-            case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-                const result = await mammoth.extractRawText({path: path});
-                let tDocs = result.value;
-                return Buffer.from(tDocs, 'utf-8');
-            case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
-            case 'application/vnd.ms-excel':
-            case 'text/csv':
-                const workbook = XLSX.readFile(path);
+        switch (ext) {
+            case 'pdf': {
+                const buffer = await fs.readFile(filePath);
+                const parser = new PDFParse({data: buffer})
+                try {
+                    const pdfData = await parser.getText();
+                    return pdfData.text;
+                } finally {
+                    if (typeof parser.destroy === 'function') await parser.destroy();
+                }
+            }
+            case 'docx': {
+                const result = await mammoth.extractRawText({path: filePath});
+                return result.value;
+            }
+            case 'xlsx':
+            case 'xls':
+            case 'csv': {
+                const workbook = XLSX.readFile(filePath);
                 const sheetName = workbook.SheetNames[0];
                 const sheet = workbook.Sheets[sheetName];
-                const tXlsx = XLSX.utils.sheet_to_csv(sheet);
-                return Buffer.from(tXlsx, 'utf-8');
+                const rows: any[][] = XLSX.utils.sheet_to_json(sheet, {header: 1});
+                return JSON.stringify(rows);
+            }
+            case 'txt':
+            case 'md': {
+                const textBuffer = await fs.readFile(filePath, 'utf-8');
+                return textBuffer;
+            }
+            default:
+                throw new Error(`Estensione non riconosciuta (${ext}).`)
         }
-
-        return buffer;
     } catch (err: any) {
-        console.log('Read file exception', err)
+        console.log('Read file exception', err);
         throw err;
     }
 }

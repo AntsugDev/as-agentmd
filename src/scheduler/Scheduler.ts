@@ -1,5 +1,6 @@
 import Database from "better-sqlite3";
 import {SqlDb} from "../database/database.js";
+import {Chunks} from "./chunks.js";
 
 export class Scheduler {
 
@@ -65,13 +66,17 @@ export class Scheduler {
         }
     }
 
-    public static worker(db: Database.Database | undefined, data: any) {
+    public static async worker(db: Database.Database | undefined, data: any) {
         try {
             if (!db) throw new Error("Database not found")
             const retry = this.retry(db, data.ID);
-            console.log(retry)
             if (retry) {
                 this.update(db, data.ID)
+                if(['xlsx','xls','csv'].includes(data.EXT)) {
+                    await Chunks.data_chunk(JSON.parse(data.CONTENT),data.ID)
+                }else{
+                    await Chunks.text_chunk(data.CONTENT,data.ID)
+                }
                 // todo lavorazione dei chunks
             }
         } catch (err: any) {

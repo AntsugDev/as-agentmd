@@ -449,35 +449,32 @@ export class ApiFe {
             model: string,
         }>, resp: Response) => {
             try {
-                console.log('ok entro nell\'api rag ...')
                 const files = req.files as Express.Multer.File[] || [];
                 const argument = req.body.argument
                 const model = req.body.model
-                const keys = ['FILE_NAME', 'CONTENT', 'TAG', 'STATUS_ID', 'MODEL_USED', 'MIME_TYPE']
+                const keys = ['FILE_NAME', 'CONTENT', 'TAG', 'STATUS_ID', 'MODEL_USED', 'MIME_TYPE', 'EXT']
                 let last: any[] = []
                 const status = SqlDb._status(db);
                 for (let i = 0; i < files.length; i++) {
                     const ele: any = files[i]
                     const mime_type = ele.mimetype
-                    const content = await getContent(mime_type, ele.path)
-
                     const name = ele.originalname;
-                    /*
-                     if(content && name){
-                         const values = [name,content,argument, status, model,mime_type]
-                         const l:any = SqlDb.insert(db,'FILES',keys,values)
-                         if(l) last.push(l)
+                    const ext = name.toString().split('.')[(name.toString().split('.').length -1)]
+                    const content = await getContent(ele.path,ext)
+
+                     if (content && name) {
+                         const values = [name, content, argument, status, model, mime_type,ext]
+                         const l: any = SqlDb.insert(db, 'FILES', keys, values)
+                         if (l) last.push(l)
                      }
 
-                     */
                 }
-                last.forEach((ele,index) => {
-                 console.log(`Start task number ${index+1}, from api ...`)
-                 queueMicrotask(() => Scheduler.worker(db,ele))
+                last.forEach((ele, index) => {
+                    queueMicrotask(() => Scheduler.worker(db, ele))
                 })
                 // if(last.length === 0) throw  new Error("Nessuna riga creata")
                 return resp.json({
-                    last_insert: last,
+                    queue: last.length,
                     status_insert: 'pending',
                     message: "Ok, in lavorazione."
                 })
