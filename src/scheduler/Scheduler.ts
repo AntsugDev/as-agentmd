@@ -13,25 +13,40 @@ export class Scheduler {
         if (!db) return;
         this.db = db
         this.statusIn = [SqlDb._status(this.db), SqlDb._status(this.db, 'ko')]
-        this.queue = this.search()
-        setInterval(() => {
-            const now = dayjs();
-            console.log(`[${now.format('YYYY-MM-DD HH:mm:ss')}] Scheduler chunks is worked (${(this.queue && Object.keys(this.queue).length > 0 ? 'FULL' : `EMPTY. Next ${now.add(2, 'minutes').format('YYYY-MM-DD HH:mm:ss')})`)}. `)
+        this.init(this.db)
+
+    }
+
+    private init(db: Database.Database | undefined) {
+        try {
+            if (!db) throw new Error("Database not found")
+            this.search()
+            const nowInit = dayjs();
+            console.log(`[${nowInit.format('YYYY-MM-DD HH:mm:ss')}] Scheduler chunks is worked (${(this.queue && Object.keys(this.queue).length > 0 ? 'FULL' : `EMPTY`)}). Next ${nowInit.add(2, 'minutes').format('YYYY-MM-DD HH:mm:ss')} `)
             if (this.queue) {
                 queueMicrotask(() => Scheduler.worker(db, this.queue))
             }
-        }, 120000)
+            setInterval(() => {
+                const now = dayjs();
+                this.search()
+                console.log(`[${now.format('YYYY-MM-DD HH:mm:ss')}] Scheduler chunks is worked (${(this.queue && Object.keys(this.queue).length > 0 ? 'FULL' : `EMPTY`)}).Next between ${now.add(2, 'minutes').format('YYYY-MM-DD HH:mm:ss')} `)
+                if (this.queue) {
+                    queueMicrotask(() => Scheduler.worker(db, this.queue))
+                }
+            }, 120000)
+
+        } catch (err: any) {
+            throw err;
+        }
     }
 
     private search() {
         try {
-            let queue: any | null = null;
             if (this.statusIn && this.statusIn.length > 0 && this.db) {
-                queue = this.db.prepare(`SELECT *
-                                         FROM FILES
-                                         WHERE STATUS_ID in (${this.statusIn.join(',')}) LIMIT 1`).get();
+                this.queue = this.db.prepare(`SELECT *
+                                              FROM FILES
+                                              WHERE STATUS_ID in (${this.statusIn.join(',')}) LIMIT 1`).get();
             }
-            return queue;
         } catch (err: any) {
             console.log('Search files error', err)
             throw err;
@@ -51,8 +66,7 @@ export class Scheduler {
         }
     }
 
-    private static update(db: Database.Database | undefined, id: number, error: boolean = false)
-    {
+    private static update(db: Database.Database | undefined, id: number, error: boolean = false) {
         try {
             if (!db) throw new Error("Database not found")
             if (!error) {
@@ -91,7 +105,7 @@ export class Scheduler {
             console.log('--------------------------------------------------------')
             if (retry) {
                 setTimeout(() => {
-                    console.log(`Task scheduler failed, next try from ${now.add(30,'seconds').format('YYYY-MM-DD HH:mm:ss')} (${err.toString()})`)
+                    console.log(`Task scheduler failed, next try from ${now.add(30, 'seconds').format('YYYY-MM-DD HH:mm:ss')} (${err.toString()})`)
                     queueMicrotask(() => Scheduler.worker(db, data))
                 }, 3000)
             } else {
