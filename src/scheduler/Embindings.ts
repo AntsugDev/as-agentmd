@@ -1,8 +1,8 @@
 import Database from "better-sqlite3";
-import {OllamaApi} from "../api/Ollama.js";
-import {Gemini} from "../api/Gemiin.js";
 import {HuggingFace} from "../api/HuggingFace.js";
 import {_class} from "../index.js";
+import dayjs from "dayjs";
+import {awaitAllCallbacks} from "@langchain/core/callbacks/promises";
 
 export class Embindings {
 
@@ -12,18 +12,17 @@ export class Embindings {
 
     constructor(db: Database.Database | undefined) {
         this.db = db
-        this.search()
-        if (this.embeddings) {
-            for (let i = 0; i < this.embeddings.length; i++) {
-                const task = this.embeddings[i]
-                if (this.polling) {
-                    clearTimeout(this.polling)
-                    this.polling = null;
+        setInterval(() => {
+            this.search()
+            console.log(`[${dayjs().format('YYYY-MM-DD HH:mm:ss')}] Scheduler embeddings work ... find nr. row ${(this.embeddings.length)}`)
+            if (this.embeddings) {
+                for (let i = 0; i < this.embeddings.length; i++) {
+                    const task = this.embeddings[i]
+                    queueMicrotask(() => Embindings.worker(this.db, task))
                 }
-                this.polling = setTimeout(() => queueMicrotask(() => Embindings.worker(this.db, task)), 10000)
             }
+        }, 180000)
 
-        }
     }
 
     private static models(db: Database.Database | undefined, idFile: number) {
@@ -42,7 +41,6 @@ export class Embindings {
     private search() {
         try {
             this.embeddings = this.db?.prepare("SELECT * FROM CHUNKS WHERE STATUS in (0,2)").all()
-
         } catch (err: any) {
             console.log("Eccezione ricerca chuncks per embindings", err)
             throw err;
@@ -62,7 +60,7 @@ export class Embindings {
     private static update(db: Database.Database | undefined, id: number, terminate: number = 0) {
         try {
             if (!db) throw new Error("Database not found")
-            db.prepare("UPDATE CHUNKS SET RETRY_COUNT = (SELECT F.RETRY_COUNT+1 FROM CHUNKS F WHERE F.ID = ? ), UPDATED_AT = datetime('now'), STATUS_ID = ?").run([
+            db.prepare("UPDATE CHUNKS SET RETRY_COUNT = (SELECT F.RETRY_COUNT+1 FROM CHUNKS F WHERE F.ID = ? ), UPDATED_AT = datetime('now'), STATUS = ?").run([
                 id, terminate
             ])
             return true;
@@ -70,12 +68,13 @@ export class Embindings {
             throw err;
         }
     }
-    protected static insert(db: Database.Database | undefined,chunk_id: number, file_id: number, content: any) {
+
+    protected static insert(db: Database.Database | undefined, chunk_id: number, file_id: number, content: any) {
         try {
             if (!db) throw new Error("Database not found")
-            const create = db.prepare("INSERT INTO vss_chunks (chunk_id,file_id, embedding) VALUES (?,?,?))")
+            const create:any|null = db.prepare("INSERT INTO vss_chunks (chunk_id,file_id, embedding) VALUES (?,?,?);")
                 .run([chunk_id, file_id, content]).lastInsertRowid
-            if(create) return this.update(db,chunk_id,1)
+            if (create) return this.update(db, chunk_id, 1)
         } catch (err: any) {
             throw err;
         }
@@ -83,28 +82,32 @@ export class Embindings {
 
     public static async worker(db: Database.Database | undefined, data: any) {
         const retry = this.retry(db, data.ID)
+        const now = dayjs()
         try {
             if (!db) throw new Error("Database not found")
             if (retry) {
-                 const vector = await HuggingFace.embeddings(_class,data.CONTENT)
-                if(vector)
-                   return this.insert(db,data.ID,data.FILE_ID,vector)
-                else{
+                const vector = await HuggingFace.embeddings(_class, data.CONTENT)
+                if (vector)
+                    return this.insert(db, data.ID, data.FILE_ID, vector)
+                else {
                     setTimeout(() => {
-                        this.update(db,data.ID, 0)
-                        queueMicrotask(() => Embindings.worker(db, data))
-                    } ,5000)
+                        this.update(db, data.ID, 0)
+                        queueMicrotask(async () => await Embindings.worker(db, data))
+                    }, 5000)
                 }
             }
         } catch (err: any) {
+            console.log('----------------------EMB-------------------------------')
+            console.log(err)
+            console.log('--------------------------------------------------------')
             if (retry) {
-                console.log(`Microstak(Emb) failed (${data.ID} retry ...`)
                 setTimeout(() => {
-                    this.update(db,data.ID, 0)
-                    queueMicrotask(() => Embindings.worker(db, data))
-                } ,5000)
+                    console.log(`Task scheduler emb failed, next try from ${now.add(30,'seconds').format('YYYY-MM-DD HH:mm:ss')} (${err.toString()})`)
+                    this.update(db, data.ID, 0)
+                    queueMicrotask(async () => await Embindings.worker(db, data))
+                }, 30000)
             } else {
-                console.log(`Microstak(emb) failed (${data.ID} closed queue`)
+                console.log(`Task scheduler emb failed, terminate with this error: ${err.toString()}`)
                 this.update(db, data.ID, 2)
                 return;
             }

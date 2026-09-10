@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import {SqlDb} from "../database/database.js";
 import {Chunks} from "./chunks.js";
+import dayjs from "dayjs";
 
 export class Scheduler {
 
@@ -14,14 +15,13 @@ export class Scheduler {
         this.statusIn = [SqlDb._status(this.db), SqlDb._status(this.db, 'ko')]
         this.queue = this.search()
         setInterval(() => {
-            console.log(`Scheduler check ...queue is :${(this.queue && Object.keys(this.queue).length > 0 ? 'FULL' : 'EMPTY')}`)
+            const now = dayjs();
+            console.log(`[${now.format('YYYY-MM-DD HH:mm:ss')}] Scheduler chunks is worked (${(this.queue && Object.keys(this.queue).length > 0 ? 'FULL' : `EMPTY. Next ${now.add(2, 'minutes').format('YYYY-MM-DD HH:mm:ss')})`)}. `)
             if (this.queue) {
                 queueMicrotask(() => Scheduler.worker(db, this.queue))
             }
-        }, 30000)
-
+        }, 120000)
     }
-
 
     private search() {
         try {
@@ -74,6 +74,7 @@ export class Scheduler {
 
     public static async worker(db: Database.Database | undefined, data: any) {
         const retry = this.retry(db, data.ID);
+        const now = dayjs()
         try {
             if (!db) throw new Error("Database not found")
             if (retry) {
@@ -83,14 +84,18 @@ export class Scheduler {
                 } else {
                     await Chunks.text_chunk(data.CONTENT, data.ID)
                 }
-                // todo lavorazione dei chunks
             }
         } catch (err: any) {
+            console.log('----------------------CHUNKS-------------------------------')
+            console.log(err)
+            console.log('--------------------------------------------------------')
             if (retry) {
-                console.log(`Microstak failed (${data.ID} retry ...`)
-                queueMicrotask(() => Scheduler.worker(db,data))
+                setTimeout(() => {
+                    console.log(`Task scheduler failed, next try from ${now.add(30,'seconds').format('YYYY-MM-DD HH:mm:ss')} (${err.toString()})`)
+                    queueMicrotask(() => Scheduler.worker(db, data))
+                }, 3000)
             } else {
-                console.log(`Microstak failed (${data.ID} closed queue`)
+                console.log(`Task scheduler failed, terminate with this error: ${err.toString()}`)
                 this.update(db, data.ID, true)
                 return;
             }
