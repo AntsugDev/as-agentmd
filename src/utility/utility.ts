@@ -1,5 +1,5 @@
 import ora, {Ora} from "ora";
-import {Ollama} from "../api/Ollama.js";
+import {OllamaApi} from "../api/Ollama.js";
 import {Gemini} from "../api/Gemiin.js";
 import {OpenAiClass} from "../api/OpenAiClass.js";
 import {Claude} from "../api/Claude.js";
@@ -101,7 +101,7 @@ export const getProviderModelUtility = async (p: string | null, msg: string | an
         let _class: any | null = null;
         if (p) {
             if (p.toString().indexOf('ollama') !== -1)
-                _class = new Ollama(files, model);
+                _class = new OllamaApi(files, model);
             else if (p.toString().indexOf('gemini') !== -1)
                 _class = new Gemini(files, model);
             else if (p.toString().indexOf('openai') !== -1)

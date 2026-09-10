@@ -1,4 +1,8 @@
 import Database from "better-sqlite3";
+import {OllamaApi} from "../api/Ollama.js";
+import {Gemini} from "../api/Gemiin.js";
+import {HuggingFace} from "../api/HuggingFace.js";
+import {_class} from "../index.js";
 
 export class Embindings {
 
@@ -61,6 +65,17 @@ export class Embindings {
             db.prepare("UPDATE CHUNKS SET RETRY_COUNT = (SELECT F.RETRY_COUNT+1 FROM CHUNKS F WHERE F.ID = ? ), UPDATED_AT = datetime('now'), STATUS_ID = ?").run([
                 id, terminate
             ])
+            return true;
+        } catch (err: any) {
+            throw err;
+        }
+    }
+    protected static insert(db: Database.Database | undefined,chunk_id: number, file_id: number, content: any) {
+        try {
+            if (!db) throw new Error("Database not found")
+            const create = db.prepare("INSERT INTO vss_chunks (chunk_id,file_id, embedding) VALUES (?,?,?))")
+                .run([chunk_id, file_id, content]).lastInsertRowid
+            if(create) return this.update(db,chunk_id,1)
         } catch (err: any) {
             throw err;
         }
@@ -71,12 +86,23 @@ export class Embindings {
         try {
             if (!db) throw new Error("Database not found")
             if (retry) {
-                const model = this.models(db, data.FILE_ID)
+                 const vector = await HuggingFace.embeddings(_class,data.CONTENT)
+                if(vector)
+                   return this.insert(db,data.ID,data.FILE_ID,vector)
+                else{
+                    setTimeout(() => {
+                        this.update(db,data.ID, 0)
+                        queueMicrotask(() => Embindings.worker(db, data))
+                    } ,5000)
+                }
             }
         } catch (err: any) {
             if (retry) {
                 console.log(`Microstak(Emb) failed (${data.ID} retry ...`)
-                queueMicrotask(() => Embindings.worker(db, data))
+                setTimeout(() => {
+                    this.update(db,data.ID, 0)
+                    queueMicrotask(() => Embindings.worker(db, data))
+                } ,5000)
             } else {
                 console.log(`Microstak(emb) failed (${data.ID} closed queue`)
                 this.update(db, data.ID, 2)

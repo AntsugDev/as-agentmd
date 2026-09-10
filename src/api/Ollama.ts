@@ -1,18 +1,37 @@
 import {callbackApi} from "../utility/api.js";
 import {AgentConfig, ChatText, RawGeminiModel} from "../interface/myInterface.js";
 import {ApiAbstract} from "./ApiAbstract.js";
-import ollama, {Message} from "ollama";
-import {configStore} from "../config.js";
-import Conf from "conf";
+import ollama, {EmbedRequest, EmbedResponse} from "ollama";
 import fs from "fs/promises";
+import {btoa} from "node:buffer";
 
 
-export class Ollama extends ApiAbstract {
+export class OllamaApi extends ApiAbstract {
 
 
-    constructor(files: any | null, model:string|null) {
-        super('ollama', "http://localhost:11434", null, files,model);
+    constructor(files: any | null, model: string | null) {
+        super('ollama', "http://localhost:11434", null, files, model);
     }
+
+    protected async validateModel() {
+        try {
+            const config = this.config
+            if (!config) return false;
+            const models: RawGeminiModel[] = config.get(`providers.ollama.models`)
+            const filter = models.filter((e: RawGeminiModel) => {
+                return e.name.toString().indexOf('bge-m3') !== -1
+            })
+            if (filter.length === 0) {
+                await ollama.pull({model: "bge-m3", stream: false});
+            }
+
+        } catch (err: any) {
+            console.log('Eccezione ollama nella ricerca del modello')
+        }
+    }
+
+
+
 
     // @ts-ignore
     async uri_file(): Promise<any | null> {
@@ -22,13 +41,13 @@ export class Ollama extends ApiAbstract {
                 for (let i = 0; i < this.files.length; i++) {
                     const ele = this.files[i]
                     const content = await fs.readFile(ele.path, 'utf-8')
-                    if(content){
+                    if (content) {
                         image.push(btoa(content))
                     }
                 }
             }
             return {
-                role:'user',images:image
+                role: 'user', images: image
             };
         } catch (err: any) {
             throw err;
@@ -38,13 +57,13 @@ export class Ollama extends ApiAbstract {
     // @ts-ignore
     async chat(text: any[]): null | string | object {
         try {
-            const model =!this.model ?  this.getModelSelect() : this.model
+            const model = !this.model ? this.getModelSelect() : this.model
             if (!model) {
                 console.error("Impossibile estrarre il modello da utilizzare")
                 return null;
             }
             const images = await this.uri_file()
-            if(images && images.images.length > 0)
+            if (images && images.images.length > 0)
                 text.push(images)
 
             let response = await ollama.chat({

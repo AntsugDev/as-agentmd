@@ -4,7 +4,6 @@ import {ApiAbstract} from "./ApiAbstract.js";
 import {instruction} from "../utility/utility.js";
 import {GoogleGenAI} from "@google/genai";
 import mime from 'mime-types';
-import fs from "fs/promises";
 
 export class Gemini extends ApiAbstract {
 
@@ -20,6 +19,7 @@ export class Gemini extends ApiAbstract {
         })
         this.model = !model ? this.getModelSelect() :model
     }
+
 
     // @ts-ignore
     async uri_file(): Promise<any | null> {

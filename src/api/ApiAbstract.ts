@@ -3,25 +3,30 @@ import {AgentConfig, ChatText} from "../interface/myInterface.js";
 import {Message} from "ollama";
 import Conf from "conf";
 import {configStore} from "../config.js";
+import Database from "better-sqlite3";
+import {db} from "../index.js";
+import {files} from "@mistralai/mistralai";
 
 export abstract class ApiAbstract extends DataUtility {
 
     protected provider: string;
     protected endPointModels: string | null;
     protected endPointChat: string | null
-    private config: Conf<AgentConfig> | null;
-    public token:{input:number,output:number};
-    public files:any|null;
-    protected model:string|null;
+    private _config: Conf<AgentConfig> | null;
+    public token: { input: number, output: number };
+    public files: any | null;
+    protected model: string | null;
+    protected db: Database.Database | undefined
 
-    constructor(provider: string, endPointModels: string | null, endPointChat: string | null,files:any|null,model:string|null) {
+    constructor(provider: string, endPointModels: string | null, endPointChat: string | null, files: any | null, model: string | null) {
         super(provider)
+        this.db = db;
         this.provider = provider
         this.endPointChat = endPointChat
         this.endPointModels = endPointModels
-        this.config = configStore;
+        this._config = configStore;
         this.token = {
-            input :0, output: 0
+            input: 0, output: 0
         }
         this.files = files
         this.model = model
@@ -29,8 +34,8 @@ export abstract class ApiAbstract extends DataUtility {
 
     getModelSelect(): string | null {
         try {
-            if(!this.config) throw new Error("Configuration not found");
-            const modelData = this.config.get('modelSelected');
+            if (!this._config) throw new Error("Configuration not found");
+            const modelData = this._config.get('modelSelected');
             if (!modelData) {
                 console.error("Model not selected")
                 return null;
@@ -42,15 +47,19 @@ export abstract class ApiAbstract extends DataUtility {
         }
     }
 
-    // @ts-ignore
+
+    get config(): Conf<AgentConfig> | null {
+        return this._config;
+    }
+
+// @ts-ignore
     abstract async sincro(): Promise<boolean> | boolean
 
 // @ts-ignore
-    abstract async chat(text: any[]): null |string| object
+    abstract async chat(text: any[]): null | string | object
 
     // @ts-ignore
-    abstract async uri_file(): Promise<any|null>
-
+    abstract async uri_file(): Promise<any | null>
 
 }
 

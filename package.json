@@ -24,6 +24,7 @@
   ],
   "dependencies": {
     "@google/genai": "^2.17.1",
+    "@huggingface/transformers": "^4.2.0",
     "@langchain/core": "^1.2.9",
     "@langchain/textsplitters": "^1.0.1",
     "@mistralai/mistralai": "^2.6.1",
