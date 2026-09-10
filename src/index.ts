@@ -3,7 +3,6 @@
 import {Command} from 'commander';
 import {Server} from "./command/Server.js";
 import {SqlDb} from "./database/database.js";
-import {Scheduler} from "./scheduler/Scheduler.js";
 export const db = await new SqlDb().create()
 const program = new Command();
 program

@@ -41,7 +41,6 @@ export class Scheduler {
     private static retry(db: Database.Database | undefined, id: number) {
         try {
             const max = 3;
-            console.log('id',id)
             if (!db) throw new Error("Database not found")
             const check: any = db.prepare("SELECT count(*) as OK FROM FILES WHERE ID = ? AND RETRY_COUNT < ?").get([id, max])
             return check && parseInt(check.OK) === 1;
@@ -52,14 +51,21 @@ export class Scheduler {
         }
     }
 
-    private static update(db: Database.Database | undefined, id: number) {
+    private static update(db: Database.Database | undefined, id: number, error: boolean = false)
+    {
         try {
             if (!db) throw new Error("Database not found")
-            const processing = SqlDb._status(db, 'processing');
-            db.prepare("UPDATE FILES SET RETRY_COUNT = (SELECT F.RETRY_COUNT+1 FROM FILES F WHERE F.ID = ? ), UPDATED_AT = datetime('now'), STATUS_ID = ?").run([
-                id, processing
-            ])
-
+            if (!error) {
+                const processing = SqlDb._status(db, 'processing');
+                db.prepare("UPDATE FILES SET RETRY_COUNT = (SELECT F.RETRY_COUNT+1 FROM FILES F WHERE F.ID = ? ), UPDATED_AT = datetime('now'), STATUS_ID = ?").run([
+                    id, processing
+                ])
+            } else {
+                const ko = SqlDb._status(db, 'ko');
+                db.prepare("UPDATE FILES SET RETRY_COUNT = 0, UPDATED_AT = datetime('now'), STATUS_ID = ?").run([
+                    id, ko
+                ])
+            }
         } catch (err: any) {
             console.log('Update Row failed ', err)
             throw err;
@@ -67,21 +73,27 @@ export class Scheduler {
     }
 
     public static async worker(db: Database.Database | undefined, data: any) {
+        const retry = this.retry(db, data.ID);
         try {
             if (!db) throw new Error("Database not found")
-            const retry = this.retry(db, data.ID);
             if (retry) {
                 this.update(db, data.ID)
-                if(['xlsx','xls','csv'].includes(data.EXT)) {
-                    await Chunks.data_chunk(JSON.parse(data.CONTENT),data.ID)
-                }else{
-                    await Chunks.text_chunk(data.CONTENT,data.ID)
+                if (['xlsx', 'xls', 'csv'].includes(data.EXT)) {
+                    await Chunks.data_chunk(JSON.parse(data.CONTENT), data.ID)
+                } else {
+                    await Chunks.text_chunk(data.CONTENT, data.ID)
                 }
                 // todo lavorazione dei chunks
             }
         } catch (err: any) {
-            console.log('Microtask failed ', err)
-            throw err;
+            if (retry) {
+                console.log(`Microstak failed (${data.ID} retry ...`)
+                queueMicrotask(() => Scheduler.worker(db,data))
+            } else {
+                console.log(`Microstak failed (${data.ID} closed queue`)
+                this.update(db, data.ID, true)
+                return;
+            }
         }
     }
 }

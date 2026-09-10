@@ -3,6 +3,7 @@ import * as sqliteVec from 'sqlite-vec';
 import fs from "fs/promises";
 import path from "path";
 import {Scheduler} from "../scheduler/Scheduler.js";
+import {Embindings} from "../scheduler/Embindings.js";
 
 export class SqlDb {
 
@@ -35,6 +36,7 @@ export class SqlDb {
                 setTimeout(() => {
                     this.init()
                     new Scheduler(this._db)
+                    new Embindings(this._db)
                 }, 3000)
             }
             return this._db;
