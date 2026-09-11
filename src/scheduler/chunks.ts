@@ -33,6 +33,7 @@ export class Chunks {
                 const values = [id, text, this.getToken(text)];
                 SqlDb.insert(db, 'CHUNKS', keys, values)
             })
+            return true;
 
         } catch (err: any) {
             console.log('Eccezione creazione chunks file di testo', err)
@@ -52,6 +53,7 @@ export class Chunks {
                 const values = [id, text, this.getToken(text)];
                 SqlDb.insert(db, 'CHUNKS', keys, values)
             }
+            return true;
         } catch (err: any) {
             console.log('Eccezione creazione chunks excel', err)
             throw err;

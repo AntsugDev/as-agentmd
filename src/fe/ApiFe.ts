@@ -14,6 +14,8 @@ import {unlink} from "node:fs/promises";
 import {SqlDb} from "../database/database.js";
 import {db} from "../index.js";
 import {Scheduler} from "../scheduler/Scheduler.js";
+import {ListData} from "../database/mapping.js";
+import {DataList} from "../database/dataList.js";
 
 
 interface Archive {
@@ -446,27 +448,25 @@ export class ApiFe {
     protected rag_file() {
         this.router.post('/rag/files', [this.isUser, this.isConfig, this.uploadMiddleware], async (req: Request<null, null, {
             argument: string,
-            model: string,
         }>, resp: Response) => {
             try {
                 const files = req.files as Express.Multer.File[] || [];
                 const argument = req.body.argument
-                const model = req.body.model
                 const keys = ['FILE_NAME', 'CONTENT', 'TAG', 'STATUS_ID', 'MODEL_USED', 'MIME_TYPE', 'EXT']
                 let last: any[] = []
-                const status = SqlDb._status(db);
+                const status: number = SqlDb._status(db);
                 for (let i = 0; i < files.length; i++) {
                     const ele: any = files[i]
                     const mime_type = ele.mimetype
                     const name = ele.originalname;
-                    const ext = name.toString().split('.')[(name.toString().split('.').length -1)]
-                    const content = await getContent(ele.path,ext)
+                    const ext = name.toString().split('.')[(name.toString().split('.').length - 1)]
+                    const content = await getContent(ele.path, ext)
 
-                     if (content && name) {
-                         const values = [name, content, argument, status, model, mime_type,ext]
-                         const l: any = SqlDb.insert(db, 'FILES', keys, values)
-                         if (l) last.push(l)
-                     }
+                    if (content && name) {
+                        const values = [name, content, argument, status, null, mime_type, ext]
+                        const l: any = SqlDb.insert(db, 'FILES', keys, values)
+                        if (l) last.push(l)
+                    }
 
                 }
                 last.forEach((ele, index) => {
@@ -479,6 +479,20 @@ export class ApiFe {
                     message: "Ok, in lavorazione."
                 })
 
+            } catch (err: any) {
+                console.log(err)
+                return this.exception(resp, err.toString())
+            }
+        });
+    }
+
+    public rag_list() {
+        this.router.get('/rag/files', [this.isUser, this.isConfig], async (req: Request, resp: Response) => {
+            try {
+                const response:ListData[] =new DataList().table();
+                const dir = path.join(os.tmpdir(),'files')
+                await fs.writeFile(path.join(dir,'rag_list.json'), JSON.stringify(response), 'utf-8')
+                return resp.json(response)
             } catch (err: any) {
                 console.log(err)
                 return this.exception(resp, err.toString())
@@ -505,6 +519,7 @@ export class ApiFe {
             this.download()
             //----RAG---------------
             this.rag_file()
+            this.rag_list()
             //--------------------------
         } catch (err: any) {
             throw err;

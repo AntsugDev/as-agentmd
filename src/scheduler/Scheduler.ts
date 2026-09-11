@@ -2,6 +2,7 @@ import Database from "better-sqlite3";
 import {SqlDb} from "../database/database.js";
 import {Chunks} from "./chunks.js";
 import dayjs from "dayjs";
+import {Files} from "../database/mapping.js";
 
 export class Scheduler {
 
@@ -24,14 +25,14 @@ export class Scheduler {
             const nowInit = dayjs();
             console.log(`[${nowInit.format('YYYY-MM-DD HH:mm:ss')}] Scheduler chunks is worked (${(this.queue && Object.keys(this.queue).length > 0 ? 'FULL' : `EMPTY`)}). Next between ${nowInit.add(2, 'minutes').format('YYYY-MM-DD HH:mm:ss')} `)
             if (this.queue) {
-                queueMicrotask(() => Scheduler.worker(db, this.queue))
+                queueMicrotask(async () => await Scheduler.worker(db, this.queue))
             }
             setInterval(() => {
                 const now = dayjs();
                 this.search()
                 console.log(`[${now.format('YYYY-MM-DD HH:mm:ss')}] Scheduler chunks is worked (${(this.queue && Object.keys(this.queue).length > 0 ? 'FULL' : `EMPTY`)}).Next between ${now.add(2, 'minutes').format('YYYY-MM-DD HH:mm:ss')} `)
                 if (this.queue) {
-                    queueMicrotask(() => Scheduler.worker(db, this.queue))
+                    queueMicrotask(async () => await Scheduler.worker(db, this.queue))
                 }
             }, 120000)
 
@@ -66,11 +67,11 @@ export class Scheduler {
         }
     }
 
-    private static update(db: Database.Database | undefined, id: number, error: boolean = false) {
+    private static update(db: Database.Database | undefined, id: number, error: boolean = false, status:'processing'|'ok'|'ko' ='processing' ) {
         try {
             if (!db) throw new Error("Database not found")
             if (!error) {
-                const processing = SqlDb._status(db, 'processing');
+                const processing = SqlDb._status(db, status);
                 db.prepare("UPDATE FILES SET RETRY_COUNT = (SELECT F.RETRY_COUNT+1 FROM FILES F WHERE F.ID = ? ), UPDATED_AT = datetime('now'), STATUS_ID = ?").run([
                     id, processing
                 ])
@@ -86,18 +87,20 @@ export class Scheduler {
         }
     }
 
-    public static async worker(db: Database.Database | undefined, data: any) {
+    public static async worker(db: Database.Database | undefined, data: Files) {
         const retry = this.retry(db, data.ID);
         const now = dayjs()
         try {
             if (!db) throw new Error("Database not found")
             if (retry) {
                 this.update(db, data.ID)
+                let res:boolean = false;
                 if (['xlsx', 'xls', 'csv'].includes(data.EXT)) {
-                    await Chunks.data_chunk(JSON.parse(data.CONTENT), data.ID)
+                   res =  await Chunks.data_chunk(JSON.parse(data.CONTENT), data.ID)
                 } else {
-                    await Chunks.text_chunk(data.CONTENT, data.ID)
+                   res =  await Chunks.text_chunk(data.CONTENT, data.ID)
                 }
+                if(res) this.update(db, data.ID, false, 'ok')
             }
         } catch (err: any) {
             console.log('----------------------CHUNKS-------------------------------')
@@ -106,7 +109,7 @@ export class Scheduler {
             if (retry) {
                 setTimeout(() => {
                     console.log(`Task scheduler failed, next try from ${now.add(30, 'seconds').format('YYYY-MM-DD HH:mm:ss')} (${err.toString()})`)
-                    queueMicrotask(() => Scheduler.worker(db, data))
+                    queueMicrotask(async () => await Scheduler.worker(db, data))
                 }, 3000)
             } else {
                 console.log(`Task scheduler failed, terminate with this error: ${err.toString()}`)

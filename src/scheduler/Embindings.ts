@@ -2,6 +2,8 @@ import Database from "better-sqlite3";
 import {HuggingFace} from "../api/HuggingFace.js";
 import {_class} from "../index.js";
 import dayjs from "dayjs";
+import {Chunks} from "../database/mapping.js";
+import {DataList} from "../database/dataList.js";
 
 export class Embindings {
 
@@ -21,7 +23,7 @@ export class Embindings {
             this.search()
             console.log(`[${dayjs().format('YYYY-MM-DD HH:mm:ss')}] Scheduler embeddings work, find nr. row ${(this.embeddings.length)}.Next between ${dayjs().add(3, 'minutes').format('YYYY-MM-DD HH:mm:ss')}`)
             if (this.embeddings) {
-                queueMicrotask(() => Embindings.worker(db, this.embeddings))
+                queueMicrotask(async () => await Embindings.worker(db, this.embeddings))
             }
             setInterval(() => {
                 this.search()
@@ -38,16 +40,6 @@ export class Embindings {
             throw err;
         }
     }
-    /*
-    SqliteError: Only integers are allows for primary key values on vss_chunks
-    at Embindings.insert (file:///C:/web/Personali/node/as-agentmd/dist/scheduler/Embindings.js:88:18)
-    at Embindings.worker (file:///C:/web/Personali/node/as-agentmd/dist/scheduler/Embindings.js:105:33)
-    at runNextTicks (node:internal/process/task_queues:65:5)
-    at process.processImmediate (node:internal/timers:453:9) {
-  code: 'SQLITE_ERROR'
-}
-
-     */
 
     private static models(db: Database.Database | undefined, idFile: number) {
         try {
@@ -96,15 +88,15 @@ export class Embindings {
     protected static insert(db: Database.Database | undefined, chunk_id: number, file_id: number, content: any) {
         try {
             if (!db) throw new Error("Database not found")
-            const create: any | null = db.prepare("INSERT INTO vss_chunks (chunk_id,file_id, embedding) VALUES (?,?,?);")
-                .run([chunk_id, file_id, JSON.stringify(content)]).lastInsertRowid
+            const create: any | null = db.prepare("INSERT OR REPLACE INTO vss_chunks (chunk_id,file_id, embedding) VALUES (?,?,?);")
+                .run([BigInt(chunk_id), BigInt(file_id), JSON.stringify(content)]).lastInsertRowid
             if (create) return this.update(db, chunk_id, 1)
         } catch (err: any) {
             throw err;
         }
     }
 
-    public static async worker(db: Database.Database | undefined, data: any) {
+    public static async worker(db: Database.Database | undefined, data: Chunks) {
         const retry = this.retry(db, data.ID)
         const now = dayjs()
         try {

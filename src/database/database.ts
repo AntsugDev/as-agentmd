@@ -4,6 +4,7 @@ import fs from "fs/promises";
 import path from "path";
 import {Scheduler} from "../scheduler/Scheduler.js";
 import {Embindings} from "../scheduler/Embindings.js";
+import {Status} from "./mapping.js";
 
 export class SqlDb {
 
