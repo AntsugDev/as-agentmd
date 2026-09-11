@@ -27,8 +27,13 @@ export class SqlDb {
         }
     }
 
-    public async create() {
+    public async create(block: boolean = false) {
         try {
+            if (block) {
+                new Scheduler(this._db)
+                new Embindings(this._db)
+                return this._db
+            }
             if (!this._db) throw new Error("Database not found");
             const directory = path.join('src/database', `table.sql`)
             const createTable = await fs.readFile(directory, 'utf-8')
@@ -71,7 +76,7 @@ export class SqlDb {
 
             const ins = `INSERT INTO ${table} (${keys.join(', ')})
                          values (${v.join(',')})`;
-            let r: any|null = null
+            let r: any | null = null
             const tmp = db.prepare(ins).run(values).lastInsertRowid
             if (tmp) {
                 r = db.prepare("SELECT * FROM FILES WHERE ID = ?").get(tmp)

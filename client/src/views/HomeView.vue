@@ -16,6 +16,7 @@ const props = defineProps({
 
 const models = ref<AiModel[]>([])
 const selectedModel = ref<string | null>(null)
+const selectedTag = ref<string | null>(null)
 const prompt = ref('')
 const selectedFile = ref([])
 const isLoading = ref(false)
@@ -23,10 +24,25 @@ const messages = ref<any[]>([])
 const formError = ref('')
 
 const modelItems = ref([])
+const tagsItems = ref([])
 const dialog = ref<boolean>(false)
 const snack = inject('snack')
 
 const loadModel = ref<boolean>(false)
+const loadTag = ref<boolean>(false)
+const loadTags = async () => {
+  try {
+    loadTag.value = true
+    const response = await api({
+      url: 'tags', method: 'GET'
+    } as Payload)
+    if (response) tagsItems.value = response.data
+  } catch (err) {
+    console.log(err)
+  } finally {
+    loadTag.value = false
+  }
+}
 const loadModels = async () => {
   try {
     loadModel.value = true
@@ -61,9 +77,11 @@ const nameFile = ref<string | null>(null)
 const token = ref<{ input: number, output: number }>({
   input: 0, output: 0
 })
+const blockChat = ref(false)
 const submitMessage = async () => {
   isLoading.value = true
   formError.value = ''
+  blockChat.value = false;
   const form = new FormData()
 
   if (!selectedModel.value) {
@@ -83,6 +101,8 @@ const submitMessage = async () => {
   selectedFile.value.forEach(e => {
     form.append('files', e)
   })
+  if(selectedTag.value)
+    form.append('tag',selectedTag.value)
 
   try {
     const response = await api({
@@ -97,18 +117,26 @@ const submitMessage = async () => {
       formError.value = response.data.error
       return;
     }
-
     if (response) {
       prompt.value = "";
       let globalMsg: any[] | null = response.data.global
-      const m = new MarkdownIt({html: true});
-      messages.value = globalMsg ? globalMsg.map(e => {
-        return {role: e.role, content: m.render(e.content)}
-      }) : []
-      uuid.value = response.data.uuid
-      time.value = response.data.time
-      status.value = 'next'
-      token.value = response.data.t
+      let errorMsg = globalMsg ? globalMsg.filter(e => {
+        return e.content === 'EXCEPTION'
+      }) : [];
+      if(errorMsg.length > 0){
+        blockChat.value = true;
+        formError.value= t('home.block')
+      }
+      else {
+        const m = new MarkdownIt({html: true});
+        messages.value = globalMsg ? globalMsg.map(e => {
+          return {role: e.role, content: m.render(e.content)}
+        }) : []
+        uuid.value = response.data.uuid
+        time.value = response.data.time
+        status.value = 'next'
+        token.value = response.data.t
+      }
     }
   } catch (e: any) {
     if (e?.response?.data && e?.response?.data?.error)
@@ -156,6 +184,7 @@ const changeModel = async () => {
 }
 const archivia = async () => {
   try {
+    blockChat.value = false;
     isLoading.value = true
     messages.value = []
     uuid.value = null
@@ -164,6 +193,7 @@ const archivia = async () => {
     token.value = {
       input: 0, output: 0
     }
+    selectedTag.value = null
   } catch (err: any) {
     console.error("Archiviazione fallita", err)
   } finally {
@@ -204,6 +234,7 @@ const isAttachement = computed(() => {
 
 onMounted(() => {
   loadModels()
+  loadTags()
 })
 </script>
 
@@ -252,7 +283,37 @@ onMounted(() => {
       <v-alert v-if="formError" type="error" variant="tonal" density="comfortable">
         {{ formError }}
       </v-alert>
+      <v-autocomplete
+          v-model="selectedModel"
+          :model-value="selectedModel"
+          :items="modelItems"
+          item-title="text"
+          item-value="value"
+          :label="t('home.model')"
+          variant="outlined"
+          density="compact"
+          prepend-inner-icon="mdi-brain"
+          hide-details="auto"
+          :loading="loadModel"
+          @update:model-value="changeModel"
+      />
+      <v-autocomplete
+          v-model="selectedTag"
+          :model-value="selectedTag"
+          :items="tagsItems"
+          item-title="TAG"
+          item-value="TAG"
+          :label="t('home.tag')"
+          variant="outlined"
+          density="compact"
+          prepend-inner-icon="mdi-tag"
+          hide-details="auto"
+          :loading="loadTag"
+          class="mt-2"
+      />
+      <v-divider></v-divider>
       <v-textarea
+          class="mt-3"
           v-model="prompt"
           :label="t('home.message')"
           :placeholder="t('home.messagePlaceholder')"
@@ -262,81 +323,60 @@ onMounted(() => {
           hide-details="auto"
           :disabled="isLoading"
           @keydown.ctrl.enter.prevent="submitMessage"
-      >
+      />
+      <div class="d-flex flex-row ga-2 justify-center pa-3" style="align-items: flex-start">
 
-        <template #append>
-          <div class="d-flex flex-column ga-2 justify-end" style="align-items: flex-start">
+        <v-btn
+            color="error"
+            :loading="isLoading"
+            append-icon="mdi-new-box"
+            @click="archivia"
+            :disabled="messages.length === 0"
+            variant="elevated"
+            :alt=" t('home.clear')"
+            :title=" t('home.clear')"
+            class="mr-3"
+        >
+          {{ t('home.clear') }}
+        </v-btn>
 
-            <v-autocomplete
-                v-model="selectedModel"
-                :model-value="selectedModel"
-                :items="modelItems"
-                item-title="text"
-                item-value="value"
-                :label="t('home.model')"
-                variant="outlined"
-                density="compact"
-                prepend-inner-icon="mdi-brain"
-                hide-details="auto"
-                :loading="loadModel"
-                @update:model-value="changeModel"
-            />
+        <v-btn
+            v-if="isAttachement"
+            color="secondary"
+            :loading="isLoading"
+            @click="openDialog"
+            append-icon="mdi-plus"
+            variant="elevated"
+            :alt="t('home.file')"
+            :title="t('home.file')"
+            class="mr-3"
+            :disabled="blockChat"
+        >
+          {{ t('home.file') }}
+        </v-btn>
 
-            <div class="d-flex flex-column">
-              <v-btn
-                  color="primary"
-                  :loading="isLoading"
-                  append-icon="mdi-send"
-                  @click="submitMessage"
-                  density="compact"
-                  variant="elevated"
-                  :alt="(isLoading ? t('home.waiting')  : t('home.start'))"
-                  :title="(isLoading ? t('home.waiting')  : t('home.start'))"
-                  class="mb-3"
-              >
-                {{ t('home.start') }}
-              </v-btn>
+        <v-btn
+            color="primary"
+            :loading="isLoading"
+            append-icon="mdi-send"
+            @click="submitMessage"
+            variant="elevated"
+            :alt="(isLoading ? t('home.waiting')  : t('home.start'))"
+            :title="(isLoading ? t('home.waiting')  : t('home.start'))"
+            :disabled="blockChat"
+        >
+          {{ t('home.start') }}
+        </v-btn>
 
-              <v-btn
-                  v-if="isAttachement"
-                  color="secondary"
-                  :loading="isLoading"
-                  @click="openDialog"
-                  append-icon="mdi-plus"
-                  variant="elevated"
-                  :alt="t('home.file')"
-                  :title="t('home.file')"
-                  class="mb-3"
-              >
-                {{ t('home.file') }}
-              </v-btn>
 
-              <v-btn
-                  color="error"
-                  :loading="isLoading"
-                  append-icon="mdi-new-box"
-                  @click="archivia"
-                  :disabled="messages.length === 0"
-                  density="compact"
-                  variant="elevated"
-                  :alt=" t('home.clear')"
-                  :title=" t('home.clear')"
+        <div class="d-flex flex-row justify-space-around mt-3 pa-2"
+             v-if="(token?.input && token?.output &&token.input > 0 && token.output > 0)">
+          <v-chip color="#CAD5E2" class="mr-2" variant="flat" label>{{ t('home.tokenIn', {t: token.input}) }}
+          </v-chip>
+          <v-chip color="#90A1B9" variant="flat" label>{{ t('home.tokenOut', {t: token.output}) }}</v-chip>
+        </div>
 
-              >
-                {{ t('home.clear') }}
-              </v-btn>
-              <div class="d-flex flex-row justify-space-around mt-3 pa-2"
-                   v-if="(token?.input && token?.output &&token.input > 0 && token.output > 0)">
-                <v-chip color="#CAD5E2" class="mr-2" variant="flat" label>{{ t('home.tokenIn', {t: token.input}) }}
-                </v-chip>
-                <v-chip color="#90A1B9" variant="flat" label>{{ t('home.tokenOut', {t: token.output}) }}</v-chip>
-              </div>
-
-            </div>
-          </div>
-        </template>
-
-      </v-textarea>
+      </div>
 
       <div class="input-row">
 

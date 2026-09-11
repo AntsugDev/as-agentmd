@@ -11,6 +11,8 @@ import fs from "fs/promises";
 import {PDFParse} from 'pdf-parse';
 import mammoth from 'mammoth';
 import _xlsx from 'xlsx';
+import {HuggingFace} from "../api/HuggingFace.js";
+import {_class} from "../index.js";
 
 const XLSX = (_xlsx as any).default || _xlsx;
 
@@ -95,7 +97,7 @@ export const providerModels = async (models: string[] | null, status: 'init' | '
 }
 
 
-export const getProviderModelUtility = async (p: string | null, msg: string | any[], input: string | null, files: any | null = null, model: string | null): Promise<any | null> => {
+export const getProviderModelUtility = async (p: string | null, msg: string | any[], input: string | null, files: any | null = null, model: string | null, rag?:string|null): Promise<any | null> => {
     try {
 
         let _class: any | null = null;
@@ -103,7 +105,7 @@ export const getProviderModelUtility = async (p: string | null, msg: string | an
             if (p.toString().indexOf('ollama') !== -1)
                 _class = new OllamaApi(files, model);
             else if (p.toString().indexOf('gemini') !== -1)
-                _class = new Gemini(files, model);
+                _class = new Gemini(files, model, (rag ? rag : null));
             else if (p.toString().indexOf('openai') !== -1)
                 _class = new OpenAiClass(files, model);
             else if (p.toString().indexOf('claude') !== -1)
@@ -169,6 +171,13 @@ export const getContent = async (filePath: string, ext: string) => {
     } catch (err: any) {
         console.log('Read file exception', err);
         throw err;
+    }
+}
+export const createVector = async (content:any):Promise<number[]> => {
+    try{
+        return  await HuggingFace.embeddings(_class, content)
+    }catch (err:any){
+        throw  err;
     }
 }
 

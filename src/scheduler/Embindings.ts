@@ -3,7 +3,7 @@ import {HuggingFace} from "../api/HuggingFace.js";
 import {_class} from "../index.js";
 import dayjs from "dayjs";
 import {Chunks} from "../database/mapping.js";
-import {DataList} from "../database/dataList.js";
+import {createVector} from "../utility/utility.js";
 
 export class Embindings {
 
@@ -102,7 +102,7 @@ export class Embindings {
         try {
             if (!db) throw new Error("Database not found")
             if (retry) {
-                const vector = await HuggingFace.embeddings(_class, data.CONTENT)
+                const vector = await createVector(data.CONTENT)
                 if (vector)
                     return this.insert(db, data.ID, data.FILE_ID, vector)
                 else {

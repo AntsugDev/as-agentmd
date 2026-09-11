@@ -4,7 +4,7 @@ import {AgentConfig, ProvidersInt, RawGeminiModel} from "../interface/myInterfac
 import Conf from "conf";
 import {Request, NextFunction, Response} from "express"
 import {exec} from 'child_process';
-import {getContent, getProviderModelUtility, providerModels} from "../utility/utility.js";
+import {createVector, getContent, getProviderModelUtility, providerModels} from "../utility/utility.js";
 import {ChatFe} from "./ChatFe.js";
 import * as os from "node:os";
 import path from "path";
@@ -16,6 +16,7 @@ import {db} from "../index.js";
 import {Scheduler} from "../scheduler/Scheduler.js";
 import {ListData} from "../database/mapping.js";
 import {DataList} from "../database/dataList.js";
+import {Rag} from "../utility/Rag.js";
 
 
 interface Archive {
@@ -260,6 +261,16 @@ export class ApiFe {
         })
     }
 
+    protected tags() {
+        this.router.get('/tags', [this.isUser, this.isConfig], (req: Request<{ model: string }>, resp: Response) => {
+            try {
+                return resp.json(db?.prepare("SELECT * FROM TAGS").all() ?? []);
+            } catch (err: any) {
+                return this.exception(resp, err.toString())
+            }
+        })
+    }
+
     protected chat() {
         this.router.post('/chat/:status', [this.isUser, this.isConfig, this.uploadMiddleware], async (req: Request<{
             status: 'init' | 'next'
@@ -267,7 +278,8 @@ export class ApiFe {
             message: string,
             uuid: string | null,
             time: string | null,
-            models?: string | null
+            models?: string | null,
+            tag?: string | null
         }, any, {
             name_file: string | null
         }>, resp: Response) => {
@@ -283,30 +295,49 @@ export class ApiFe {
                 const files = req.files as Express.Multer.File[] || [];
 
                 const nameFile = req.query.name_file
-                if (status === 'init') {
-                    const role = provider?.toString().indexOf('gemini') === -1 ? 'system' : 'user'
-                    let s = (status === 'init')
-                    if (role === 'user') s = false
-                    await ChatFe.init(uuid, msg, role, s)
-                } else if (status === 'next')
-                    await ChatFe.user(msg, uuid, nameFile)
-
-                const globalMsg: string | any[] = ChatFe.getFile(uuid)
-                const agent = await getProviderModelUtility(provider, globalMsg, msg, files, null);
-                if (!agent) {
-                    ChatFe.delStorage(uuid)
-                    await ChatFe.del_archive(uuid, time)
-                    return resp.status(422).json(agent)
+                const tag = req.body?.tag ?? null
+                let ragSystem: string | null = null;
+                let goto = false;
+                if (tag) {
+                    ragSystem = await new Rag(msg, tag).result()
+                    if (!ragSystem) goto = true;
                 }
-                ChatFe.assistant(agent.m, uuid, nameFile)
-                time = await ChatFe._archive(globalMsg, uuid, nameFile)
-                return resp.status(200).json({
-                    uuid: uuid, global: globalMsg.filter(e => {
-                        return e.role !== 'system'
-                    }), t: (agent.c?.token ?? null),
-                    time: time,
-                    name_file: nameFile
-                })
+                if (!goto) {
+                    if (status === 'init') {
+                        const role = provider?.toString().indexOf('gemini') === -1 ? 'system' : 'user'
+                        let s = (status === 'init')
+                        if (role === 'user') s = false
+                        await ChatFe.init(uuid, msg, role, s, ragSystem)
+                    } else if (status === 'next')
+                        await ChatFe.user(msg, uuid, nameFile)
+
+                    const globalMsg: string | any[] = ChatFe.getFile(uuid)
+                    const agent = await getProviderModelUtility(provider, globalMsg, msg, files, null, ragSystem);
+                    if (!agent) {
+                        ChatFe.delStorage(uuid)
+                        await ChatFe.del_archive(uuid, time)
+                        return resp.status(422).json(agent)
+                    }
+                    await ChatFe.assistant(agent.m, uuid, nameFile)
+                    time = await ChatFe._archive(globalMsg, uuid, nameFile)
+                    return resp.status(200).json({
+                        uuid: uuid, global: globalMsg.filter(e => {
+                            return e.role !== 'system'
+                        }), t: (agent.c?.token ?? null),
+                        time: time,
+                        name_file: nameFile
+                    })
+                } else {
+                    return resp.status(200).json({
+                        uuid: uuid,
+                        global: [
+                            {role: "user", content: msg},
+                            {role: "assistant", content: "EXCEPTION"},
+                        ], t: null,
+                        time: time,
+                        name_file: nameFile
+                    })
+                }
 
             } catch (err: any) {
                 return this.exception(resp, err.toString())
@@ -489,9 +520,9 @@ export class ApiFe {
     public rag_list() {
         this.router.get('/rag/files', [this.isUser, this.isConfig], async (req: Request, resp: Response) => {
             try {
-                const response:ListData[] =new DataList().table();
-                const dir = path.join(os.tmpdir(),'files')
-                await fs.writeFile(path.join(dir,'rag_list.json'), JSON.stringify(response), 'utf-8')
+                const response: ListData[] = new DataList().table();
+                //const dir = path.join(os.tmpdir(),'files')
+                //await fs.writeFile(path.join(dir,'rag_list.json'), JSON.stringify(response), 'utf-8')
                 return resp.json(response)
             } catch (err: any) {
                 console.log(err)
@@ -499,7 +530,6 @@ export class ApiFe {
             }
         });
     }
-
 
     public api() {
         try {
@@ -520,6 +550,7 @@ export class ApiFe {
             //----RAG---------------
             this.rag_file()
             this.rag_list()
+            this.tags()
             //--------------------------
         } catch (err: any) {
             throw err;

@@ -11,9 +11,11 @@
         compare:"Compare Chats",
     },
     home: {
+        block:'The selected topic does not relate to the request. Create a new chat.',
         title: 'Chat',
         intro: 'Choose a model, write a prompt, and attach a file when needed.',
         model: 'AI model',
+        tag: 'Topics (related to saved files)',
         message: 'Message',
         messagePlaceholder: 'Write your question...',
         attachment: 'Attachment',

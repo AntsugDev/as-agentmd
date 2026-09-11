@@ -34,18 +34,15 @@ export interface Embed{
 
 export interface ListData{
     FILE_ID:number
-    CHUNK_ID:number
-    STATUS:string
     FILE_NAME:string
     PREVIEW_CONTENT_FILE:string
-    LEN_TEXT_FILE:number
-    ALL_FILE_DATA:string
-    CHUNK_CONTENT:string
-    PREVIEW_CONTENT_CHUNCK:string
-    SUCCESS_CHUNK:string
-    TAG:string
+    TAG:string,
     CREATED_AT:string
-    UPDATE_FILES:string
-    UPDATE_CHUNK:string
-    embedding:string
+    UPDATED_AT:string
+    STATUS:string
+}
+
+export interface RagInt{
+    CONTENT:string
+    distance:number
 }

@@ -11,9 +11,11 @@
     compare:"Confronta Chat"
   },
   home: {
+    block:'L\'argomento selezionato non riguarda quanto richiesto.Creare una nuova chat',
     title: 'Chat',
     intro: 'Scegli un modello, scrivi una domanda e allega un file se necessario.',
     model: 'Modello AI',
+    tag: 'Argomenti(relativo ai file salvati)',
     message: 'Messaggio',
     messagePlaceholder: 'Scrivi la tua domanda...',
     attachment: 'Allegato',

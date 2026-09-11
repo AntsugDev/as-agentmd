@@ -11,8 +11,8 @@ export class Gemini extends ApiAbstract {
 
     protected ai: any;
 
-    constructor(files: any | null,model:string|null) {
-        super('gemini', `https://generativelanguage.googleapis.com/v1beta/models?key=`, `https://generativelanguage.googleapis.com/v1beta/interactions?key=`, files,model);
+    constructor(files: any | null,model:string|null, rag?:string|null) {
+        super('gemini', `https://generativelanguage.googleapis.com/v1beta/models?key=`, `https://generativelanguage.googleapis.com/v1beta/interactions?key=`, files,model, (rag ? rag : null));
         this.prevousGemini = null;
         this.ai = new GoogleGenAI({
             apiKey: this.extraApiKey()
@@ -66,8 +66,11 @@ export class Gemini extends ApiAbstract {
             })
             if (fileData.length > 0)
                 input.push(...fileData)
+            let system = instruction;
+            if(this.rag) system += `\n---CONTEXT FROM LOCAL DOCUMENTS---\n ${this.rag}`
             const response = await this.ai.interactions.create({
-                model: this.model, system_instruction: instruction,
+                model: this.model,
+                system_instruction: system,
                 input: input,
                 previous_interaction_id: this.prevousGemini,
                 generation_config: {
@@ -86,7 +89,6 @@ export class Gemini extends ApiAbstract {
                 if (contents) {
                     return contents;
                 }
-
             }
             return null;
         } catch (err: any) {

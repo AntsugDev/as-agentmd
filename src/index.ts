@@ -4,7 +4,7 @@ import {Command} from 'commander';
 import {Server} from "./command/Server.js";
 import {SqlDb} from "./database/database.js";
 import {HuggingFace} from "./api/HuggingFace.js";
-export const db = await new SqlDb().create()
+export const db = await new SqlDb().create(true)
 export const _class = await HuggingFace.instance()
 const program = new Command();
 program

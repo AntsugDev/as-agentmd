@@ -34,11 +34,14 @@ export class ChatFe {
         }
     }
 
-    public static async init(uuid: string, msg: string | null, role: 'user' | 'system', status: boolean): Promise<void> {
+    public static async init(uuid: string, msg: string | null, role: 'user' | 'system', status: boolean, rag?:string|null): Promise<void> {
         try {
             let content = instruction
             if (role === 'user')
                 content = msg ? msg : ""
+            else {
+                if(rag) content +=  `---CONTEXT FROM LOCAL DOCUMENTS--- ${rag}`
+            }
             const i: ChatMessage[] = [{
                 role: role, content: content
             }]

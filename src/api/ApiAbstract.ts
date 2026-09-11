@@ -17,8 +17,9 @@ export abstract class ApiAbstract extends DataUtility {
     public files: any | null;
     protected model: string | null;
     protected db: Database.Database | undefined
+    protected rag:string|null = null
 
-    constructor(provider: string, endPointModels: string | null, endPointChat: string | null, files: any | null, model: string | null) {
+    constructor(provider: string, endPointModels: string | null, endPointChat: string | null, files: any | null, model: string | null, rag?:string|null) {
         super(provider)
         this.db = db;
         this.provider = provider
@@ -30,6 +31,7 @@ export abstract class ApiAbstract extends DataUtility {
         }
         this.files = files
         this.model = model
+        if(rag) this.rag = rag
     }
 
     getModelSelect(): string | null {
