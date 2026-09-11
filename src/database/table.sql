@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS CHUNKS
     );
 
 CREATE VIRTUAL TABLE IF NOT EXISTS vss_chunks USING vec0(
-    chunk_id INTEGER PRIMARY KEY,
+    chunk_id INTEGER,
     file_id INTEGER,
     embedding float[384]
 );

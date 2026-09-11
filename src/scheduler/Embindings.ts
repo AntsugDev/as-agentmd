@@ -38,6 +38,16 @@ export class Embindings {
             throw err;
         }
     }
+    /*
+    SqliteError: Only integers are allows for primary key values on vss_chunks
+    at Embindings.insert (file:///C:/web/Personali/node/as-agentmd/dist/scheduler/Embindings.js:88:18)
+    at Embindings.worker (file:///C:/web/Personali/node/as-agentmd/dist/scheduler/Embindings.js:105:33)
+    at runNextTicks (node:internal/process/task_queues:65:5)
+    at process.processImmediate (node:internal/timers:453:9) {
+  code: 'SQLITE_ERROR'
+}
+
+     */
 
     private static models(db: Database.Database | undefined, idFile: number) {
         try {

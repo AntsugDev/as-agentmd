@@ -22,7 +22,7 @@ export class Scheduler {
             if (!db) throw new Error("Database not found")
             this.search()
             const nowInit = dayjs();
-            console.log(`[${nowInit.format('YYYY-MM-DD HH:mm:ss')}] Scheduler chunks is worked (${(this.queue && Object.keys(this.queue).length > 0 ? 'FULL' : `EMPTY`)}). Next ${nowInit.add(2, 'minutes').format('YYYY-MM-DD HH:mm:ss')} `)
+            console.log(`[${nowInit.format('YYYY-MM-DD HH:mm:ss')}] Scheduler chunks is worked (${(this.queue && Object.keys(this.queue).length > 0 ? 'FULL' : `EMPTY`)}). Next between ${nowInit.add(2, 'minutes').format('YYYY-MM-DD HH:mm:ss')} `)
             if (this.queue) {
                 queueMicrotask(() => Scheduler.worker(db, this.queue))
             }
