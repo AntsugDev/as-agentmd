@@ -4,20 +4,32 @@ import {AxiosHeaders} from "axios";
 import {RawGeminiModel} from "../interface/myInterface.js";
 import dayjs from "dayjs";
 import fs from "fs";
+import * as fs_promise from "fs/promises";
 import {instruction} from "../utility/utility.js";
 import OpenAI from "openai";
+import {storage_put} from "../utility/storage.js";
 
 export class OpenAiClass extends ApiAbstract {
 
     protected ai: any | null;
+    protected fromDeepSeek:boolean = false;
+    protected apiKey:any|null;
 
-    constructor(files: any | null, model: string | null) {
-        super('openai', 'https://api.openai.com/v1/models', 'https://api.openai.com/v1/chat/completions', files, model);
+    constructor(files: any | null, model: string | null, fromDeepSeek:boolean = false) {
+        super((!fromDeepSeek ? 'openai' : 'openai-deep-seek'), 'https://api.openai.com/v1/models', 'https://api.openai.com/v1/chat/completions', files, model);
+        this.fromDeepSeek = fromDeepSeek
         this.model = null;
         this.model = !model ? this.getModelSelect() : model
+        this.apiKey = fromDeepSeek ?  (this.config?.get('providers.deep-seek.apiKey') ?? null) : this.extraApiKey()
+        if(!this.fromDeepSeek)
         this.ai = new OpenAI({
-            apiKey: this.extraApiKey()
+            apiKey: this.apiKey
         })
+        else
+            this.ai = new OpenAI({
+                apiKey: this.apiKey,
+                baseURL: 'https://api.deepseek.com'
+            })
     }
 
     // @ts-ignore
@@ -102,8 +114,6 @@ export class OpenAiClass extends ApiAbstract {
                 input.push({
                     role: 'assistant', content: assistant
                 })
-
-
             const options = {
                 model: this.model,
                 instructions: instruction,
@@ -118,20 +128,50 @@ export class OpenAiClass extends ApiAbstract {
                     input: input, output: output
                 }
             }
-
             if (response.output_text)
                 return response.output_text ?? "Errore di sistema";
             return null;
 
         } catch (err: any) {
-            throw new Error(`OpenAI exception ${JSON.stringify(err)}`);
+            throw err;
+        }
+    }
+    protected async sincro_deep_seek(){
+        try{
+            if (!this.ai) throw new Error("Deep seek - openAi not instance.")
+            let $models: RawGeminiModel[] = []
+            const modelCsv = await fs_promise.readFile('./src/api/openai_models.csv', 'utf-8');
+            const explode = modelCsv.toString().split('\n')
+            for (let i = 1; i < explode.length; i++) {
+                if (explode[i] !== '') {
+                    const row = explode[i].split(';')
+                    $models.push({
+                        name: row[0],
+                        displayName: row[1],
+                        description: row[2],
+                        inputTokenLimit: parseInt(row[3]),
+                        outputTokenLimit: parseInt(row[4]),
+                        version: null
+                    })
+                }
+            }
+            if ($models.length > 0) {
+                this.setModels($models)
+                console.log("Deep seek - openAi models update")
+                return true;
+            } else {
+                console.log("Deep seek - openAi models not found or exception system")
+                return false;
+            }
+
+        }catch (err:any){
+            throw err;
         }
     }
 
-    async sincro(): Promise<boolean> {
-        try {
-            this.preProviderInstance();
-            const key = this.extraApiKey()
+    protected async sincro_openAi(){
+        try{
+            const key = this.apiKey
             const headers: AxiosHeaders = new AxiosHeaders();
             headers.set('Authorization', `Bearer ${key}`)
             headers.set('Content-Type', `application/json`)
@@ -161,16 +201,28 @@ export class OpenAiClass extends ApiAbstract {
             }
             if ($models.length > 0) {
                 this.setModels($models)
-                console.log("OpenAi models update")
+                console.log(`(${this.fromDeepSeek  ? 'OpenAi Deep Seek' : 'OpenAi'}) models update`)
                 return true;
             } else {
-                console.log("OpenAi models not found or exception system")
+                console.log(`(${this.fromDeepSeek  ? 'OpenAi Deep Seek' : 'OpenAi'})  models not found or exception system`)
                 return false;
             }
+        }catch (err:any){
+            throw err;
+        }
+    }
+
+    async sincro(): Promise<boolean> {
+        try {
+            this.preProviderInstance();
+            if(this.fromDeepSeek)
+                return this.sincro_deep_seek()
+            else
+                return this.sincro_openAi()
+
 
         } catch (err: any) {
-            console.error(`Api extract model openai error: ${err.toString()}`)
-            return false;
+            throw err;
         }
     }
 

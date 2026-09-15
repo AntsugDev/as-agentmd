@@ -1,36 +1,27 @@
 import {ApiAbstract} from "./ApiAbstract.js";
-import {AxiosHeaders} from "axios";
-import {callbackApi, Params} from "../utility/api.js";
-import {RawGeminiModel} from "../interface/myInterface.js";
-import dayjs from "dayjs";
-import {instruction} from "../utility/utility.js";
 import {Anthropic} from "@anthropic-ai/sdk";
+import {RawGeminiModel} from "../interface/myInterface.js";
+import {instruction} from "../utility/utility.js";
+import fs from "fs/promises";
 
-export class Claude extends ApiAbstract {
+export class ClaudeThroughDeepSeek extends ApiAbstract {
 
     private anthropic: any | null;
     private apiKey: any | null;
 
-    constructor(files: any | null, model: string | null) {
-        super('claude', 'https://api.anthropic.com/v1/models', 'https://api.anthropic.com/v1/messages', files, model);
+    constructor(files: any | null, model: string | null, rag?: string | null) {
+        super('claude-deep-seek', '', '', files, model, (rag ? rag : null));
         this.apiKey = this.config?.get('providers.deep-seek.apiKey') ?? null
         if (!this.apiKey) this.anthropic = null
         this.anthropic = new Anthropic({
+            baseURL: 'https://api.deepseek.com/anthropic',
             apiKey: this.apiKey
         })
-    }
 
-// @ts-ignore
-    async uri_file(): Promise<any | null> {
-        try {
-            return null;
-        } catch (err: any) {
-            return null;
-        }
     }
 
     // @ts-ignore
-    async chat(text: any[]): string | object | null {
+    async chat(text: any): null | string | object {
         try {
             const model = !this.model ? this.getModelSelect() : this.model
             let system = instruction;
@@ -65,35 +56,43 @@ export class Claude extends ApiAbstract {
         }
     }
 
-    // @ts-ignore
-    async sincro(): Promise<boolean> | boolean {
+    async sincro(): Promise<boolean> {
         try {
             if (!this.anthropic) throw new Error("Deep seek - claude not instance.")
             this.preProviderInstance()
             let $models: RawGeminiModel[] = []
-            for await (const modelInfo of this.anthropic.models.list()) {
-               $models.push({
-                   name: modelInfo.id,
-                   displayName: modelInfo.display_name,
-                   description:null,
-                   inputTokenLimit:modelInfo.max_input_tokens,
-                   outputTokenLimit: null,
-                   version:modelInfo.created_at
-               })
+            const modelCsv = await fs.readFile('./src/api/modelli_claude.csv', 'utf-8');
+            const explode = modelCsv.toString().split('\n')
+            for (let i = 1; i < explode.length; i++) {
+                if (explode[i] !== '') {
+                    const row = explode[i].split(';')
+                    $models.push({
+                        name: row[1],
+                        displayName: row[0],
+                        description: row[2],
+                        inputTokenLimit: null,
+                        outputTokenLimit: null,
+                        version: null
+                    })
+                }
             }
             if ($models.length > 0) {
                 this.setModels($models)
-                console.log("Claude models update")
+                console.log("Deep seek - claude models update")
                 return true;
             } else {
-                console.log("Claude models not found or exception system")
+                console.log("Deep seek - claude models not found or exception system")
                 return false;
             }
-
         } catch (err: any) {
-            console.error(`Api extract model claude error: ${err.toString()}`)
-            return false
+            throw err;
         }
     }
+
+    // @ts-ignore
+    async uri_file(): Promise<any | null> {
+        return null;
+    }
+
 
 }

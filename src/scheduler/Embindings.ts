@@ -21,20 +21,20 @@ export class Embindings {
         try {
             if (!db) throw new Error("Database not found")
             this.search()
-            console.log(`[${dayjs().format('YYYY-MM-DD HH:mm:ss')}] Scheduler embeddings work, find nr. row ${(this.embeddings.length)}.Next between ${dayjs().add(3, 'minutes').format('YYYY-MM-DD HH:mm:ss')}`)
+            console.log(`[${dayjs().format('YYYY-MM-DD HH:mm:ss')}] Scheduler embeddings work, find nr. row ${(this.embeddings.length)}.Next between ${dayjs().add(6, 'minutes').format('YYYY-MM-DD HH:mm:ss')}`)
             if (this.embeddings) {
                 queueMicrotask(async () => await Embindings.worker(db, this.embeddings))
             }
             setInterval(() => {
                 this.search()
-                console.log(`[${dayjs().format('YYYY-MM-DD HH:mm:ss')}] Scheduler embeddings work, find nr. row ${(this.embeddings.length)}.Next between ${dayjs().add(3, 'minutes').format('YYYY-MM-DD HH:mm:ss')} `)
+                console.log(`[${dayjs().format('YYYY-MM-DD HH:mm:ss')}] Scheduler embeddings work, find nr. row ${(this.embeddings.length)}.Next between ${dayjs().add(6, 'minutes').format('YYYY-MM-DD HH:mm:ss')} `)
                 if (this.embeddings) {
                     for (let i = 0; i < this.embeddings.length; i++) {
                         const task = this.embeddings[i]
                         queueMicrotask(() => Embindings.worker(this.db, task))
                     }
                 }
-            }, 180000)
+            }, 360000)
 
         } catch (err: any) {
             throw err;

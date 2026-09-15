@@ -1,0 +1,19 @@
+﻿model_id;model_name;description;max_input_context_tokens;max_output_tokens;status
+gpt-6-astra;GPT-6 Astra;"Modello flagship per i task più complessi: reasoning, coding, computer use, ricerca e creazione di documenti.";1050000;128000;attuale
+gpt-5.6-sol;GPT-5.6 Sol,Flagship GPT-5.6 per lavoro professionale complesso;1050000;128000;attuale
+gpt-5.6;GPT-5.6 (alias);Alias che instrada a GPT-5.6 Sol.;1050000;128000;alias
+gpt-5.6-terra;GPT-5.6 Terra;"Bilancia capacità, costo e velocità. Adatto a workload generali e professionali.";1050000;128000;attuale
+gpt-5.6-luna;GPT-5.6 Luna;Ottimizzato per costi contenuti e workload ad alto volume.;1050000;128000;attuale
+gpt-5.5;GPT-5.5;Modello flagship per coding e lavoro professionale complesso.;1050000;128000;attuale
+gpt-5.5-pro;GPT-5.5 Pro;Versione di GPT-5.5 che usa più compute per risposte più precise e robuste.;1050000;128000;attuale
+gpt-5.4;GPT-5.4;"Modello professionale più economico, orientato a coding e task complessi.";1050000;128000;attuale
+gpt-5.4-pro;GPT-5.4 Pro;Versione di GPT-5.4 con più compute per problemi difficili.;1050000;128000;attuale
+gpt-5.4-mini;GPT-5.4 Mini;"Modello mini per coding, computer use, sub-agents e workload ad alto volume.";400000;128000;attuale
+gpt-5.4-nano;GPT-5.4 nano;"Modello economico per classificazione, estrazione dati, ranking e sub-agents.";400000;128000;attuale
+gpt-5;GPT-5;"Modello reasoning precedente per coding, reasoning e task agentici.";400000;128000;precedente
+gpt-4.1;GPT-4.1;"Modello non-reasoning avanzato, forte in instruction following e tool calling.";1047576;32768;precedente
+gpt-4.1-mini;GPT-4.1 Mini;Versione più piccola e veloce di GPT-4.1.;1047576;32768;precedente
+gpt-4.1-nano;GPT-4.1 nano;Versione più veloce ed economica di GPT-4.1.;1047576;32768;precedente
+gpt-4;GPT-4;"Vecchio modello ad alta capacità, utilizzabile con Chat Completions.";8192;8192;legacy
+chat-latest;Chat Latest;Alias che punta al modello Instant più recente usato in ChatGPT;400000;128000;alias
+gpt-5.6-cyber;GPT-5.6 Cyber;Modello specializzato per ricerca di vulnerabilità e security testing autorizzati;400000;128000;specializzato

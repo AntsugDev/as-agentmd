@@ -23,18 +23,18 @@ export class Scheduler {
             if (!db) throw new Error("Database not found")
             this.search()
             const nowInit = dayjs();
-            console.log(`[${nowInit.format('YYYY-MM-DD HH:mm:ss')}] Scheduler chunks is worked (${(this.queue && Object.keys(this.queue).length > 0 ? 'FULL' : `EMPTY`)}). Next between ${nowInit.add(2, 'minutes').format('YYYY-MM-DD HH:mm:ss')} `)
+            console.log(`[${nowInit.format('YYYY-MM-DD HH:mm:ss')}] Scheduler chunks is worked (${(this.queue && Object.keys(this.queue).length > 0 ? 'FULL' : `EMPTY`)}). Next between ${nowInit.add(5, 'minutes').format('YYYY-MM-DD HH:mm:ss')} `)
             if (this.queue) {
                 queueMicrotask(async () => await Scheduler.worker(db, this.queue))
             }
             setInterval(() => {
                 const now = dayjs();
                 this.search()
-                console.log(`[${now.format('YYYY-MM-DD HH:mm:ss')}] Scheduler chunks is worked (${(this.queue && Object.keys(this.queue).length > 0 ? 'FULL' : `EMPTY`)}).Next between ${now.add(2, 'minutes').format('YYYY-MM-DD HH:mm:ss')} `)
+                console.log(`[${now.format('YYYY-MM-DD HH:mm:ss')}] Scheduler chunks is worked (${(this.queue && Object.keys(this.queue).length > 0 ? 'FULL' : `EMPTY`)}).Next between ${now.add(5, 'minutes').format('YYYY-MM-DD HH:mm:ss')} `)
                 if (this.queue) {
                     queueMicrotask(async () => await Scheduler.worker(db, this.queue))
                 }
-            }, 120000)
+            }, 300000)
 
         } catch (err: any) {
             throw err;

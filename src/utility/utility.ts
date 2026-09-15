@@ -13,8 +13,12 @@ import mammoth from 'mammoth';
 import _xlsx from 'xlsx';
 import {HuggingFace} from "../api/HuggingFace.js";
 import {_class} from "../index.js";
+import {ClaudeThroughDeepSeek} from "../api/ClaudeThroughDeepSeek.js";
+import {logger, storage_append} from "./storage.js";
 
 const XLSX = (_xlsx as any).default || _xlsx;
+
+export let totalToken: number = 0;
 
 export const instruction = `You are an AI agent specializing in software development, operating in a terminal environment. CORE RULES: 1. **Language**: ALWAYS respond in the language of the user's request. 2. **Format**: Use clean, well-structured Markdown (headings, lists, code blocks). 3. **Conciseness**: Be direct and concise. Get straight to the point without digressions. 4. **Focus**: Stay focused on the original request. If the user strays too far from the initial topic, kindly ask if they prefer to: - Continue in the new direction - Return to the original topic - Start a new conversation 5. **Code**: When providing code, include: - An explanation before the code - The code in Markdown blocks with the language specified (e.g., \`\`\`python) - Usage or output examples where helpful 6. **Assumptions**: If details needed to answer are missing, make reasonable assumptions but **clearly state them** to the user. 7. **Terminal**: Keep in mind that the user is working in a terminal environment, so: - Suggest commands ready for copy-pasting - Avoid references to graphical user interfaces (GUIs) - Consider cross-platform compatibility (Linux/macOS/Windows) where appropriate 8. **Limitations**: If you do not know something or the request falls outside your expertise, admit it honestly.`
 export const wait = (): Ora => {
@@ -97,7 +101,7 @@ export const providerModels = async (models: string[] | null, status: 'init' | '
 }
 
 
-export const getProviderModelUtility = async (p: string | null, msg: string | any[], input: string | null, files: any | null = null, model: string | null, rag?:string|null): Promise<any | null> => {
+export const getProviderModelUtility = async (p: string | null, msg: string | any[], input: string | null, files: any | null = null, model: string | null, rag?: string | null): Promise<any | null> => {
     try {
 
         let _class: any | null = null;
@@ -106,11 +110,17 @@ export const getProviderModelUtility = async (p: string | null, msg: string | an
                 _class = new OllamaApi(files, model);
             else if (p.toString().indexOf('gemini') !== -1)
                 _class = new Gemini(files, model, (rag ? rag : null));
-            else if (p.toString().indexOf('openai') !== -1)
-                _class = new OpenAiClass(files, model);
-            else if (p.toString().indexOf('claude') !== -1)
-                _class = new Claude(files, model);
-            else if (p.toString().indexOf('deep-seek') !== -1)
+            else if (p.toString().indexOf('openai') !== -1) {
+                _class = new OpenAiClass(files, model,(p.toString().indexOf('deep-seek') !== -1));
+            } else if (p.toString().indexOf('claude') !== -1) {
+                console.log('claude ...')
+                if (p.toString().indexOf('deep-seek') === -1) {
+                    _class = new Claude(files, model);
+                } else {
+                    console.log('claude da deep seek')
+                    _class = new ClaudeThroughDeepSeek(files, model, (rag ? rag : null))
+                }
+            } else if (p.toString().indexOf('deep-seek') !== -1)
                 _class = new DeepSeek(files, model);
             else if (p.toString().indexOf('mistral') !== -1)
                 _class = new MistralClass(files, model);
@@ -127,8 +137,8 @@ export const getProviderModelUtility = async (p: string | null, msg: string | an
             return {m: chat, c: _class}
         }
         return null;
-    } catch (err) {
-        console.log('getProviderModelUtility exc', err)
+    } catch (err:any) {
+        await logger('EXCEPTION', 'Estrazione Risposta assistant Chat', err.message, 601,err.stack)
         throw err;
     }
 
@@ -173,11 +183,11 @@ export const getContent = async (filePath: string, ext: string) => {
         throw err;
     }
 }
-export const createVector = async (content:any):Promise<number[]> => {
-    try{
-        return  await HuggingFace.embeddings(_class, content)
-    }catch (err:any){
-        throw  err;
+export const createVector = async (content: any): Promise<number[]> => {
+    try {
+        return await HuggingFace.embeddings(_class, content)
+    } catch (err: any) {
+        throw err;
     }
 }
 

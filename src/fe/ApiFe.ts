@@ -4,7 +4,7 @@ import {AgentConfig, ProvidersInt, RawGeminiModel} from "../interface/myInterfac
 import Conf from "conf";
 import {Request, NextFunction, Response} from "express"
 import {exec} from 'child_process';
-import {createVector, getContent, getProviderModelUtility, providerModels} from "../utility/utility.js";
+import {createVector, getContent, getProviderModelUtility, providerModels, totalToken} from "../utility/utility.js";
 import {ChatFe} from "./ChatFe.js";
 import * as os from "node:os";
 import path from "path";
@@ -17,6 +17,13 @@ import {Scheduler} from "../scheduler/Scheduler.js";
 import {ListData} from "../database/mapping.js";
 import {DataList} from "../database/dataList.js";
 import {Rag} from "../utility/Rag.js";
+import {Claude} from "../api/Claude.js";
+import {ClaudeThroughDeepSeek} from "../api/ClaudeThroughDeepSeek.js";
+import {DeepSeek} from "../api/DeepSeek.js";
+import {Gemini} from "../api/Gemiin.js";
+import {MistralClass} from "../api/MistralClass.js";
+import {OllamaApi} from "../api/Ollama.js";
+import {OpenAiClass} from "../api/OpenAiClass.js";
 
 
 interface Archive {
@@ -203,18 +210,18 @@ export class ApiFe {
     protected sincro() {
         this.router.get('/sincro', [this.isUser, this.isConfig], (req: Request, resp: Response) => {
             try {
-                const command = `agentmd sync`
-                const c = exec(command, (error, stdout, stderr) => {
-                    if (error) {
-                        console.error(`Errore nell'esecuzione del comando: ${error.message}`);
-                        return;
-                    }
-                    console.log(`Output del comando: ${stdout}`);
+                queueMicrotask(async () => {
+                    await new Claude(null, null).sincro();
+                    await new ClaudeThroughDeepSeek(null, null).sincro();
+                    await new DeepSeek(null, null).sincro()
+                    await new Gemini(null, null).sincro()
+                    await new MistralClass(null, null).sincro()
+                    new OllamaApi(null, null).sincro()
+                    await new OpenAiClass(null, null).sincro()
+                    await new OpenAiClass(null, null, true).sincro()
                 })
-
                 return resp.json({
                     msg: "La sincronizzazione è stata avviata con successo.",
-                    pid: (c ? c.pid : null)
                 })
             } catch (err: any) {
                 return this.exception(resp, err.toString())
@@ -304,7 +311,11 @@ export class ApiFe {
                 }
                 if (!goto) {
                     if (status === 'init') {
-                        const role = provider?.toString().indexOf('gemini') === -1 ? 'system' : 'user'
+                        if(totalToken > 0) {
+                            // @ts-ignore
+                            totalToken = 0;
+                        }
+                        const role = (provider?.toString().indexOf('gemini') === -1 || provider?.toString().indexOf('claude-deep-seek') === -1)  ? 'system' : 'user'
                         let s = (status === 'init')
                         if (role === 'user') s = false
                         await ChatFe.init(uuid, msg, role, s, ragSystem)
@@ -320,10 +331,16 @@ export class ApiFe {
                     }
                     await ChatFe.assistant(agent.m, uuid, nameFile)
                     time = await ChatFe._archive(globalMsg, uuid, nameFile)
+                    const tToken = (agent.c?.token ?? null);
+                    if(tToken) {
+                        //@ts-ignore
+                        totalToken = totalToken+tToken.input+tToken.output
+                    }
                     return resp.status(200).json({
                         uuid: uuid, global: globalMsg.filter(e => {
                             return e.role !== 'system'
-                        }), t: (agent.c?.token ?? null),
+                        }), t: tToken,
+                        totalToken: totalToken,
                         time: time,
                         name_file: nameFile
                     })
@@ -334,6 +351,7 @@ export class ApiFe {
                             {role: "user", content: msg},
                             {role: "assistant", content: "EXCEPTION"},
                         ], t: null,
+                        totalToken: 0,
                         time: time,
                         name_file: nameFile
                     })

@@ -23,6 +23,7 @@
     "bin"
   ],
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.125.0",
     "@google/genai": "^2.17.1",
     "@huggingface/transformers": "^4.2.0",
     "@langchain/core": "^1.2.9",
@@ -47,7 +48,7 @@
     "multer": "^2.2.0",
     "ollama": "^0.6.3",
     "open": "^11.0.0",
-    "openai": "^7.5.0",
+    "openai": "^7.15.0",
     "ora": "^9.4.1",
     "pdf-parse": "^2.4.5",
     "sqlite-vec": "^0.1.9",
