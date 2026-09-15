@@ -17,7 +17,7 @@ export class DeepSeek extends ApiAbstract{
     }
 
     // @ts-ignore
-    async chat(text: any[]): string | object | null {
+    async chat(text: any[]|string): string | object | null {
        try{
 
            const key = this.extraApiKey()

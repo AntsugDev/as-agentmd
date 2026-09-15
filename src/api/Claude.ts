@@ -30,7 +30,7 @@ export class Claude extends ApiAbstract {
     }
 
     // @ts-ignore
-    async chat(text: any[]): string | object | null {
+    async chat(text: any[]|string): string | object | null {
         try {
             const model = !this.model ? this.getModelSelect() : this.model
             let system = instruction;

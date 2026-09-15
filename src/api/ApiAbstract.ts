@@ -9,6 +9,7 @@ import {files} from "@mistralai/mistralai";
 
 export abstract class ApiAbstract extends DataUtility {
 
+    public previous: string | null = null;
     protected provider: string;
     protected endPointModels: string | null;
     protected endPointChat: string | null
@@ -58,7 +59,7 @@ export abstract class ApiAbstract extends DataUtility {
     abstract async sincro(): Promise<boolean> | boolean
 
 // @ts-ignore
-    abstract async chat(text: any[]): null | string | object
+    abstract async chat(text: any[]|string): null | string | object
 
     // @ts-ignore
     abstract async uri_file(): Promise<any | null>

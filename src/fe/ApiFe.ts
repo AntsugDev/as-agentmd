@@ -337,9 +337,11 @@ export class ApiFe {
                         totalToken = totalToken+tToken.input+tToken.output
                     }
                     return resp.status(200).json({
-                        uuid: uuid, global: globalMsg.filter(e => {
+                        uuid: uuid,
+                        global: globalMsg.filter(e => {
                             return e.role !== 'system'
-                        }), t: tToken,
+                        }),
+                        t: tToken,
                         totalToken: totalToken,
                         time: time,
                         name_file: nameFile

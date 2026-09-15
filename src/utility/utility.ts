@@ -113,11 +113,9 @@ export const getProviderModelUtility = async (p: string | null, msg: string | an
             else if (p.toString().indexOf('openai') !== -1) {
                 _class = new OpenAiClass(files, model,(p.toString().indexOf('deep-seek') !== -1));
             } else if (p.toString().indexOf('claude') !== -1) {
-                console.log('claude ...')
                 if (p.toString().indexOf('deep-seek') === -1) {
                     _class = new Claude(files, model);
                 } else {
-                    console.log('claude da deep seek')
                     _class = new ClaudeThroughDeepSeek(files, model, (rag ? rag : null))
                 }
             } else if (p.toString().indexOf('deep-seek') !== -1)
@@ -131,7 +129,12 @@ export const getProviderModelUtility = async (p: string | null, msg: string | an
             }
         }
         if (_class && p) {
-            const chat = await _class.chat((p.toString().indexOf('gemini') !== -1 ? input : msg))
+            let status = false;
+            if(p?.toString().indexOf('claude-deep-seek') !== -1
+                || p?.toString().indexOf('openai') !== -1
+                || p?.toString().indexOf('gemini') !== -1
+            ) status = true;
+            const chat = await _class.chat((status ? input : msg))
             if (typeof chat === 'object' && chat?.message)
                 throw new Error(chat.message)
             return {m: chat, c: _class}

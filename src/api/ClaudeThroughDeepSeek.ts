@@ -21,7 +21,7 @@ export class ClaudeThroughDeepSeek extends ApiAbstract {
     }
 
     // @ts-ignore
-    async chat(text: any): null | string | object {
+    async chat(text: any[]|string): null | string | object {
         try {
             const model = !this.model ? this.getModelSelect() : this.model
             let system = instruction;

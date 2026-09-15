@@ -7,13 +7,11 @@ import mime from 'mime-types';
 
 export class Gemini extends ApiAbstract {
 
-    public prevousGemini: string | null;
 
     protected ai: any;
 
     constructor(files: any | null,model:string|null, rag?:string|null) {
         super('gemini', `https://generativelanguage.googleapis.com/v1beta/models?key=`, `https://generativelanguage.googleapis.com/v1beta/interactions?key=`, files,model, (rag ? rag : null));
-        this.prevousGemini = null;
         this.ai = new GoogleGenAI({
             apiKey: this.extraApiKey()
         })
@@ -57,7 +55,7 @@ export class Gemini extends ApiAbstract {
 
 
     // @ts-ignore
-    async chat(text: any): null | string | object {
+    async chat(text: any[]|string): null | string | object {
         try {
             const fileData = await this.uri_file();
             let input = [];
@@ -72,14 +70,14 @@ export class Gemini extends ApiAbstract {
                 model: this.model,
                 system_instruction: system,
                 input: input,
-                previous_interaction_id: this.prevousGemini,
+                previous_interaction_id: this.previous,
                 generation_config: {
                     temperature: 0.6,
                 },
             })
             if (response) {
                 const contents = response.output_text
-                this.prevousGemini = response.id
+                this.previous = response.id
                 const usage = response.usage
                 const input = usage.prompt_tokens;
                 const output = usage.completion_tokens;
