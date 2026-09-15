@@ -4,7 +4,7 @@ import {AgentConfig, ProvidersInt, RawGeminiModel} from "../interface/myInterfac
 import Conf from "conf";
 import {Request, NextFunction, Response} from "express"
 import {exec} from 'child_process';
-import {createVector, getContent, getProviderModelUtility, providerModels, totalToken} from "../utility/utility.js";
+import {createVector, dd, getContent, getProviderModelUtility, providerModels, totalToken} from "../utility/utility.js";
 import {ChatFe} from "./ChatFe.js";
 import * as os from "node:os";
 import path from "path";
@@ -286,7 +286,8 @@ export class ApiFe {
             uuid: string | null,
             time: string | null,
             models?: string | null,
-            tag?: string | null
+            tag?: string | null,
+            tt?: number
         }, any, {
             name_file: string | null
         }>, resp: Response) => {
@@ -309,19 +310,18 @@ export class ApiFe {
                     ragSystem = await new Rag(msg, tag).result()
                     if (!ragSystem) goto = true;
                 }
+                let tt = 0;
                 if (!goto) {
                     if (status === 'init') {
-                        if(totalToken > 0) {
-                            // @ts-ignore
-                            totalToken = 0;
-                        }
-                        const role = (provider?.toString().indexOf('gemini') === -1 || provider?.toString().indexOf('claude-deep-seek') === -1)  ? 'system' : 'user'
+                        const role = (provider?.toString().indexOf('gemini') === -1 || provider?.toString().indexOf('claude-deep-seek') === -1) ? 'system' : 'user'
                         let s = (status === 'init')
                         if (role === 'user') s = false
                         await ChatFe.init(uuid, msg, role, s, ragSystem)
-                    } else if (status === 'next')
+                    } else if (status === 'next') {
                         await ChatFe.user(msg, uuid, nameFile)
-
+                        if (req.body?.tt)
+                            tt = (req.body.tt)
+                    }
                     const globalMsg: string | any[] = ChatFe.getFile(uuid)
                     const agent = await getProviderModelUtility(provider, globalMsg, msg, files, null, ragSystem);
                     if (!agent) {
@@ -332,9 +332,9 @@ export class ApiFe {
                     await ChatFe.assistant(agent.m, uuid, nameFile)
                     time = await ChatFe._archive(globalMsg, uuid, nameFile)
                     const tToken = (agent.c?.token ?? null);
-                    if(tToken) {
+                    if (tToken) {
                         //@ts-ignore
-                        totalToken = totalToken+tToken.input+tToken.output
+                        tt = tt + parseInt(tToken.input) + parseInt(tToken.output)
                     }
                     return resp.status(200).json({
                         uuid: uuid,
@@ -342,7 +342,7 @@ export class ApiFe {
                             return e.role !== 'system'
                         }),
                         t: tToken,
-                        totalToken: totalToken,
+                        totalToken: tt,
                         time: time,
                         name_file: nameFile
                     })
@@ -360,6 +360,7 @@ export class ApiFe {
                 }
 
             } catch (err: any) {
+                dd(err)
                 return this.exception(resp, err.toString())
             }
         })

@@ -5,7 +5,7 @@ import {RawGeminiModel} from "../interface/myInterface.js";
 import dayjs from "dayjs";
 import fs from "fs";
 import * as fs_promise from "fs/promises";
-import {instruction} from "../utility/utility.js";
+import {dd, instruction} from "../utility/utility.js";
 import OpenAI from "openai";
 
 export class OpenAiClass extends ApiAbstract {
@@ -58,10 +58,11 @@ export class OpenAiClass extends ApiAbstract {
             throw err;
         }
     }
-    protected async text_openAi(input:string,files:any|null){
-        try{
-            let msg:any[]|string = [];
-            if(files){
+
+    protected async text_openAi(input: string, files: any | null) {
+        try {
+            let msg: any[] | string = [];
+            if (files) {
                 msg = [
                     {
                         role: "user",
@@ -74,40 +75,15 @@ export class OpenAiClass extends ApiAbstract {
                         ],
                     },
                 ]
-            }
-            else msg = input
+            } else msg = input
             const options = {
                 model: this.model,
                 instructions: instruction,
                 previous_response_id: this.previous,
                 input: msg
             }
-            return  await this.ai.responses.create(options)
-
-        }catch (e:any){
-            throw e;
-        }
-    }
-
-    protected text_deep_seek(text:any[], files:any){
-        try{
-
-        }catch (e:any){
-            throw e;
-        }
-    }
-
-
-// @ts-ignore
-    async chat(text: any[]|string): string | object | null {
-        try {
-            if (!this.ai) throw new Error("Openai non instanziato")
-            const files = await this.uri_file()
-
-            const options = await this.text_openAi(text.toString(), files)
-
-            const response = this.fromDeepSeek ? await this.ai.completions.create(options) : await this.ai.responses.create(options)
-            const usage = response.usage
+            const response = await this.ai.responses.create(options)
+            const usage = response?.usage ?? null
             if (usage) {
                 const input = usage.input_tokens;
                 const output = usage.output_tokens;
@@ -120,6 +96,56 @@ export class OpenAiClass extends ApiAbstract {
                 return response.output_text ?? "Errore di sistema";
             return null;
 
+        } catch (e: any) {
+            throw e;
+        }
+    }
+
+    protected async text_deep_seek(text: any[] | string) {
+        try {
+            let input: { role: any; content: any; }[] = [];
+
+            if (Array.isArray(text)) {
+
+                text.map((we: any) => {
+                    input.push({
+                        role: we.role, content: we.content
+                    })
+                })
+                const options = {
+                    model: 'deepseek-chat',
+                    messages: input,
+                    temperature: 0.6,
+                    max_tokens: 1500,
+                }
+                const response = await this.ai.chat.completions.create(options)
+                const usage = response?.usage ?? null
+                if (usage) {
+                    const input = usage.prompt_tokens;
+                    const output = usage.completion_tokens;
+                    this.token = {
+                        input: input, output: output
+                    }
+                }
+                return response?.choices[0]?.message?.content ?? null;
+            }
+            return null;
+
+        } catch (e: any) {
+            throw e;
+        }
+    }
+
+
+// @ts-ignore
+    async chat(text: any[] | string): string | object | null {
+        try {
+            if (!this.ai) throw new Error("Openai non instanziato")
+            const files = await this.uri_file()
+            if (!this.fromDeepSeek)
+                return await this.text_openAi(text.toString(), files)
+            else
+                return await this.text_deep_seek(text);
         } catch (err: any) {
             throw err;
         }

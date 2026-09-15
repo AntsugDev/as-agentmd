@@ -105,16 +105,22 @@ export const getProviderModelUtility = async (p: string | null, msg: string | an
     try {
 
         let _class: any | null = null;
+        let isInput = false;
         if (p) {
             if (p.toString().indexOf('ollama') !== -1)
                 _class = new OllamaApi(files, model);
-            else if (p.toString().indexOf('gemini') !== -1)
+            else if (p.toString().indexOf('gemini') !== -1) {
                 _class = new Gemini(files, model, (rag ? rag : null));
+                isInput= true;
+            }
             else if (p.toString().indexOf('openai') !== -1) {
-                _class = new OpenAiClass(files, model,(p.toString().indexOf('deep-seek') !== -1));
+                if(p.toString().indexOf('deep-seek') === -1)
+                    isInput = true
+                _class = new OpenAiClass(files, model, !isInput);
             } else if (p.toString().indexOf('claude') !== -1) {
                 if (p.toString().indexOf('deep-seek') === -1) {
                     _class = new Claude(files, model);
+                    isInput = true
                 } else {
                     _class = new ClaudeThroughDeepSeek(files, model, (rag ? rag : null))
                 }
@@ -129,19 +135,14 @@ export const getProviderModelUtility = async (p: string | null, msg: string | an
             }
         }
         if (_class && p) {
-            let status = false;
-            if(p?.toString().indexOf('claude-deep-seek') !== -1
-                || p?.toString().indexOf('openai') !== -1
-                || p?.toString().indexOf('gemini') !== -1
-            ) status = true;
-            const chat = await _class.chat((status ? input : msg))
+            const chat = await _class.chat((isInput ? input : msg))
             if (typeof chat === 'object' && chat?.message)
                 throw new Error(chat.message)
             return {m: chat, c: _class}
         }
         return null;
-    } catch (err:any) {
-        await logger('EXCEPTION', 'Estrazione Risposta assistant Chat', err.message, 601,err.stack)
+    } catch (err: any) {
+        await logger('EXCEPTION', 'Estrazione Risposta assistant Chat', err.message, 601, err.stack)
         throw err;
     }
 
@@ -193,4 +194,11 @@ export const createVector = async (content: any): Promise<number[]> => {
         throw err;
     }
 }
-
+export const dd = (inPrint: any, tag?:string) => {
+    console.log(`------------PRINT DATA ${tag}----------------------------`)
+    console.log('      ')
+    console.log(inPrint)
+    console.log('      ')
+    console.log('---------------------------------------------------')
+    process.exit(1)
+}

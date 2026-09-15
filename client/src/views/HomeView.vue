@@ -77,6 +77,7 @@ const nameFile = ref<string | null>(null)
 const token = ref<{ input: number, output: number }>({
   input: 0, output: 0
 })
+const tt = ref<number>(0)
 const blockChat = ref(false)
 const submitMessage = async () => {
   isLoading.value = true
@@ -101,8 +102,10 @@ const submitMessage = async () => {
   selectedFile.value.forEach(e => {
     form.append('files', e)
   })
-  if(selectedTag.value)
-    form.append('tag',selectedTag.value)
+  if (selectedTag.value)
+    form.append('tag', selectedTag.value)
+  if (tt.value)
+    form.append('tt', tt.value)
 
   try {
     const response = await api({
@@ -123,11 +126,10 @@ const submitMessage = async () => {
       let errorMsg = globalMsg ? globalMsg.filter(e => {
         return e.content === 'EXCEPTION'
       }) : [];
-      if(errorMsg.length > 0){
+      if (errorMsg.length > 0) {
         blockChat.value = true;
-        formError.value= t('home.block')
-      }
-      else {
+        formError.value = t('home.block')
+      } else {
         const m = new MarkdownIt({html: true});
         messages.value = globalMsg ? globalMsg.map(e => {
           return {role: e.role, content: m.render(e.content)}
@@ -136,6 +138,7 @@ const submitMessage = async () => {
         time.value = response.data.time
         status.value = 'next'
         token.value = response.data.t
+        tt.value = response.data.tt
       }
     }
   } catch (e: any) {
