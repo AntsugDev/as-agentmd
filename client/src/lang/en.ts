@@ -1,6 +1,7 @@
 ﻿export default {
     exception: "Exception",
     success: "Success",
+    privacy:"Using different providers may result in response errors or service unavailability. Please note that chats are retained by the system for a maximum of 30 days, while the handling and protection of sensitive data depend entirely on the chosen provider; specifically, the documents used for the RAG context reside locally on your device but are transmitted to the provider during queries.",
     app: {
         subtitle: 'Operational AI chat',
     },

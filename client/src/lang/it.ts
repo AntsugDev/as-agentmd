@@ -1,6 +1,7 @@
 ﻿export default {
   exception:"Eccezione",
   success: "Successo",
+  privacy: "Utilizzando differenti provider, potrebbero verificarsi errori di risposta o indisponibilità del servizio. Si ricorda che le chat vengono conservate dal sistema per un periodo massimo di 30 giorni, mentre la gestione e la protezione dei dati sensibili dipendono esclusivamente dal provider scelto; nello specifico, i documenti utilizzati per il contesto RAG risiedono in locale sul tuo dispositivo, ma vengono trasmessi al provider durante le interrogazioni.",
   app: {
     subtitle: 'Chat AI operativa',
   },
@@ -62,5 +63,5 @@
     max:"Si possono selezionare al massimo 2 modelli",
     required:"Campo obbligatorio",
     generic:'Error generico della chat'
-  }
+  },
 }

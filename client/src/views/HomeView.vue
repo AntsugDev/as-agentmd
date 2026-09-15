@@ -105,7 +105,7 @@ const submitMessage = async () => {
   if (selectedTag.value)
     form.append('tag', selectedTag.value)
   if (tt.value)
-    form.append('tt', tt.value)
+    form.append('tt', tt.value.toString())
 
   try {
     const response = await api({
@@ -327,6 +327,9 @@ onMounted(() => {
           :disabled="isLoading"
           @keydown.ctrl.enter.prevent="submitMessage"
       />
+      <small class="pa-2 ml-2 mr-2"><i>
+        {{ t('privacy') }}
+      </i></small>
       <div class="d-flex flex-row ga-2 justify-center pa-3" style="align-items: flex-start">
 
         <v-btn
