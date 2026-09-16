@@ -138,7 +138,6 @@ const invertViewTable = () => {
 }
 const headers = [
   {title: t('rag.fileName'), key: 'FILE_NAME'},
-  {title: t('rag.preview'), key: 'PREVIEW_CONTENT_FILE'},
   {title: t('rag.tagTable'), key: 'TAG'},
   {title: t('rag.status'), key: 'STATUS', align: 'center'},
   {title: t('rag.created'), key: 'CREATED_AT'},
@@ -178,7 +177,7 @@ onMounted(() => {
     <div class="section-heading">
       <h1>{{ t('rag.title') }}</h1>
     </div>
-    <v-sheet class="panel" rounded="lg" border style="height: max-content">
+    <v-sheet class="panel" rounded="lg" border style="height: max-content" max-width="1125">
       <div class="d-flex flex-row mb-3 justify-space-between">
         <p class="text-body-medium">{{ t('rag.form') }}</p>
         <v-icon :icon="icon" size="30" @click="invertView" :alt="alt" :title="alt"></v-icon>
@@ -250,7 +249,7 @@ onMounted(() => {
         </div>
       </v-form>
     </v-sheet>
-    <v-sheet class="panel" rounded="lg" border style="height: max-content">
+    <v-sheet class="panel" rounded="lg" border style="height: max-content" max-width="1125">
       <div class="d-flex flex-row mb-3 justify-space-between">
         <p class="text-body-medium">{{ t('rag.table') }}</p>
         <v-icon :icon="iconTable" size="30" @click="invertViewTable" :alt="altTable" :title="altTable"></v-icon>

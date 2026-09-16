@@ -97,19 +97,19 @@ SELECT TT.FILE_ID,
        TT.CREATED_AT,
        TT.UPDATED_AT,
        (CASE
-            WHEN TT.STATUS_NAME = 'OK' AND TT.TOT_CHUNKS = TT.ELABORATE AND TT.TOT_CHUNKS = TT.TOT_EMB THEN 'SUCCESS'
-            WHEN TT.STATUS_NAME = 'processing' AND TT.TOT_EMB = 0 THEN 'WAIT EMBED'
             WHEN TT.STATUS_NAME = 'KO' THEN 'EXCEPTION FILE'
             WHEN TT.EXCEPTION > 0 THEN 'EXCEPTION CHUNK'
+            WHEN TT.STATUS_NAME = 'OK' AND TT.TOT_CHUNKS = TT.ELABORATE AND TT.TOT_CHUNKS = TT.TOT_EMB THEN 'SUCCESS'
+            WHEN TT.STATUS_NAME = 'OK' AND TT.TOT_CHUNKS != TT.ELABORATE THEN 'WAIT EMBED'
             WHEN TT.NOT_ELABORATE > 0 AND TT.STATUS_NAME = 'processing' THEN 'WAIT CHUNK'
-            ELSE TT.STATUS_NAME
+            else tt.STATUS_NAME
            END) STATUS
 FROM (SELECT F.ID                                                                  FILE_ID,
              S.NAME                                                                STATUS_NAME,
              (SELECT COUNT(*) FROM CHUNKS C WHERE C.FILE_ID = F.ID)                TOT_CHUNKS,
              (SELECT COUNT(*) FROM CHUNKS C WHERE C.FILE_ID = F.ID AND STATUS = 0) NOT_ELABORATE,
              (SELECT COUNT(*) FROM CHUNKS C WHERE C.FILE_ID = F.ID AND STATUS = 2) EXCEPTION,
-             (SELECT COUNT(*) FROM CHUNKS C WHERE C.FILE_ID = F.ID AND STATUS = 2) ELABORATE,
+             (SELECT COUNT(*) FROM CHUNKS C WHERE C.FILE_ID = F.ID AND STATUS = 1) ELABORATE,
              (SELECT COUNT(*) FROM vss_chunks V WHERE V.FILE_ID = F.ID)            TOT_EMB,
              F.FILE_NAME,
              SUBSTR(F.CONTENT, 0, 100)                                             PREVIEW_CONTENT_FILE,
@@ -120,11 +120,11 @@ FROM (SELECT F.ID                                                               
                JOIN STATUS S ON S.ID = F.STATUS_ID
       ORDER BY F.CREATED_AT, F.UPDATED_AT) TT;
 
-SELECT
-    C.CONTENT,
-    vec_distance_cosine(v.embedding, ?) AS distance
-    FROM vss_chunks V
-JOIN CHUNKS C ON C.ID = V.CHUNK_ID
-JOIN FILES F ON F.ID = C.FILE_ID
+SELECT C.CONTENT,
+       vec_distance_cosine(v.embedding, ?) AS distance
+FROM vss_chunks V
+         JOIN CHUNKS C ON C.ID = V.CHUNK_ID
+         JOIN FILES F ON F.ID = C.FILE_ID
 WHERE F.TAG = ?
-ORDER BY distance LIMIT 3;
+ORDER BY distance
+LIMIT 3;
