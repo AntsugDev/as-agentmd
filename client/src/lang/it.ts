@@ -1,7 +1,8 @@
 ﻿export default {
   exception:"Eccezione",
   success: "Successo",
-  privacy: "Utilizzando differenti provider, potrebbero verificarsi errori di risposta o indisponibilità del servizio. Si ricorda che le chat vengono conservate dal sistema per un periodo massimo di 30 giorni, mentre la gestione e la protezione dei dati sensibili dipendono esclusivamente dal provider scelto; nello specifico, i documenti utilizzati per il contesto RAG risiedono in locale sul tuo dispositivo, ma vengono trasmessi al provider durante le interrogazioni.",
+  privacy: "Utilizzando differenti provider, potrebbero verificarsi errori di risposta o indisponibilità del servizio. Le chat vengono salvate in locale per un massimo di 30 giorni, mentre la gestione dei dati sensibili dipende esclusivamente dal provider scelto. Nello specifico, i documenti personali che selezioni per dare informazioni all'IA restano sul tuo dispositivo, ma i passaggi rilevanti vengono inviati al provider di volta in volta per permettere all'assistente di leggerli e risponderti.",
+  obbligatorio: 'Campo obbligatorio',
   app: {
     subtitle: 'Chat AI operativa',
   },
@@ -9,7 +10,18 @@
     home: 'Home',
     settings: 'Impostazioni',
     archivia:'Chat archiviate',
-    compare:"Confronta Chat"
+    compare:"Confronta Chat",
+    rag:"Carica i documenti"
+  },
+  rag:{
+    title:'Carica documenti',
+    topics: 'Argomenti',
+    topic_create: 'Crea l\'argomento',
+    tag:'Crea un argomento o cerca nella lista',
+    file:"Seleziona i file da caricare",
+    only_file: "E'possibile caricare solamente i file pdf, testo, markdown, docs, excel e csv",
+    up:'Carica documenti',
+    obbligatorio:'Almeno uno dei due campi sopra deve essere valorizzato'
   },
   home: {
     block:'L\'argomento selezionato non riguarda quanto richiesto.Creare una nuova chat',

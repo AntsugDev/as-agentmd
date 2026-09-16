@@ -3,6 +3,7 @@ import HomeView from '../views/HomeView.vue'
 import SettingsView from '../views/SettingsView.vue'
 import DocsView from "../views/DocsView.vue";
 import DoubleChat from "../views/DoubleChat.vue";
+import Rag from "../views/Rag.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -16,6 +17,11 @@ const router = createRouter({
       path: '/ctrl',
       name: 'double_chat',
       component: DoubleChat,
+    },
+    {
+      path: '/rag',
+      name: 'rag',
+      component: Rag,
     },
     {
       path: '/settings',

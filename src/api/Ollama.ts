@@ -90,6 +90,7 @@ export class OllamaApi extends ApiAbstract {
                 url: this.endPointChat.toString(),
                 method: 'GET'
             })
+            console.log('ollama chek',response)
             if (response && parseInt(response.status) === 200)
                 return true;
 
@@ -105,7 +106,6 @@ export class OllamaApi extends ApiAbstract {
         try {
             // @ts-ignore
             this.preProviderInstance()
-            if (await this.OllamaRun()) {
                 // @ts-ignore
                 const response = await ollama.list()
                 if (response?.models) {
@@ -136,10 +136,6 @@ export class OllamaApi extends ApiAbstract {
                         return false;
                     }
                 }
-            } else {
-                console.warn("Ollama or is not installed or not running")
-                return false;
-            }
 
         } catch (err: any) {
             console.log(`Ollama sync runnig error ${err.toString()}`)

@@ -1,7 +1,8 @@
 ﻿export default {
     exception: "Exception",
     success: "Success",
-    privacy:"Using different providers may result in response errors or service unavailability. Please note that chats are retained by the system for a maximum of 30 days, while the handling and protection of sensitive data depend entirely on the chosen provider; specifically, the documents used for the RAG context reside locally on your device but are transmitted to the provider during queries.",
+    privacy:"Using different providers may result in response errors or service unavailability. Chats are stored locally for up to 30 days, while the handling of sensitive data depends entirely on the chosen provider. Specifically, the personal documents you select to provide information to the AI ​​remain on your device, but the relevant excerpts are sent to the provider as needed to allow the assistant to read them and respond to you.",
+    obbligatorio: 'Field required',
     app: {
         subtitle: 'Operational AI chat',
     },
@@ -10,6 +11,18 @@
         settings: 'Settings',
         archivia:'Archived chats',
         compare:"Compare Chats",
+        rag:"Upload the files"
+    },
+    rag:{
+        title:'Upload the files',
+        topics: 'Topics',
+        topic_create: 'Create the topic',
+        tag:'Create a topic or search into list',
+        file:"Choice the files for uploaded",
+        only_file: "Can to upolad only type file: pdf, text,markdown, docs, excel e csv",
+        up:'Upload files',
+        obbligatorio:'At least one of the two fields above must be filled in.'
+
     },
     home: {
         block:'The selected topic does not relate to the request. Create a new chat.',

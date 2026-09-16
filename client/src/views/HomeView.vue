@@ -286,6 +286,9 @@ onMounted(() => {
       <v-alert v-if="formError" type="error" variant="tonal" density="comfortable">
         {{ formError }}
       </v-alert>
+      <small class="ml-2 mr-2 mt-2"><i style="font-size: 11px;">
+        {{ t('privacy') }}
+      </i></small>
       <v-autocomplete
           v-model="selectedModel"
           :model-value="selectedModel"
@@ -314,6 +317,7 @@ onMounted(() => {
           :loading="loadTag"
           class="mt-2"
       />
+
       <v-divider></v-divider>
       <v-textarea
           class="mt-3"
@@ -327,9 +331,7 @@ onMounted(() => {
           :disabled="isLoading"
           @keydown.ctrl.enter.prevent="submitMessage"
       />
-      <small class="pa-2 ml-2 mr-2"><i>
-        {{ t('privacy') }}
-      </i></small>
+
       <div class="d-flex flex-row ga-2 justify-center pa-3" style="align-items: flex-start">
 
         <v-btn

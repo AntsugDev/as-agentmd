@@ -100,6 +100,9 @@ const openArchive = (data: any[]) => {
 const goToCtrlChat = ()=>{
   router.push({name:'double_chat'})
 }
+const goToRag = () => {
+  router.push({name:'rag'})
+}
 </script>
 
 <template>
@@ -140,6 +143,7 @@ const goToCtrlChat = ()=>{
               </v-menu>
               <v-icon size="33" icon="mdi-cog-outline" @click="goToSettings" class="ml-2" :alt="t('navigation.settings')" :title="t('navigation.settings')" ></v-icon>
               <v-icon size="33" icon="mdi-compare" @click="goToCtrlChat" class="ml-2" :alt="t('navigation.compare')" :title="t('navigation.compare')" ></v-icon>
+              <v-icon size="33" icon="mdi-text-box-multiple" @click="goToRag" class="ml-2" :alt="t('navigation.rag')" :title="t('navigation.rag')" ></v-icon>
 
               <v-btn variant="tonal" color="primary" size="small" @click="toggleLocale">
                 {{ locale.toUpperCase() }}
