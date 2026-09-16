@@ -69,6 +69,7 @@ export class SqlDb {
     public static insert(db: Database.Database | undefined, table: string, keys: string[], values: any[]) {
         try {
             if (!db) throw new Error("Database non definito")
+            db.exec('BEGIN TRANSACTION')
             const v: string[] = [];
             Array.from(keys).forEach(e => {
                 v.push('?')
@@ -78,12 +79,15 @@ export class SqlDb {
                          values (${v.join(',')})`;
             let r: any | null = null
             const tmp = db.prepare(ins).run(values).lastInsertRowid
+            db.exec('COMMIT')
             if (tmp) {
                 r = db.prepare("SELECT * FROM FILES WHERE ID = ?").get(tmp)
             }
             return r;
         } catch (err: any) {
             console.log('Insert eccezione', err)
+            if (!db) throw new Error("Database non definito")
+            db.exec('ROLLBACK')
             throw err;
         }
     }

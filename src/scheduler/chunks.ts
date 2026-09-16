@@ -2,6 +2,7 @@ import {SqlDb} from "../database/database.js";
 import {db} from "../index.js";
 import {RecursiveCharacterTextSplitter} from "@langchain/textsplitters";
 import { getEncoding} from "js-tiktoken";
+import {clearInterval} from "node:timers";
 
 export const enc = getEncoding("cl100k_base");
 
@@ -44,15 +45,21 @@ export class Chunks {
     public static async data_chunk(data: any[], id: number) {
         try {
             const len = data.length
-            const increment = len >= 10 ? 3 : 5;
+            let increment = len >= 10 ? 3 : 5;
+            const lenData = (data.length-1)
+            if(lenData >= 1000){
+                increment =  len >= 10 ? 500 : 1000;
+            }
             const headers = data[0]
             const keys = ['FILE_ID', 'CONTENT', 'TOKENS'];
+
             for (let i = 1; i < len; i += increment) {
                 const chunkRows = data.slice(i, i + increment);
                 const text = JSON.stringify([headers, chunkRows]);
                 const values = [id, text, this.getToken(text)];
                 SqlDb.insert(db, 'CHUNKS', keys, values)
             }
+
             return true;
         } catch (err: any) {
             console.log('Eccezione creazione chunks excel', err)

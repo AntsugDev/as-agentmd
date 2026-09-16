@@ -524,12 +524,7 @@ export class ApiFe {
                 last.forEach((ele, index) => {
                     queueMicrotask(() => Scheduler.worker(db, ele))
                 })
-                // if(last.length === 0) throw  new Error("Nessuna riga creata")
-                return resp.json({
-                    queue: last.length,
-                    status_insert: 'pending',
-                    message: "Ok, in lavorazione."
-                })
+                return resp.sendStatus(201)
 
             } catch (err: any) {
                 console.log(err)

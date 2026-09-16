@@ -1,31 +1,48 @@
 ﻿export default {
     exception: "Exception",
     success: "Success",
-    privacy:"Using different providers may result in response errors or service unavailability. Chats are stored locally for up to 30 days, while the handling of sensitive data depends entirely on the chosen provider. Specifically, the personal documents you select to provide information to the AI ​​remain on your device, but the relevant excerpts are sent to the provider as needed to allow the assistant to read them and respond to you.",
+    privacy: "Using different providers may result in response errors or service unavailability. Chats are stored locally for up to 30 days, while the handling of sensitive data depends entirely on the chosen provider. Specifically, the personal documents you select to provide information to the AI ​​remain on your device, but the relevant excerpts are sent to the provider as needed to allow the assistant to read them and respond to you.",
     obbligatorio: 'Field required',
     app: {
         subtitle: 'Operational AI chat',
     },
+    alt: {
+        open: 'Apri',
+        closed: 'Chiudi'
+    },
     navigation: {
         home: 'Home',
         settings: 'Settings',
-        archivia:'Archived chats',
-        compare:"Compare Chats",
-        rag:"Upload the files"
+        archivia: 'Archived chats',
+        compare: "Compare Chats",
+        rag: "Upload the files"
     },
-    rag:{
-        title:'Upload the files',
+    rag: {
+        title: 'Upload the files',
         topics: 'Topics',
         topic_create: 'Create the topic',
-        tag:'Create a topic or search into list',
-        file:"Choice the files for uploaded",
+        tag: 'Create a topic or search into list',
+        file: "Choice the files for uploaded",
         only_file: "Can to upolad only type file: pdf, text,markdown, docs, excel e csv",
-        up:'Upload files',
-        obbligatorio:'At least one of the two fields above must be filled in.'
+        up: 'Upload files',
+        obbligatorio: 'At least one of the two fields above must be filled in.',
+        form: 'Form uploading the files',
+        table: 'List the files uploaded',
+        fileName: 'File name',
+        preview: 'Preview',
+        tagTable: 'Topic',
+        created: 'Date inserted',
+        update: 'Date last updated',
+        status: 'Work progress status',
+        success:'File worked',
+        wait:'File in status wait',
+        error:'Exception to work the file',
+        insert_OK: 'Files uploaded successfully'
+
 
     },
     home: {
-        block:'The selected topic does not relate to the request. Create a new chat.',
+        block: 'The selected topic does not relate to the request. Create a new chat.',
         title: 'Chat',
         intro: 'Choose a model, write a prompt, and attach a file when needed.',
         model: 'AI model',
@@ -45,9 +62,9 @@
         modelRequired: 'Select a model',
         messageRequired: 'Write a message',
         archiviata: "Chat successfully archived",
-        clear:"New Chat",
-        tokenIn:"Input token {t}",
-        tokenOut:"Output token {t}",
+        clear: "New Chat",
+        tokenIn: "Input token {t}",
+        tokenOut: "Output token {t}",
         accept: "File format not accepted ({format})"
     },
     settings: {
@@ -68,13 +85,13 @@
         deleted: 'Delete ApiKey for {provider}',
         synced: 'Models updated',
         up_model: "Modello updated with {model}",
-        download:"Download lists provider and models"
+        download: "Download lists provider and models"
     },
-    double_chat:{
-        title:"Compare Chats",
-        intro:"Select more than one model, enter your question, and compare the answers",
-        max:"A maximum of 2 models can be selected.",
-        required:"Required field",
-        generic:'Generic chat error'
+    double_chat: {
+        title: "Compare Chats",
+        intro: "Select more than one model, enter your question, and compare the answers",
+        max: "A maximum of 2 models can be selected.",
+        required: "Required field",
+        generic: 'Generic chat error'
     }
 }

@@ -23,7 +23,7 @@ export class Embindings {
             this.search()
             console.log(`[${dayjs().format('YYYY-MM-DD HH:mm:ss')}] Scheduler embeddings work, find nr. row ${(this.embeddings.length)}.Next between ${dayjs().add(6, 'minutes').format('YYYY-MM-DD HH:mm:ss')}`)
             if (this.embeddings) {
-                queueMicrotask(async () => await Embindings.worker(db, this.embeddings))
+                queueMicrotask( () =>  Embindings.worker(db, this.embeddings))
             }
             setInterval(() => {
                 this.search()
@@ -88,10 +88,16 @@ export class Embindings {
     protected static insert(db: Database.Database | undefined, chunk_id: number, file_id: number, content: any) {
         try {
             if (!db) throw new Error("Database not found")
+            db.exec('BEGIN TRANSACTION')
             const create: any | null = db.prepare("INSERT OR REPLACE INTO vss_chunks (chunk_id,file_id, embedding) VALUES (?,?,?);")
                 .run([BigInt(chunk_id), BigInt(file_id), JSON.stringify(content)]).lastInsertRowid
-            if (create) return this.update(db, chunk_id, 1)
+            if (create) {
+                db.exec('COMMIT')
+                return this.update(db, chunk_id, 1)
+            }
         } catch (err: any) {
+            if (!db) throw new Error("Database not found")
+            db.exec('ROLLBACK')
             throw err;
         }
     }
