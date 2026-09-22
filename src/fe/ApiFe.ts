@@ -505,7 +505,6 @@ export class ApiFe {
                 const files = req.files as Express.Multer.File[] || [];
                 const argument = req.body.argument
                 const keys = ['FILE_NAME', 'CONTENT', 'TAG', 'STATUS_ID', 'MODEL_USED', 'MIME_TYPE', 'EXT']
-                let last: any[] = []
                 const status: number = SqlDb._status(db);
                 for (let i = 0; i < files.length; i++) {
                     const ele: any = files[i]
@@ -516,14 +515,11 @@ export class ApiFe {
 
                     if (content && name) {
                         const values = [name, content, argument, status, null, mime_type, ext]
-                        const l: any = SqlDb.insert(db, 'FILES', keys, values)
-                        if (l) last.push(l)
+                        SqlDb.insert(db, 'FILES', keys, values)
                     }
 
                 }
-                last.forEach((ele, index) => {
-                    queueMicrotask(() => Scheduler.worker(db, ele))
-                })
+
                 return resp.sendStatus(201)
 
             } catch (err: any) {

@@ -3,6 +3,10 @@ import {SqlDb} from "../database/database.js";
 import {Chunks} from "./chunks.js";
 import dayjs from "dayjs";
 import {Files} from "../database/mapping.js";
+import {isActiveEmbending} from "./Embindings.js";
+
+export let isActiveScheduler: boolean = false;
+let clear: any | null = null;
 
 export class Scheduler {
 
@@ -18,24 +22,43 @@ export class Scheduler {
 
     }
 
+    private start(db: Database.Database | undefined) {
+        const clearTmp = setTimeout(() => {
+            if (isActiveScheduler || isActiveEmbending) {
+                this.start(db)
+                return;
+            }
+            if (clear) {
+                clearTimeout(clear)
+                clear = null;
+            }
+            const now = dayjs();
+            this.search()
+            console.log(`[${now.format('YYYY-MM-DD HH:mm:ss')}] Scheduler chunks is worked (${(this.queue && Object.keys(this.queue).length > 0 ? 'FULL' : `EMPTY`)}).Next between ${now.add(5, 'minutes').format('YYYY-MM-DD HH:mm:ss')} `)
+            if (this.queue) {
+                queueMicrotask(() => {
+                    isActiveScheduler = true;
+                    clear = clearTmp
+                    Scheduler.worker(db, this.queue)
+                    this.start(db)
+                })
+            }else{
+                if (clear) {
+                    clearTimeout(clear)
+                    clear = null;
+                }
+                isActiveScheduler = false
+            }
+        }, 300000)
+    }
+
     private init(db: Database.Database | undefined) {
         try {
             if (!db) throw new Error("Database not found")
             this.search()
             const nowInit = dayjs();
             console.log(`[${nowInit.format('YYYY-MM-DD HH:mm:ss')}] Scheduler chunks is worked (${(this.queue && Object.keys(this.queue).length > 0 ? 'FULL' : `EMPTY`)}). Next between ${nowInit.add(5, 'minutes').format('YYYY-MM-DD HH:mm:ss')} `)
-            if (this.queue) {
-                queueMicrotask( () =>  Scheduler.worker(db, this.queue))
-            }
-            setInterval(() => {
-                const now = dayjs();
-                this.search()
-                console.log(`[${now.format('YYYY-MM-DD HH:mm:ss')}] Scheduler chunks is worked (${(this.queue && Object.keys(this.queue).length > 0 ? 'FULL' : `EMPTY`)}).Next between ${now.add(5, 'minutes').format('YYYY-MM-DD HH:mm:ss')} `)
-                if (this.queue) {
-                    queueMicrotask(() => Scheduler.worker(db, this.queue))
-                }
-            }, 300000)
-
+            this.start(db)
         } catch (err: any) {
             throw err;
         }
@@ -67,7 +90,7 @@ export class Scheduler {
         }
     }
 
-    private static update(db: Database.Database | undefined, id: number, error: boolean = false, status:'processing'|'ok'|'ko' ='processing' ) {
+    private static update(db: Database.Database | undefined, id: number, error: boolean = false, status: 'processing' | 'ok' | 'ko' = 'processing') {
         try {
             if (!db) throw new Error("Database not found")
             if (!error) {
@@ -75,11 +98,14 @@ export class Scheduler {
                 db.prepare("UPDATE FILES SET RETRY_COUNT = (SELECT F.RETRY_COUNT+1 FROM FILES F WHERE F.ID = ? ), UPDATED_AT = datetime('now'), STATUS_ID = ?").run([
                     id, processing
                 ])
+                if (status === 'ok')
+                    isActiveScheduler = false;
             } else {
                 const ko = SqlDb._status(db, 'ko');
                 db.prepare("UPDATE FILES SET RETRY_COUNT = 0, UPDATED_AT = datetime('now'), STATUS_ID = ?").run([
                     id, ko
                 ])
+                isActiveScheduler = false;
             }
         } catch (err: any) {
             console.log('Update Row failed ', err)
@@ -94,13 +120,13 @@ export class Scheduler {
             if (!db) throw new Error("Database not found")
             if (retry) {
                 this.update(db, data.ID)
-                let res:boolean = false;
+                let res: boolean = false;
                 if (['xlsx', 'xls', 'csv'].includes(data.EXT)) {
-                   res =  await Chunks.data_chunk(JSON.parse(data.CONTENT), data.ID)
+                    res = await Chunks.data_chunk(JSON.parse(data.CONTENT), data.ID)
                 } else {
-                   res =  await Chunks.text_chunk(data.CONTENT, data.ID)
+                    res = await Chunks.text_chunk(data.CONTENT, data.ID)
                 }
-                if(res) this.update(db, data.ID, false, 'ok')
+                if (res) this.update(db, data.ID, false, 'ok')
             }
         } catch (err: any) {
             console.log('----------------------CHUNKS-------------------------------')

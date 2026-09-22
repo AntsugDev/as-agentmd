@@ -1,7 +1,7 @@
 import {SqlDb} from "../database/database.js";
 import {db} from "../index.js";
 import {RecursiveCharacterTextSplitter} from "@langchain/textsplitters";
-import { getEncoding} from "js-tiktoken";
+import {getEncoding} from "js-tiktoken";
 import {clearInterval} from "node:timers";
 
 export const enc = getEncoding("cl100k_base");
@@ -18,6 +18,16 @@ export class Chunks {
         }
     }
 
+    protected static async insert(e: any, id: number, keys: string[]) {
+        try {
+            const text = e.pageContent
+            const values = [id, text, this.getToken(text)];
+            SqlDb.insert(db, 'CHUNKS', keys, values)
+        } catch (e: any) {
+            throw e;
+        }
+    }
+
 
     public static async text_chunk(data: any, id: number) {
 
@@ -29,10 +39,12 @@ export class Chunks {
             });
             const keys = ['FILE_ID', 'CONTENT', 'TOKENS'];
             const outputChunks = await splitter.createDocuments([data]);
-            outputChunks.map(e => {
-                const text = e.pageContent
-                const values = [id, text, this.getToken(text)];
-                SqlDb.insert(db, 'CHUNKS', keys, values)
+            db?.transaction(() => {
+                outputChunks.map(e => {
+                    const text = e.pageContent
+                    const values = [id, text, this.getToken(text)];
+                    SqlDb.insert(db, 'CHUNKS', keys, values)
+                })
             })
             return true;
 
@@ -44,13 +56,13 @@ export class Chunks {
 
     public static async data_chunk(data: any[], id: number) {
         try {
-            const len = data.length
-            let increment = len >= 10 ? 3 : 5;
-            const lenData = (data.length-1)
-            if(lenData >= 1000){
-                increment =  len >= 10 ? 500 : 1000;
-            }
             const headers = data[0]
+            const len = headers.length
+            let increment = len >= 10 ? 3 : 5;
+            const lenData = (data.length - 1)
+            if (lenData >= 1000) {
+                increment = len >= 10 ? 500 : 1000;
+            }
             const keys = ['FILE_ID', 'CONTENT', 'TOKENS'];
 
             for (let i = 1; i < len; i += increment) {

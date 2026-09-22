@@ -4,6 +4,10 @@ import {_class} from "../index.js";
 import dayjs from "dayjs";
 import {Chunks} from "../database/mapping.js";
 import {createVector} from "../utility/utility.js";
+import {isActiveSchedulerScheduler} from "./Scheduler.js";
+
+export let isActiveEmbending = false;
+let clear:any|null = null;
 
 export class Embindings {
 
@@ -17,14 +21,41 @@ export class Embindings {
 
     }
 
+    protected start(){
+        try{
+            const tmp = setTimeout(() => {
+                if(isActiveEmbending || isActiveSchedulerScheduler){
+                    this.start()
+                    return
+                }
+                if(clear){
+                    clearTimeout(clear)
+                    clear = null;
+                }
+                this.search()
+                console.log(`[${dayjs().format('YYYY-MM-DD HH:mm:ss')}] Scheduler embeddings work, find nr. row ${(this.embeddings.length)}.Next between ${dayjs().add(6, 'minutes').format('YYYY-MM-DD HH:mm:ss')} `)
+                if (this.embeddings) {
+                    for (let i = 0; i < this.embeddings.length; i++) {
+                        const task = this.embeddings[i]
+                        queueMicrotask(() => {
+                            isActiveEmbending = true
+                            clear = tmp;
+                            Embindings.worker(this.db, task)
+                        })
+                    }
+                }
+            }, 360000)
+
+        }catch (e:any){
+            throw e;
+        }
+    }
+
     private init(db: Database.Database | undefined) {
         try {
             if (!db) throw new Error("Database not found")
             this.search()
             console.log(`[${dayjs().format('YYYY-MM-DD HH:mm:ss')}] Scheduler embeddings work, find nr. row ${(this.embeddings.length)}.Next between ${dayjs().add(6, 'minutes').format('YYYY-MM-DD HH:mm:ss')}`)
-            if (this.embeddings) {
-                queueMicrotask( () =>  Embindings.worker(db, this.embeddings))
-            }
             setInterval(() => {
                 this.search()
                 console.log(`[${dayjs().format('YYYY-MM-DD HH:mm:ss')}] Scheduler embeddings work, find nr. row ${(this.embeddings.length)}.Next between ${dayjs().add(6, 'minutes').format('YYYY-MM-DD HH:mm:ss')} `)
@@ -79,9 +110,12 @@ export class Embindings {
             db.prepare("UPDATE CHUNKS SET RETRY_COUNT = (SELECT F.RETRY_COUNT+1 FROM CHUNKS F WHERE F.ID = ? ), UPDATED_AT = datetime('now'), STATUS = ?").run([
                 id, terminate
             ])
+            if(terminate !== 0) isActiveEmbending = false;
             return true;
         } catch (err: any) {
             throw err;
+        }finally {
+            if(terminate !== 0) isActiveEmbending = false;
         }
     }
 
