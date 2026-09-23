@@ -24,6 +24,7 @@ import {Gemini} from "../api/Gemiin.js";
 import {MistralClass} from "../api/MistralClass.js";
 import {OllamaApi} from "../api/Ollama.js";
 import {OpenAiClass} from "../api/OpenAiClass.js";
+import {logger} from "../utility/storage.js";
 
 
 interface Archive {
@@ -308,6 +309,8 @@ export class ApiFe {
                 let goto = false;
                 if (tag) {
                     ragSystem = await new Rag(msg, tag).result()
+                    if (ragSystem)
+                        await logger('INFO', 'CHAT-RAG', ragSystem)
                     if (!ragSystem) goto = true;
                 }
                 let tt = 0;
@@ -360,7 +363,6 @@ export class ApiFe {
                 }
 
             } catch (err: any) {
-                dd(err)
                 return this.exception(resp, err.toString())
             }
         })

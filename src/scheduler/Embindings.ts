@@ -4,7 +4,7 @@ import {_class} from "../index.js";
 import dayjs from "dayjs";
 import {Chunks} from "../database/mapping.js";
 import {createVector} from "../utility/utility.js";
-import {isActiveSchedulerScheduler} from "./Scheduler.js";
+import {isActiveScheduler} from "./Scheduler.js";
 
 export let isActiveEmbending = false;
 let clear:any|null = null;
@@ -21,11 +21,13 @@ export class Embindings {
 
     }
 
-    protected start(){
+    protected start(delay:number = 360000){
         try{
+            console.log(`[SCHED EMB] Embedding attivo?${isActiveEmbending ? 'SI':'NO'} - Scheduler attivo?${isActiveScheduler ? 'SI':'NO'}`)
             const tmp = setTimeout(() => {
-                if(isActiveEmbending || isActiveSchedulerScheduler){
-                    this.start()
+                if(isActiveEmbending || isActiveScheduler){
+                    console.log(`[${dayjs().format('YYYY-MM-DD HH:mm:ss')}] Scheduler embeddings is blocked. Starts in  ${dayjs().add(80, 'seconds').format('YYYY-MM-DD HH:mm:ss')} `)
+                    this.start(80000)
                     return
                 }
                 if(clear){
@@ -35,16 +37,22 @@ export class Embindings {
                 this.search()
                 console.log(`[${dayjs().format('YYYY-MM-DD HH:mm:ss')}] Scheduler embeddings work, find nr. row ${(this.embeddings.length)}.Next between ${dayjs().add(6, 'minutes').format('YYYY-MM-DD HH:mm:ss')} `)
                 if (this.embeddings) {
+                    let c = 1;
                     for (let i = 0; i < this.embeddings.length; i++) {
+                        isActiveEmbending = true
                         const task = this.embeddings[i]
+                        c++;
                         queueMicrotask(() => {
-                            isActiveEmbending = true
                             clear = tmp;
                             Embindings.worker(this.db, task)
+
                         })
                     }
+                    console.log(`Ciclo giunto al numero ${c}`)
+                    console.log(`Lunghezza embeddings data ${this.embeddings.length}`)
+                    if(c >= this.embeddings.length) isActiveEmbending = false
                 }
-            }, 360000)
+            }, delay)
 
         }catch (e:any){
             throw e;
@@ -56,16 +64,7 @@ export class Embindings {
             if (!db) throw new Error("Database not found")
             this.search()
             console.log(`[${dayjs().format('YYYY-MM-DD HH:mm:ss')}] Scheduler embeddings work, find nr. row ${(this.embeddings.length)}.Next between ${dayjs().add(6, 'minutes').format('YYYY-MM-DD HH:mm:ss')}`)
-            setInterval(() => {
-                this.search()
-                console.log(`[${dayjs().format('YYYY-MM-DD HH:mm:ss')}] Scheduler embeddings work, find nr. row ${(this.embeddings.length)}.Next between ${dayjs().add(6, 'minutes').format('YYYY-MM-DD HH:mm:ss')} `)
-                if (this.embeddings) {
-                    for (let i = 0; i < this.embeddings.length; i++) {
-                        const task = this.embeddings[i]
-                        queueMicrotask(() => Embindings.worker(this.db, task))
-                    }
-                }
-            }, 360000)
+            this.start()
 
         } catch (err: any) {
             throw err;
@@ -110,12 +109,9 @@ export class Embindings {
             db.prepare("UPDATE CHUNKS SET RETRY_COUNT = (SELECT F.RETRY_COUNT+1 FROM CHUNKS F WHERE F.ID = ? ), UPDATED_AT = datetime('now'), STATUS = ?").run([
                 id, terminate
             ])
-            if(terminate !== 0) isActiveEmbending = false;
             return true;
         } catch (err: any) {
             throw err;
-        }finally {
-            if(terminate !== 0) isActiveEmbending = false;
         }
     }
 
@@ -148,7 +144,7 @@ export class Embindings {
                 else {
                     setTimeout(() => {
                         this.update(db, data.ID, 0)
-                        queueMicrotask(async () => await Embindings.worker(db, data))
+                        queueMicrotask(async () => Embindings.worker(db, data))
                     }, 5000)
                 }
             }

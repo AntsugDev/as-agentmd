@@ -22,10 +22,13 @@ export class Scheduler {
 
     }
 
-    private start(db: Database.Database | undefined) {
+    private start(db: Database.Database | undefined, delay:number = 300000) {
+        console.log(`[SCHED] Embedding attivo?${isActiveEmbending ? 'SI':'NO'} - Scheduler attivo?${isActiveScheduler ? 'SI':'NO'}`)
+
         const clearTmp = setTimeout(() => {
             if (isActiveScheduler || isActiveEmbending) {
-                this.start(db)
+                console.log(`[${dayjs().format('YYYY-MM-DD HH:mm:ss')}] Scheduler chunks is blocked. Starts in  ${dayjs().add(60, 'seconds').format('YYYY-MM-DD HH:mm:ss')} `)
+                this.start(db, 60000)
                 return;
             }
             if (clear) {
@@ -40,7 +43,7 @@ export class Scheduler {
                     isActiveScheduler = true;
                     clear = clearTmp
                     Scheduler.worker(db, this.queue)
-                    this.start(db)
+                    this.start(db, delay)
                 })
             }else{
                 if (clear) {
@@ -49,7 +52,7 @@ export class Scheduler {
                 }
                 isActiveScheduler = false
             }
-        }, 300000)
+        }, delay)
     }
 
     private init(db: Database.Database | undefined) {
@@ -95,21 +98,25 @@ export class Scheduler {
             if (!db) throw new Error("Database not found")
             if (!error) {
                 const processing = SqlDb._status(db, status);
-                db.prepare("UPDATE FILES SET RETRY_COUNT = (SELECT F.RETRY_COUNT+1 FROM FILES F WHERE F.ID = ? ), UPDATED_AT = datetime('now'), STATUS_ID = ?").run([
-                    id, processing
+                db.prepare("UPDATE FILES SET RETRY_COUNT = (SELECT F.RETRY_COUNT+1 FROM FILES F WHERE F.ID = ? ), UPDATED_AT = datetime('now'), STATUS_ID = ? WHERE ID = ? ").run([
+                    id, processing, id
                 ])
                 if (status === 'ok')
                     isActiveScheduler = false;
             } else {
                 const ko = SqlDb._status(db, 'ko');
-                db.prepare("UPDATE FILES SET RETRY_COUNT = 0, UPDATED_AT = datetime('now'), STATUS_ID = ?").run([
-                    id, ko
+                db.prepare("UPDATE FILES SET RETRY_COUNT = 0, UPDATED_AT = datetime('now'), STATUS_ID = ? WHERE ID = ?").run([
+                    id, ko, id
                 ])
                 isActiveScheduler = false;
             }
         } catch (err: any) {
             console.log('Update Row failed ', err)
             throw err;
+        }
+        finally {
+            if (status === 'ok' || status === 'ko')
+                isActiveScheduler = false;
         }
     }
 

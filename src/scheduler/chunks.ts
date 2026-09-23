@@ -3,6 +3,8 @@ import {db} from "../index.js";
 import {RecursiveCharacterTextSplitter} from "@langchain/textsplitters";
 import {getEncoding} from "js-tiktoken";
 import {clearInterval} from "node:timers";
+import {chunkArray} from "@langchain/core/utils/chunk_array";
+import {cArray, dd} from "../utility/utility.js";
 
 export const enc = getEncoding("cl100k_base");
 
@@ -60,14 +62,18 @@ export class Chunks {
             const len = headers.length
             let increment = len >= 10 ? 3 : 5;
             const lenData = (data.length - 1)
-            if (lenData >= 1000) {
-                increment = len >= 10 ? 500 : 1000;
+            if (lenData >= 500) {
+                increment = len >= 10 ? 250 : 500;
             }
             const keys = ['FILE_ID', 'CONTENT', 'TOKENS'];
-
-            for (let i = 1; i < len; i += increment) {
-                const chunkRows = data.slice(i, i + increment);
-                const text = JSON.stringify([headers, chunkRows]);
+            data.shift()
+            const chunks = cArray(data, increment);
+            for (let i = 0; i < chunks.length; i++) {
+                const chunkRows = chunks[i];
+                let text: string = "";
+                chunkRows.map((row: any) => {
+                    text += headers.map((h: string, index: number) => `${h.toString().trim()}=${(row[index] || "")}`).join('|')+"\n"
+                })
                 const values = [id, text, this.getToken(text)];
                 SqlDb.insert(db, 'CHUNKS', keys, values)
             }

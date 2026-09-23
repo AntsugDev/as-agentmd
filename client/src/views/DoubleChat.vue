@@ -76,7 +76,7 @@ const submitMessage = async () => {
 
   } catch (err: any) {
     console.error("Form submit exc", err)
-    errorGeneral.value = err.response.data?.error ?? t('double_chat.generic')
+    // errorGeneral.value = err.response.data?.error ?? t('double_chat.generic')
   } finally {
     isLoading.value = false
   }
@@ -152,132 +152,153 @@ onMounted(() => {
 <template>
   <section class="content-grid">
     <div class="section-heading">
+      <div class="d-flex align-center ga-2">
+        <v-chip color="secondary" variant="tonal" size="small" class="font-weight-bold">
+          <v-icon icon="mdi-scale-balance" size="14" class="mr-1"></v-icon>
+          Model Arena
+        </v-chip>
+      </div>
       <h1>{{ t('double_chat.title') }}</h1>
       <p>{{ t('double_chat.intro') }}</p>
     </div>
 
-    <v-sheet class="panel conversation-panel" rounded="lg" border>
-
+    <!-- Comparison Conversation Panel -->
+    <v-sheet class="panel conversation-panel" rounded="xl" border>
       <div class="panel-title">
-        <h2>{{ t('home.conversation') }}</h2>
+        <div class="d-flex align-center ga-2">
+          <v-icon icon="mdi-compare-horizontal" color="primary"></v-icon>
+          <h2>{{ t('home.conversation') }}</h2>
+        </div>
       </div>
 
       <div v-if="Object.keys(messages).length === 0" class="empty-state">
-        {{ t('home.emptyConversation') }}
+        <v-icon icon="mdi-scale-balance" size="48" class="empty-state-icon mb-2"></v-icon>
+        <div class="font-weight-bold text-subtitle-1 text-grey-darken-2">
+          {{ t('home.emptyConversation') }}
+        </div>
+        <small class="text-grey-darken-1">Seleziona 2 modelli e invia un messaggio per confrontare le risposte.</small>
       </div>
-      <v-skeleton-loader v-if="isLoading" type="article, actions"/>
+
+      <v-skeleton-loader v-if="isLoading && Object.keys(messages).length === 0" type="article, actions" rounded="xl"/>
+      
       <template v-else>
-        <div class="d-flex flex-row justify-space-between gap-3">
-          <template v-for="(data,model) in messages" :key="model">
-            <div class="d-flex flex-column justify-start align-start pa-3 ga-2 mr-3"
-                 style="width: 50%;border: 1px solid; border-radius: 6px">
-              <v-btn color="info" variant="elevated">
-                {{ model }}
-              </v-btn>
-              <v-alert color="error" v-if="errors[model]" density="compact" type="error">{{errors[model]}}</v-alert>
-              <div class="message-list mr-3" v-for="(message,idx) in data" :key="idx" v-else>
+        <div class="d-flex flex-column flex-md-row justify-space-between ga-4">
+          <template v-for="(data, model) in messages" :key="model">
+            <v-card class="comparison-column flex-1-1 pa-4 border shadow-sm" rounded="xl">
+              <!-- Model Header Badge -->
+              <div class="d-flex align-center justify-space-between pb-3 border-b mb-3">
+                <v-chip color="primary" variant="flat" class="font-weight-bold" rounded="lg">
+                  <v-icon icon="mdi-chip" size="16" class="mr-1"></v-icon>
+                  {{ model }}
+                </v-chip>
+                <v-chip size="x-small" color="secondary" variant="tonal">Model Output</v-chip>
+              </div>
+
+              <v-alert color="error" v-if="errors[model]" density="comfortable" type="error" variant="tonal" rounded="lg" class="mb-3">
+                {{ errors[model] }}
+              </v-alert>
+
+              <div class="message-list" v-for="(message, idx) in data" :key="idx" v-else>
                 <div
                     v-if="message.role !== 'system'"
-                    class="message-item"
+                    class="message-item mb-3"
                     :class="`message-item--${message.role}`"
                 >
                   <div class="message-bubble__header">
-
                     <span class="message-author-dot"></span>
                     <strong>{{ message.role === 'user' ? t('home.user') : t('home.agent') }}</strong>
                   </div>
                   <div class="message-content" v-html="getContentHtml(message.content)"></div>
                 </div>
               </div>
-            </div>
+            </v-card>
           </template>
         </div>
       </template>
     </v-sheet>
-    <v-sheet class="panel chat-panel" rounded="lg" border>
 
-      <v-alert v-if="errorGeneral" type="error" variant="tonal" density="comfortable">
+    <!-- Controls & Prompt Card -->
+    <v-sheet class="panel chat-panel pa-5" rounded="xl" border>
+      <v-alert v-if="errorGeneral" type="error" variant="tonal" density="comfortable" rounded="lg" closable class="mb-4" @click:close="errorGeneral = null">
         {{ errorGeneral }}
       </v-alert>
-      <v-textarea
-          v-model="prompt"
-          :label="t('home.message')"
-          :placeholder="t('home.messagePlaceholder')"
-          variant="outlined"
-          rows="4"
-          auto-grow
-          hide-details="auto"
-          :disabled="isLoading"
-          :error="tError.is"
-          :error-messages="tError.text"
-      >
 
-        <template #details>
-          <div class="d-flex flex-row ga-2 justify-space-between">
-
-            <v-autocomplete
-                style="width: 600px"
-                clearable
-                v-model="selectedModel"
-                :model-value="selectedModel"
-                multiple
-                :items="filterModels"
-                item-title="text"
-                item-value="value"
-                :label="t('home.model')"
-                variant="outlined"
-                density="compact"
-                prepend-inner-icon="mdi-brain"
-                hide-details="auto"
-                :loading="loadModel"
-                chips
-                closable-chips
-                :error="aError.is"
-                :error-messages="aError.text"
-                @update:modelValue="verifyModel"
-            />
-
-            <div class="d-flex flex-column">
-              <v-btn
-                  color="primary"
-                  :loading="isLoading"
-                  :disabled="loading"
-                  append-icon="mdi-send"
-                  @click="submitMessage"
-                  density="compact"
-                  variant="elevated"
-                  :alt="(isLoading ? t('home.waiting')  : t('home.start'))"
-                  :title="(isLoading ? t('home.waiting')  : t('home.start'))"
-                  class="mb-3"
-              >
-                {{ t('home.start') }}
-              </v-btn>
-
-              <v-btn
-                  color="error"
-                  :loading="isLoading"
-                  :disabled="loading"
-                  append-icon="mdi-new-box"
-                  @click="clearChats"
-                  density="compact"
-                  variant="elevated"
-                  :alt=" t('home.clear')"
-                  :title=" t('home.clear')"
-
-              >
-                {{ t('home.clear') }}
-              </v-btn>
-            </div>
-          </div>
-        </template>
-
-      </v-textarea>
-
-      <div class="input-row">
-
-
+      <!-- Model Selector -->
+      <div class="mb-4">
+        <v-autocomplete
+            clearable
+            v-model="selectedModel"
+            :model-value="selectedModel"
+            multiple
+            :items="filterModels"
+            item-title="text"
+            item-value="value"
+            :label="t('home.model')"
+            variant="outlined"
+            density="comfortable"
+            prepend-inner-icon="mdi-chip"
+            hide-details="auto"
+            :loading="loadModel"
+            chips
+            closable-chips
+            :error="aError.is"
+            :error-messages="aError.text"
+            @update:modelValue="verifyModel"
+            rounded="lg"
+        />
+        <div class="text-caption text-grey-darken-1 mt-2 ml-1 d-flex align-center ga-1">
+          <v-icon icon="mdi-information-outline" size="14"></v-icon>
+          <span>Seleziona esattamente 2 modelli da mettere a confronto.</span>
+        </div>
       </div>
 
+      <!-- Textarea Input -->
+      <div class="mb-4">
+        <v-textarea
+            v-model="prompt"
+            :label="t('home.message')"
+            :placeholder="t('home.messagePlaceholder')"
+            variant="outlined"
+            rows="3"
+            auto-grow
+            hide-details="auto"
+            :disabled="isLoading"
+            :error="tError.is"
+            :error-messages="tError.text"
+            rounded="lg"
+            @keydown.ctrl.enter.prevent="submitMessage"
+        />
+      </div>
+
+      <!-- Action Buttons Bar -->
+      <div class="d-flex flex-row justify-end align-center ga-3 pt-3 border-t">
+        <v-btn
+            color="error"
+            :loading="isLoading"
+            :disabled="loading"
+            prepend-icon="mdi-refresh"
+            @click="clearChats"
+            variant="tonal"
+            :title="t('home.clear')"
+            class="px-4"
+        >
+          {{ t('home.clear') }}
+        </v-btn>
+
+        <v-btn
+            color="primary"
+            :loading="isLoading"
+            :disabled="loading"
+            append-icon="mdi-send"
+            @click="submitMessage"
+            variant="flat"
+            size="large"
+            class="px-6 font-weight-bold"
+            :title="(isLoading ? t('home.waiting') : t('home.start'))"
+        >
+          {{ (isLoading ? t('home.waiting') : t('home.start')) }}
+        </v-btn>
+      </div>
     </v-sheet>
   </section>
 </template>
@@ -287,27 +308,35 @@ onMounted(() => {
   overflow: hidden;
 }
 
-.conversation-panel .message-list {
-  gap: 16px;
-  padding: 2px;
+.comparison-column {
+  background: #f8fafc;
+  min-height: 280px;
+  max-height: 540px;
+  overflow-y: auto;
 }
 
-.conversation-panel .message-item {
+.message-item {
+  display: flex;
+  flex-direction: column;
   gap: 6px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+}
+
+.message-item--user {
+  border-color: #c7d2fe;
+  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
 }
 
 .message-bubble__header {
   display: flex;
   align-items: center;
-  gap: 7px;
-  margin: 0 4px;
-  color: #526071;
+  gap: 6px;
+  color: #64748b;
   font-size: 0.78rem;
-  letter-spacing: 0;
+  font-weight: 600;
 }
 
 .message-author-dot {
@@ -318,127 +347,7 @@ onMounted(() => {
 }
 
 .message-content {
-  padding: 14px 16px;
-  border: 1px solid #dce5f1;
-  border-radius: 8px;
-  color: #253044;
-  background: #ffffff;
-  box-shadow: 0 10px 24px rgba(31, 42, 68, 0.06);
-  font-size: 0.96rem;
+  font-size: 0.94rem;
   line-height: 1.6;
-  overflow-x: auto;
-  width: 85%;
-}
-
-.message-item--assistant {
-  align-self: flex-start;
-  width: min(100%, 980px);
-  min-height: 0;
-  max-height: none;
-  overflow: visible;
-}
-
-.message-item--assistant .message-content {
-  border-top-left-radius: 2px;
-  background: #ffffff;
-}
-
-.message-item--user {
-  align-self: flex-end;
-  width: min(78%, 760px);
-}
-
-.message-item--user .message-bubble__header {
-  justify-content: flex-end;
-  color: #267365;
-}
-
-.message-item--user .message-author-dot {
-  order: 2;
-}
-
-.message-item--user .message-content {
-  border-color: #a7d8ce;
-  border-top-right-radius: 2px;
-  color: #153b35;
-  background: #eefbf7;
-}
-
-.message-content :deep(p) {
-  margin: 0 0 0.8rem;
-}
-
-.message-content :deep(p:last-child),
-.message-content :deep(ul:last-child),
-.message-content :deep(ol:last-child),
-.message-content :deep(pre:last-child),
-.message-content :deep(blockquote:last-child) {
-  margin-bottom: 0;
-}
-
-.message-content :deep(ul),
-.message-content :deep(ol) {
-  margin: 0 0 0.85rem;
-  padding-left: 1.25rem;
-}
-
-.message-content :deep(li + li) {
-  margin-top: 0.35rem;
-}
-
-.message-content :deep(pre) {
-  margin: 0.85rem 0;
-  padding: 12px 14px;
-  border-radius: 8px;
-  background: #111827;
-  color: #f8fafc;
-  overflow-x: auto;
-}
-
-.message-content :deep(code) {
-  padding: 0.12rem 0.35rem;
-  border-radius: 5px;
-  background: #e8edf5;
-  color: #1f2937;
-  font-size: 0.9em;
-}
-
-.message-content :deep(pre code) {
-  padding: 0;
-  background: transparent;
-  color: inherit;
-}
-
-.message-content :deep(blockquote) {
-  margin: 0.85rem 0;
-  padding: 0.1rem 0 0.1rem 0.9rem;
-  border-left: 3px solid #94a3b8;
-  color: #526071;
-}
-
-.message-content :deep(table) {
-  width: 100%;
-  margin: 0.85rem 0;
-  border-collapse: collapse;
-  font-size: 0.92rem;
-}
-
-.message-content :deep(th),
-.message-content :deep(td) {
-  padding: 8px 10px;
-  border: 1px solid #dce5f1;
-  text-align: left;
-}
-
-.message-content :deep(th) {
-  background: #f8fafc;
-  font-weight: 700;
-}
-
-@media (max-width: 720px) {
-  .message-item--assistant,
-  .message-item--user {
-    width: 100%;
-  }
 }
 </style>

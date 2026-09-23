@@ -1,5 +1,5 @@
 import axios, {AxiosHeaders, type AxiosRequestConfig} from "axios";
-import {inject} from "vue";
+import {ref} from "vue";
 
 export interface Payload {
     url: string,
@@ -9,6 +9,16 @@ export interface Payload {
     queryString: any | null,
     responseType: null | 'blob'
 }
+
+export const snack = ref<{
+    error: boolean,
+    msg: string | null,
+    view: boolean
+}>({
+    error: false,
+    msg: null,
+    view: false
+})
 
 const isSession = (url: string): boolean => {
     return url.toString() === 'session';
@@ -52,9 +62,13 @@ export const api = async (p: Payload): Promise<any | null> => {
             }
         } catch (err: any) {
             console.log('Api error', err)
+            const errorMsg = err?.response?.data?.error || err?.message || 'Eccezione API'
+            snack.value = {
+                error: true,
+                msg: errorMsg,
+                view: true
+            }
             reject(err)
         }
-
-
     })
 }

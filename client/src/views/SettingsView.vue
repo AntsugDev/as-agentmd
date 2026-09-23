@@ -42,6 +42,13 @@ const hydrateApiKeys = () => {
 }
 const snack = inject('snack')
 
+const noApiKeyProviders = ['ollama', 'claude-deep-seek', 'openai-deep-seek']
+const requiresApiKey = (providerKey: string | number): boolean => {
+  if (!providerKey) return true
+  const lowerKey = providerKey.toString().toLowerCase().trim()
+  return !noApiKeyProviders.includes(lowerKey)
+}
+
 const getModelsList = async () => {
   try {
     load.value = true
@@ -220,70 +227,109 @@ onMounted(() => {
 <template>
   <section class="content-grid">
     <div class="section-heading">
+      <div class="d-flex align-center gap-2">
+        <v-chip color="primary" variant="tonal" size="small" class="font-weight-bold">
+          <v-icon icon="mdi-cog-outline" size="14" class="mr-1"></v-icon>
+          Configuration
+        </v-chip>
+      </div>
       <h1>{{ t('settings.title') }}</h1>
       <p>{{ t('settings.intro') }}</p>
     </div>
 
-    <v-skeleton-loader v-if="isLoading" type="article, actions"/>
+    <v-skeleton-loader v-if="isLoading" type="article, actions" rounded="xl"/>
 
     <template v-else-if="settings">
-      <v-sheet class="panel settings-summary" rounded="lg" border>
-        <v-autocomplete
-            :items="modelItems"
-            item-title="text"
-            item-value="value"
-            :label="t('settings.defaultModel')"
-            variant="outlined"
-            density="comfortable"
-            prepend-inner-icon="mdi-brain"
-            append-inner-icon="mdi-pencil"
-            hide-details="auto"
-            v-model="modelName"
-            :model-value="modelName"
-            :loading="load"
-            @click:append-inner="changeDefaultModel"
-        >
-        </v-autocomplete>
+      <!-- Default Model & Sync Card -->
+      <v-sheet class="panel settings-summary" rounded="xl" border>
+        <v-row density="comfortable" align="center">
+          <v-col cols="12" md="6">
+            <v-autocomplete
+                :items="modelItems"
+                item-title="text"
+                item-value="value"
+                :label="t('settings.defaultModel')"
+                variant="outlined"
+                density="comfortable"
+                prepend-inner-icon="mdi-brain"
+                append-inner-icon="mdi-check-circle-outline"
+                hide-details="auto"
+                v-model="modelName"
+                :model-value="modelName"
+                :loading="load"
+                @click:append-inner="changeDefaultModel"
+                rounded="lg"
+            />
+          </v-col>
 
-        <div class="summary-meta">
-          <span>{{ t('settings.lastUpdated') }}</span>
-          <strong>{{ formattedLastUpdated }}</strong>
-        </div>
+          <v-col cols="12" sm="6" md="3" class="d-flex align-center gap-2">
+            <v-icon icon="mdi-clock-outline" color="grey" size="18"></v-icon>
+            <div class="summary-meta">
+              <span>{{ t('settings.lastUpdated') }}</span>
+              <strong class="text-caption font-weight-bold">{{ formattedLastUpdated }}</strong>
+            </div>
+          </v-col>
 
-        <v-btn
-            color="secondary"
-            variant="flat"
-            prepend-icon="mdi-refresh"
-            :loading="isSyncing"
-            @click="synchronizeModels"
-        >
-          {{ isSyncing ? t('settings.syncing') : t('settings.updateModels') }}
-        </v-btn>
+          <v-col cols="12" sm="6" md="3" class="d-flex justify-end">
+            <v-btn
+                color="secondary"
+                variant="flat"
+                prepend-icon="mdi-sync"
+                :loading="isSyncing"
+                @click="synchronizeModels"
+                rounded="lg"
+                class="font-weight-bold w-100 w-sm-auto"
+            >
+              {{ isSyncing ? t('settings.syncing') : t('settings.updateModels') }}
+            </v-btn>
+          </v-col>
+        </v-row>
       </v-sheet>
 
-      <v-alert v-if="notice" type="success" variant="tonal" density="comfortable">
+      <v-alert v-if="notice" type="success" variant="tonal" density="comfortable" rounded="lg" closable @click:close="notice = ''">
         {{ notice }}
       </v-alert>
 
-      <v-sheet class="panel" rounded="lg" border>
+      <!-- Providers Panel -->
+      <v-sheet class="panel" rounded="xl" border>
         <div class="panel-title">
-          <h2>{{ t('settings.providers') }}</h2>
-          <v-btn variant="flat" icon="mdi-file-export" size="40" :alt="t('settings.download')"
-                 :title="t('settings.download')" color="info" @click="download" :loading="loadDownload"></v-btn>
+          <div class="d-flex align-center gap-2">
+            <v-icon icon="mdi-server-network" color="primary"></v-icon>
+            <h2>{{ t('settings.providers') }}</h2>
+          </div>
+          
+          <v-btn
+              variant="tonal"
+              color="primary"
+              prepend-icon="mdi-file-export-outline"
+              size="small"
+              :title="t('settings.download')"
+              @click="download"
+              :loading="loadDownload"
+              rounded="lg"
+              class="font-weight-bold"
+          >
+            Export CSV
+          </v-btn>
         </div>
 
-        <v-expansion-panels variant="accordion">
-          <v-expansion-panel v-for="(provider,key) in settings.providers" :key="key">
-            <v-expansion-panel-title>
+        <v-expansion-panels variant="inset" class="provider-panels">
+          <v-expansion-panel v-for="(provider, key) in settings.providers" :key="key" rounded="xl" border class="mb-3">
+            <v-expansion-panel-title class="py-3">
               <div class="provider-title">
-                <strong>{{ key }}</strong>
-                <small>{{ maskApiKey(provider.apiKey) }}</small>
+                <div class="d-flex align-center ga-2">
+                  <v-icon icon="mdi-api" color="primary" size="20"></v-icon>
+                  <strong class="text-subtitle-1">{{ key }}</strong>
+                </div>
+                <v-chip size="x-small" variant="tonal" :color="requiresApiKey(key) ? 'grey' : 'info'" class="font-mono font-weight-bold">
+                  {{ requiresApiKey(key) ? maskApiKey(provider.apiKey) : 'Nessuna API Key richiesta' }}
+                </v-chip>
               </div>
             </v-expansion-panel-title>
 
             <v-expansion-panel-text>
-              <div class="provider-body">
-                <div class="input-row">
+              <div class="provider-body pt-2">
+                <div class="d-flex flex-column flex-md-row ga-4 align-stretch align-md-center" v-if="requiresApiKey(key)">
                   <v-text-field
                       v-model="apiKeys[key]"
                       :label="t('settings.apiKey')"
@@ -294,48 +340,60 @@ onMounted(() => {
                       hide-details="auto"
                       :append-inner-icon="iconView.icon"
                       @click:append-inner="viewApiKey"
+                      rounded="lg"
+                      class="flex-grow-1"
                   />
-                  <div class="d-flex flex-row justify-start">
+                  <div class="d-flex align-center ga-3">
                     <v-btn
-                        class="mr-2"
                         color="primary"
                         prepend-icon="mdi-content-save-outline"
                         :loading="savingProvider === key"
                         @click="saveApiKey(key)"
+                        rounded="lg"
+                        class="px-4"
                     >
                       {{ t('settings.saveApiKey') }}
                     </v-btn>
                     <v-btn
                         color="error"
-                        prepend-icon="mdi-delete"
+                        variant="tonal"
+                        icon="mdi-delete-outline"
                         :loading="savingProvider === key"
                         @click="saveApiKey(key, true)"
-                    >
-                      {{ t('settings.delApiKey') }}
-                    </v-btn>
+                        rounded="lg"
+                        :title="t('settings.delApiKey')"
+                    />
                   </div>
-
                 </div>
 
-                <div class="models-block">
-                  <h3>{{ t('settings.models') }}</h3>
+                <!-- Models list for this provider -->
+                <div class="models-block mt-4">
+                  <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-2 mb-2 d-flex align-center gap-1">
+                    <v-icon icon="mdi-cube-outline" size="16"></v-icon>
+                    <span>{{ t('settings.models') }}</span>
+                  </h3>
+
                   <div v-if="getModels(key).length === 0" class="empty-state compact">
-                    {{ t('settings.noModels') }}
+                    <span class="text-caption text-grey-darken-1">{{ t('settings.noModels') }}</span>
                   </div>
-                  <v-list v-else lines="two" density="comfortable">
-                    <v-list-item v-for="model in getModels(key)" :key="model.name">
+
+                  <v-list v-else lines="two" density="comfortable" class="rounded-lg border pa-1">
+                    <v-list-item v-for="model in getModels(key)" :key="model.name" class="rounded-lg mb-1">
                       <template #prepend>
-                        <v-icon icon="mdi-cube-outline"/>
+                        <v-avatar color="primary" variant="tonal" size="32">
+                          <v-icon icon="mdi-brain" size="18"></v-icon>
+                        </v-avatar>
                       </template>
-                      <v-list-item-title>{{ model.displayName ?? model.name }}</v-list-item-title>
-                      <v-list-item-subtitle>
+                      <v-list-item-title class="font-weight-bold text-body-2">
+                        {{ model.displayName ?? model.name }}
+                      </v-list-item-title>
+                      <v-list-item-subtitle class="text-caption text-grey-darken-1">
                         {{ model.description ?? model.name }}
                       </v-list-item-subtitle>
                       <template #append>
                         <span class="token-pill">
-                          {{ t('settings.tokens') }}: {{
-                            model.inputTokenLimit ?? '-'
-                          }} / {{ model.outputTokenLimit ?? '-' }}
+                          <v-icon icon="mdi-counter" size="12" class="mr-1"></v-icon>
+                          {{ t('settings.tokens') }}: {{ model.inputTokenLimit ?? '-' }} / {{ model.outputTokenLimit ?? '-' }}
                         </span>
                       </template>
                     </v-list-item>
@@ -349,3 +407,20 @@ onMounted(() => {
     </template>
   </section>
 </template>
+
+<style scoped>
+.provider-title {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-right: 8px;
+}
+
+.summary-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+</style>

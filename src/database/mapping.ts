@@ -34,12 +34,16 @@ export interface Embed{
 
 export interface ListData{
     FILE_ID:number
+    STATUS_NAME:string
+    TOT_CHUNKS:number|null
+    NOT_ELABORATE:number|null
+    EXCEPTION:number|null
+    ELABORATE:number|null
+    TOT_EMB:number|null
     FILE_NAME:string
-    PREVIEW_CONTENT_FILE:string
-    TAG:string,
+    TAG:string
     CREATED_AT:string
     UPDATED_AT:string
-    STATUS:string
 }
 
 export interface RagInt{

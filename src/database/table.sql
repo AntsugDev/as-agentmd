@@ -90,35 +90,20 @@ ORDER BY F.CREATED_AT, F.UPDATED_AT, C.UPDATED_AT;
 
 DROP VIEW IF EXISTS DATALIST;
 CREATE VIEW DATALIST AS
-SELECT TT.FILE_ID,
-       TT.FILE_NAME,
-       TT.PREVIEW_CONTENT_FILE,
-       TT.TAG,
-       TT.CREATED_AT,
-       TT.UPDATED_AT,
-       (CASE
-            WHEN TT.STATUS_NAME = 'KO' THEN 'EXCEPTION FILE'
-            WHEN TT.EXCEPTION > 0 THEN 'EXCEPTION CHUNK'
-            WHEN TT.STATUS_NAME = 'OK' AND TT.TOT_CHUNKS = TT.ELABORATE AND TT.ELABORATE = TT.TOT_EMB THEN 'SUCCESS'
-            WHEN TT.STATUS_NAME = 'OK' AND TT.TOT_CHUNKS != TT.ELABORATE THEN 'WAIT EMBED'
-            WHEN TT.NOT_ELABORATE > 0 AND TT.STATUS_NAME = 'processing' THEN 'WAIT CHUNK'
-            else tt.STATUS_NAME
-           END) STATUS
-FROM (SELECT F.ID                                                                  FILE_ID,
-             S.NAME                                                                STATUS_NAME,
-             (SELECT COUNT(*) FROM CHUNKS C WHERE C.FILE_ID = F.ID)                TOT_CHUNKS,
-             (SELECT COUNT(*) FROM CHUNKS C WHERE C.FILE_ID = F.ID AND STATUS = 0) NOT_ELABORATE,
-             (SELECT COUNT(*) FROM CHUNKS C WHERE C.FILE_ID = F.ID AND STATUS = 2) EXCEPTION,
-             (SELECT COUNT(*) FROM CHUNKS C WHERE C.FILE_ID = F.ID AND STATUS = 1) ELABORATE,
-             (SELECT COUNT(*) FROM vss_chunks V WHERE V.FILE_ID = F.ID)            TOT_EMB,
-             F.FILE_NAME,
-             SUBSTR(F.CONTENT, 0, 100)                                             PREVIEW_CONTENT_FILE,
-             F.TAG,
-             F.CREATED_AT,
-             F.UPDATED_AT
-      FROM FILES F
-               JOIN STATUS S ON S.ID = F.STATUS_ID
-      ORDER BY F.CREATED_AT, F.UPDATED_AT) TT;
+SELECT F.ID                                                                  FILE_ID,
+       S.NAME                                                                STATUS_NAME,
+       (SELECT COUNT(*) FROM CHUNKS C WHERE C.FILE_ID = F.ID)                TOT_CHUNKS,
+       (SELECT COUNT(*) FROM CHUNKS C WHERE C.FILE_ID = F.ID AND STATUS = 0) NOT_ELABORATE,
+       (SELECT COUNT(*) FROM CHUNKS C WHERE C.FILE_ID = F.ID AND STATUS = 2) EXCEPTION,
+       (SELECT COUNT(*) FROM CHUNKS C WHERE C.FILE_ID = F.ID AND STATUS = 1) ELABORATE,
+       (SELECT COUNT(*) FROM vss_chunks V WHERE V.FILE_ID = F.ID)            TOT_EMB,
+       F.FILE_NAME,
+       F.TAG,
+       F.CREATED_AT,
+       F.UPDATED_AT
+FROM FILES F
+         JOIN STATUS S ON S.ID = F.STATUS_ID
+ORDER BY F.CREATED_AT, F.UPDATED_AT;
 
 SELECT C.CONTENT,
        vec_distance_cosine(v.embedding, ?) AS distance
