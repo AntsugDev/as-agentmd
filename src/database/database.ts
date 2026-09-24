@@ -30,8 +30,6 @@ export class SqlDb {
     public async create(block: boolean = false) {
         try {
             if (block) {
-                new Scheduler(this._db)
-                new Embindings(this._db)
                 return this._db
             }
             if (!this._db) throw new Error("Database not found");
@@ -41,8 +39,6 @@ export class SqlDb {
                 this._db.exec(createTable)
                 setTimeout(() => {
                     this.init()
-                    new Scheduler(this._db)
-                    new Embindings(this._db)
                 }, 3000)
             }
             return this._db;

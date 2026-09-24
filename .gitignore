@@ -8,3 +8,4 @@ workflows
 uploads
 package-lock.json
 src/database/rag.db
+src/database/rag.db-journal

@@ -4,8 +4,13 @@ import {Command} from 'commander';
 import {Server} from "./command/Server.js";
 import {SqlDb} from "./database/database.js";
 import {HuggingFace} from "./api/HuggingFace.js";
+import {work} from "./worked/work.js";
 export const db = await new SqlDb().create()
 export const _class = await HuggingFace.instance()
+
+await work('CHUNK')
+await work('EMB')
+
 const program = new Command();
 program
     .name('agentmd')
