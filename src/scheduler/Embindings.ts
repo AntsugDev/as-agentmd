@@ -36,13 +36,13 @@ export class Embindings {
         try {
             msg += `\n[SCHED EMB] Embedding attivo? ${isActiveEmbending ? 'SI' : 'NO'} - Scheduler attivo? ${isActiveScheduler ? 'SI' : 'NO'}`;
             if (!isActiveScheduler && !isActiveEmbending) {
-                const data: IntEmb[] | undefined = this.search() ?? []
+                const data: Chunks[] | undefined = this.search() ?? []
                 msg += ` \nScheduler emb is worked (${(data && data.length > 0 ? 'FULL' : `EMPTY`)}) `
                 if (data.length > 0) {
                     let c = 1;
-                    for (let i = 0; i < this.embeddings.length; i++) {
+                    for (let i = 0; i < data.length; i++) {
                         isActiveEmbending = true
-                        const task = this.embeddings[i]
+                        const task:Chunks = data[i]
                         c++;
                         await Embindings.worker(this.db, task)
                     }
@@ -57,10 +57,10 @@ export class Embindings {
     }
 
 
-    private search(): IntEmb[] | undefined {
+    private search(): Chunks[] | undefined {
         try {
             //@ts-ignore
-            const embeddings: IntEmb[] | undefined = this.db?.prepare("SELECT * FROM CHUNKS WHERE STATUS in (0,2)").all()
+            const embeddings: Chunks[] | undefined = this.db?.prepare("SELECT * FROM CHUNKS WHERE STATUS in (0,2)").all()
             return embeddings;
         } catch (err: any) {
             throw err;

@@ -58,11 +58,9 @@ export class Server extends AbstractProgram {
             setInterval(async () => {
                 try {
                     console.log('tentativo chunks delle ', dayjs().format('HH:mm:ss'),isActiveEmbending, isActiveScheduler)
-                    console.log('alle  ', dayjs().add(2,'minutes').format('HH:mm:ss'),' tentativo emb')
                     if (!isActiveEmbending && !isActiveScheduler) {
                         await pool.run('CHUNK')
                     } else console.log('tentativo chunks bloccato', isActiveScheduler, isActiveEmbending)
-                    this.intervalEmb()
                 } catch (ec: any) {
                     throw ec;
                 }
@@ -75,7 +73,7 @@ export class Server extends AbstractProgram {
     protected intervalEmb(): void {
         try {
             const delay = 3 * 60 * 1000
-            setTimeout(async () => {
+            setInterval(async () => {
                 try {
                     console.log('tentativo emb delle ', dayjs().format('HH:mm:ss'), isActiveScheduler, isActiveEmbending)
                     if (!isActiveEmbending && !isActiveScheduler) {
@@ -108,6 +106,7 @@ export class Server extends AbstractProgram {
                         if (!this.complete) {
                             this.complete = true
                             this.intervalChunck()
+                            this.intervalEmb()
                             this._clear()
                             const now = dayjs()
                             let msg = `Worked start (scheduler start):Next Scheduler chunks start between ${now.add(5, 'minutes').format('YYYY-MM-DD HH:mm:ss')} and next scheduler emb start between ${now.add(6, 'minutes').format('YYYY-MM-DD HH:mm:ss')}`
