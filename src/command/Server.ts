@@ -8,6 +8,11 @@ import {ApiFe} from "../fe/ApiFe.js";
 import {ChatFe} from "../fe/ChatFe.js";
 import {Request, Response} from "express"
 import pool from "../worked/istanza.js";
+import dayjs from "dayjs";
+import {ClearDirectory} from "../scheduler/clearDirectory.js";
+import {isActiveEmbending} from "../scheduler/Embindings.js";
+import {isActiveScheduler} from "../scheduler/Scheduler.js";
+import {logger} from "../utility/storage.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -46,39 +51,83 @@ export class Server extends AbstractProgram {
         }
     }
 
-    protected startWorker() {
+    protected intervalChunck() {
         try {
-            this.cTimeout = setTimeout(async () => {
-                console.log('🏃 Trying to start worker ...')
-                if (!this.complete) {
-                    const rChunk = await pool.run('CHUNK')
-                    const rEmb = await pool.run('EMB')
-
-                    if (rEmb && rChunk) {
-                        this.complete = true
-                        if (this.cTimeout) {
-                            clearTimeout(this.cTimeout)
-                            this.cTimeout = null
-                        }
-                    } else {
-                        if (this.cTimeout) {
-                            clearTimeout(this.cTimeout)
-                            this.cTimeout = null
-                        }
-                        this.startWorker()
-                    }
-                } else {
-                    if (this.cTimeout) {
-                        clearTimeout(this.cTimeout)
-                        this.cTimeout = null
-                    }
-                    this.startWorker()
+            const delay = 2 * 60 * 1000
+            console.log('attivo interval ....', dayjs().add(2,'minutes').format('HH:mm:ss'), isActiveScheduler, isActiveEmbending)
+            setInterval(async () => {
+                try {
+                    console.log('tentativo chunks delle ', dayjs().format('HH:mm:ss'),isActiveEmbending, isActiveScheduler)
+                    console.log('alle  ', dayjs().add(2,'minutes').format('HH:mm:ss'),' tentativo emb')
+                    if (!isActiveEmbending && !isActiveScheduler) {
+                        await pool.run('CHUNK')
+                    } else console.log('tentativo chunks bloccato', isActiveScheduler, isActiveEmbending)
+                    this.intervalEmb()
+                } catch (ec: any) {
+                    throw ec;
                 }
-            }, 30000)
-
+            }, delay)
         } catch (e: any) {
             throw e;
         }
+    }
+
+    protected intervalEmb(): void {
+        try {
+            const delay = 3 * 60 * 1000
+            setTimeout(async () => {
+                try {
+                    console.log('tentativo emb delle ', dayjs().format('HH:mm:ss'), isActiveScheduler, isActiveEmbending)
+                    if (!isActiveEmbending && !isActiveScheduler) {
+                        await pool.run('EMB')
+                    } else console.log('tentativo emb bloccato', isActiveScheduler, isActiveEmbending)
+                } catch (eM: any) {
+                    throw eM;
+                }
+            }, delay)
+        } catch (e: any) {
+            throw e;
+        }
+    }
+
+    protected _clear() {
+        if (this.cTimeout) {
+            clearTimeout(this.cTimeout)
+            this.cTimeout = null
+        }
+    }
+
+
+    protected startWorker(): Promise<boolean> {
+        return new Promise((resolve, reject) => {
+            try {
+                const delay = 30 * 1000
+                console.log('tra ', dayjs().add(30,'s').format('HH:mm:ss'), this.complete)
+                setTimeout(async () => {
+                    try {
+                        if (!this.complete) {
+                            this.complete = true
+                            this.intervalChunck()
+                            this._clear()
+                            const now = dayjs()
+                            let msg = `Worked start (scheduler start):Next Scheduler chunks start between ${now.add(5, 'minutes').format('YYYY-MM-DD HH:mm:ss')} and next scheduler emb start between ${now.add(6, 'minutes').format('YYYY-MM-DD HH:mm:ss')}`
+                            await logger('INFO', 'WORKED', msg, null, null, `${dayjs().format('YYYYMMDD')}_worked`)
+                            resolve(true)
+                        } else {
+                            this._clear()
+                            await this.startWorker()
+                            resolve(false)
+                        }
+                    } catch (er: any) {
+                        throw er;
+                    } finally {
+                        //await ClearDirectory.worked()
+                    }
+                }, delay)
+            } catch (e: any) {
+                reject(e)
+            }
+        })
     }
 
 
@@ -93,6 +142,15 @@ export class Server extends AbstractProgram {
                 process.on('unhandledRejection', (reason, promise) => {
                     console.error('PROMISE REJECTED NON GESTITA:', reason);
                 });
+                process.on('SIGTERM', async () => {
+                    console.log('Shutdown...');
+
+                    this.server.close(async () => {
+                        await pool.destroy();
+                        process.exit(0);
+                    });
+                });
+
                 this.server = this.app.listen(this.port, async () => {
                     try {
                         const url = `http://localhost:${this.port}`;
@@ -100,8 +158,7 @@ export class Server extends AbstractProgram {
                         ChatFe.clearAll()
                         await ChatFe.clear_archive(false)
                         await ChatFe.clear_uploads()
-                        this.startWorker()
-
+                        await this.startWorker()
                     } catch (err: any) {
                         console.log('Server not started', err)
                     }

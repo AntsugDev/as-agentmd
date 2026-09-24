@@ -2,12 +2,26 @@ import Database from "better-sqlite3";
 import {SqlDb} from "../database/database.js";
 import {Chunks} from "./chunks.js";
 import dayjs from "dayjs";
-import {Files} from "../database/mapping.js";
 import {isActiveEmbending} from "./Embindings.js";
 import {dd} from "../utility/utility.js";
+import {log_worked, logger} from "../utility/storage.js";
 
 export let isActiveScheduler: boolean = false;
 let clear: any | null = null;
+
+interface Files {
+    ID: number
+    FILE_NAME: string
+    CONTENT: string
+    TAG: string,
+    STATUS_ID: number
+    MODEL_USED?: string | null
+    CREATED_AT: string
+    UPDATED_AT: string | null
+    RETRY_COUNT: number | null
+    MIME_TYPE: string
+    EXT: string
+}
 
 export class Scheduler {
 
@@ -19,64 +33,37 @@ export class Scheduler {
         if (!db) throw new Error("Database not found");
         this.db = db
         this.statusIn = [SqlDb._status(this.db), SqlDb._status(this.db, 'ko')]
-        this.init(this.db)
-
     }
 
-    private start(db: Database.Database | undefined, delay:number = 300000) {
-        console.log(`[SCHED] Embedding attivo?${isActiveEmbending ? 'SI':'NO'} - Scheduler attivo?${isActiveScheduler ? 'SI':'NO'}`)
-
-        const clearTmp = setTimeout(() => {
-            if (isActiveScheduler || isActiveEmbending) {
-                console.log(`[${dayjs().format('YYYY-MM-DD HH:mm:ss')}] Scheduler chunks is blocked. Starts in  ${dayjs().add(60, 'seconds').format('YYYY-MM-DD HH:mm:ss')} `)
-                this.start(db, 60000)
-                return;
-            }
-            if (clear) {
-                clearTimeout(clear)
-                clear = null;
-            }
-            const now = dayjs();
-            this.search()
-            console.log(`[${now.format('YYYY-MM-DD HH:mm:ss')}] Scheduler chunks is worked (${(this.queue && Object.keys(this.queue).length > 0 ? 'FULL' : `EMPTY`)}).Next between ${now.add(5, 'minutes').format('YYYY-MM-DD HH:mm:ss')} `)
-            if (this.queue) {
-                queueMicrotask(() => {
-                    isActiveScheduler = true;
-                    clear = clearTmp
-                    Scheduler.worker(db, this.queue)
-                    this.start(db, delay)
-                })
-            }else{
-                if (clear) {
-                    clearTimeout(clear)
-                    clear = null;
-                }
-                isActiveScheduler = false
-            }
-        }, delay)
-    }
-
-    private init(db: Database.Database | undefined) {
+    public async start() {
+        let msg = "";
+        const now = dayjs();
         try {
-            if (!db) throw new Error("Database not found")
-            this.search()
-            const nowInit = dayjs();
-            console.log(`[${nowInit.format('YYYY-MM-DD HH:mm:ss')}] Scheduler chunks is worked (${(this.queue && Object.keys(this.queue).length > 0 ? 'FULL' : `EMPTY`)}). Next between ${nowInit.add(5, 'minutes').format('YYYY-MM-DD HH:mm:ss')} `)
-            this.start(db)
-        } catch (err: any) {
-            throw err;
+            msg += `\n[SCHED] Embedding attivo? ${isActiveEmbending ? 'SI' : 'NO'} - Scheduler attivo? ${isActiveScheduler ? 'SI' : 'NO'}`;
+            if (!isActiveScheduler && !isActiveEmbending) {
+                const data: Files | undefined = this.search()
+                msg += ` \nScheduler chunks is worked (${(data && Object.keys(data).length > 0 ? 'FULL' : `EMPTY`)}) `
+                if (data) {
+                    isActiveScheduler = true;
+                    await Scheduler.worker(this.db, data)
+                }
+            }
+            await log_worked('INFO', msg)
+        } catch (e: any) {
+            throw e;
         }
     }
 
-    private search() {
+    private search(): Files | undefined {
         try {
             if (this.statusIn && this.statusIn.length > 0 && this.db) {
-                this.queue = this.db.prepare(`SELECT *
-                                              FROM FILES
-                                              WHERE STATUS_ID in (${this.statusIn.join(',')}) LIMIT 1`).get();
+                // @ts-ignore
+                const result: Files | undefined = this.db.prepare(`SELECT *
+                                                                   FROM FILES
+                                                                   WHERE STATUS_ID in (${this.statusIn.join(',')}) LIMIT 1`).get();
+                return result;
             }
         } catch (err: any) {
-            console.log('Search files error', err)
             throw err;
         }
     }
@@ -89,12 +76,11 @@ export class Scheduler {
             return check && parseInt(check.OK) === 1;
 
         } catch (err: any) {
-            console.log('Retry failed ', err)
             throw err;
         }
     }
 
-    private static update(db: Database.Database | undefined, id: number, error: boolean = false, status: 'processing' | 'ok' | 'ko' = 'processing') {
+    public static update(db: Database.Database | undefined, id: number, error: boolean = false, status: 'processing' | 'ok' | 'ko' = 'processing') {
         try {
             if (!db) throw new Error("Database not found")
             if (!error) {
@@ -112,10 +98,8 @@ export class Scheduler {
                 isActiveScheduler = false;
             }
         } catch (err: any) {
-            console.log('Update Row failed ', err)
             throw err;
-        }
-        finally {
+        } finally {
             if (status === 'ok' || status === 'ko')
                 isActiveScheduler = false;
         }
@@ -130,23 +114,23 @@ export class Scheduler {
                 this.update(db, data.ID)
                 let res: boolean = false;
                 if (['xlsx', 'xls', 'csv'].includes(data.EXT)) {
-                    res = await Chunks.data_chunk(JSON.parse(data.CONTENT), data.ID)
+                    res = await Chunks.data_chunk(JSON.parse(data.CONTENT), data.ID, db)
                 } else {
-                    res = await Chunks.text_chunk(data.CONTENT, data.ID)
+                    res = await Chunks.text_chunk(data.CONTENT, data.ID, db)
                 }
                 if (res) this.update(db, data.ID, false, 'ok')
             }
         } catch (err: any) {
-            console.log('----------------------CHUNKS-------------------------------')
-            console.log(err)
-            console.log('--------------------------------------------------------')
+            let msg = "";
             if (retry) {
-                setTimeout(() => {
-                    console.log(`Task scheduler failed, next try from ${now.add(30, 'seconds').format('YYYY-MM-DD HH:mm:ss')} (${err.toString()})`)
-                    queueMicrotask(async () => await Scheduler.worker(db, data))
+                setTimeout(async () => {
+                    msg = `Task scheduler failed, next try from ${now.add(30, 'seconds').format('YYYY-MM-DD HH:mm:ss')} (${err.toString()})`
+                    await logger('EXCEPTION', 'WORKED', msg, 701, err, 'worked')
+                    await Scheduler.worker(db, data)
                 }, 3000)
             } else {
-                console.log(`Task scheduler failed, terminate with this error: ${err.toString()}`)
+                msg = `Task scheduler failed, terminate with this error: ${err.toString()}`
+                await logger('EXCEPTION', 'WORKED', msg, 700, err, 'worked')
                 this.update(db, data.ID, true)
                 return;
             }

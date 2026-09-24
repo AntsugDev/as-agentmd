@@ -11,7 +11,7 @@ import fs from "fs/promises";
 import {PDFParse} from 'pdf-parse';
 import mammoth from 'mammoth';
 import _xlsx from 'xlsx';
-import {HuggingFace,_class} from "../api/HuggingFace.js";
+import {HuggingFace, _class} from "../api/HuggingFace.js";
 import {ClaudeThroughDeepSeek} from "../api/ClaudeThroughDeepSeek.js";
 import {logger} from "./storage.js";
 
@@ -110,10 +110,9 @@ export const getProviderModelUtility = async (p: string | null, msg: string | an
                 _class = new OllamaApi(files, model);
             else if (p.toString().indexOf('gemini') !== -1) {
                 _class = new Gemini(files, model, (rag ? rag : null));
-                isInput= true;
-            }
-            else if (p.toString().indexOf('openai') !== -1) {
-                if(p.toString().indexOf('deep-seek') === -1)
+                isInput = true;
+            } else if (p.toString().indexOf('openai') !== -1) {
+                if (p.toString().indexOf('deep-seek') === -1)
                     isInput = true
                 _class = new OpenAiClass(files, model, !isInput);
             } else if (p.toString().indexOf('claude') !== -1) {
@@ -194,15 +193,21 @@ export const createVector = async (content: any): Promise<number[]> => {
     }
 }
 
-export const cArray =(arr:any[], size:number) =>  Array.from(
-    { length: Math.ceil(arr.length / size) },
+export const cArray = (arr: any[], size: number) => Array.from(
+    {length: Math.ceil(arr.length / size)},
     (_, i) => arr.slice(i * size, i * size + size)
 );
 
-export const dd = (inPrint: any, tag?:string) => {
-    console.log(`------------PRINT DATA ${tag}----------------------------`)
+export const dd = (inPrint: any, tag?: string) => {
+    if (tag)
+        console.log(`------------PRINT DATA ${tag}----------------------------`)
+    else
+        console.log(`------------PRINT DATA----------------------------`)
     console.log('      ')
-    console.log(inPrint)
+    if (typeof inPrint === "string")
+        console.log(inPrint)
+    else
+        console.table(inPrint)
     console.log('      ')
     console.log('---------------------------------------------------')
     process.exit(1)

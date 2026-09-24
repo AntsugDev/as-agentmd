@@ -5,7 +5,7 @@ import {Server} from "./command/Server.js";
 import {SqlDb} from "./database/database.js";
 import {HuggingFace} from "./api/HuggingFace.js";
 
-await new SqlDb().create()
+await new SqlDb().create(true)
 await HuggingFace.instance()
 
 export const program = new Command();

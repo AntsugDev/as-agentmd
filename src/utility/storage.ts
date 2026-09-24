@@ -36,7 +36,6 @@ export const storage_append = async (nameFile: string, text: any) => {
         const dataFile = await storage_exist(nameFile)
         if (!dataFile) return storage_put(nameFile, text)
         await fs.appendFile(fileDir, `\n${text}`, 'utf-8')
-        console.log(`The row added into file ${fileDir}`)
     } catch (err: any) {
         console.log('File not updated', err)
     }
@@ -56,10 +55,11 @@ export const storage_del = async (nameFile: string) => {
     }
 }
 
-export const logger=async (status:'INFO'|'EXCEPTION',tag:string, msg:string, code?:number|string, stack?:string) => {
+export const logger= async (status:'INFO'|'EXCEPTION',tag:string, msg:string, code?:number|string|null, stack?:string|null, name?:string ) => {
     try{
         const now = dayjs().format('YYYY_MM_DD');
-        const fileName = `${now}_log.txt`;
+        let fileName = `${now}_log.txt`;
+        if(name) fileName = `${name}.txt`
         const time = dayjs().format('HH:mm:ss')
         let audit = `[${time}](${status}),${tag}: ${msg}`
         if(code || stack){
@@ -68,5 +68,14 @@ export const logger=async (status:'INFO'|'EXCEPTION',tag:string, msg:string, cod
         await storage_append(fileName,audit)
     }catch (err:any){
         console.log('Log not registered', err)
+        throw err;
+    }
+}
+
+export const log_worked =async (status:'INFO'|'EXCEPTION',msg:string) => {
+    try{
+        await logger(status,'WORKED',msg,null,null,`${dayjs().format('YYYYMMDD')}_worked`)
+    }catch (err:any){
+        throw err;
     }
 }

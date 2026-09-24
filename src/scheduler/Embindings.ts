@@ -3,9 +3,22 @@ import dayjs from "dayjs";
 import {Chunks} from "../database/mapping.js";
 import {createVector} from "../utility/utility.js";
 import {isActiveScheduler} from "./Scheduler.js";
+import {log_worked, logger} from "../utility/storage.js";
+import {awaitAllCallbacks} from "@langchain/core/callbacks/promises";
 
 export let isActiveEmbending = false;
-let clear:any|null = null;
+let clear: any | null = null;
+
+interface IntEmb {
+    ID: number
+    FILE_ID: number
+    CONTENT: string
+    TOKENS: number | null
+    STATUS: number
+    RETRY_COUNT: number | null
+    CREATED_AT: string
+    UPDATED_AT: string | null
+}
 
 export class Embindings {
 
@@ -15,78 +28,41 @@ export class Embindings {
 
     constructor(db: Database.Database | undefined) {
         this.db = db
-        this.init(this.db)
-
     }
 
-    protected start(delay:number = 360000){
-        try{
-            console.log(`[SCHED EMB] Embedding attivo?${isActiveEmbending ? 'SI':'NO'} - Scheduler attivo?${isActiveScheduler ? 'SI':'NO'}`)
-            const tmp = setTimeout(() => {
-                if(isActiveEmbending || isActiveScheduler){
-                    console.log(`[${dayjs().format('YYYY-MM-DD HH:mm:ss')}] Scheduler embeddings is blocked. Starts in  ${dayjs().add(80, 'seconds').format('YYYY-MM-DD HH:mm:ss')} `)
-                    this.start(80000)
-                    return
-                }
-                if(clear){
-                    clearTimeout(clear)
-                    clear = null;
-                }
-                this.search()
-                console.log(`[${dayjs().format('YYYY-MM-DD HH:mm:ss')}] Scheduler embeddings work, find nr. row ${(this.embeddings.length)}.Next between ${dayjs().add(6, 'minutes').format('YYYY-MM-DD HH:mm:ss')} `)
-                if (this.embeddings) {
+    public async start() {
+        let msg = "";
+        const now = dayjs();
+        try {
+            msg += `\n[SCHED EMB] Embedding attivo? ${isActiveEmbending ? 'SI' : 'NO'} - Scheduler attivo? ${isActiveScheduler ? 'SI' : 'NO'}`;
+            if (!isActiveScheduler && !isActiveEmbending) {
+                const data: IntEmb[] | undefined = this.search() ?? []
+                msg += ` \nScheduler emb is worked (${(data && data.length > 0 ? 'FULL' : `EMPTY`)}) `
+                if (data.length > 0) {
                     let c = 1;
                     for (let i = 0; i < this.embeddings.length; i++) {
                         isActiveEmbending = true
                         const task = this.embeddings[i]
                         c++;
-                        queueMicrotask(() => {
-                            clear = tmp;
-                            Embindings.worker(this.db, task)
-
-                        })
+                        await Embindings.worker(this.db, task)
                     }
-                    console.log(`Ciclo giunto al numero ${c}`)
-                    console.log(`Lunghezza embeddings data ${this.embeddings.length}`)
-                    if(c >= this.embeddings.length) isActiveEmbending = false
+                    if (c >= this.embeddings.length) isActiveEmbending = false
                 }
-            }, delay)
+                await log_worked('INFO', msg)
+            }
 
-        }catch (e:any){
+        } catch (e: any) {
             throw e;
         }
     }
 
-    private init(db: Database.Database | undefined) {
-        try {
-            if (!db) throw new Error("Database not found")
-            this.search()
-            console.log(`[${dayjs().format('YYYY-MM-DD HH:mm:ss')}] Scheduler embeddings work, find nr. row ${(this.embeddings.length)}.Next between ${dayjs().add(6, 'minutes').format('YYYY-MM-DD HH:mm:ss')}`)
-            this.start()
 
-        } catch (err: any) {
-            throw err;
-        }
-    }
-
-    private static models(db: Database.Database | undefined, idFile: number) {
+    private search(): IntEmb[] | undefined {
         try {
-            if (!db) throw new Error("Database not found")
-            const m: any = db?.prepare("SELECT MODEL_USED FROM FILES WHERE ID = ?").get([idFile])
-            if (m) {
-                return m.MODEL_USED
-            }
-            return null;
+            //@ts-ignore
+            const embeddings: IntEmb[] | undefined = this.db?.prepare("SELECT * FROM CHUNKS WHERE STATUS in (0,2)").all()
+            return embeddings;
         } catch (err: any) {
-            throw err;
-        }
-    }
-
-    private search() {
-        try {
-            this.embeddings = this.db?.prepare("SELECT * FROM CHUNKS WHERE STATUS in (0,2)").all()
-        } catch (err: any) {
-            console.log("Eccezione ricerca chuncks per embindings", err)
             throw err;
         }
     }
@@ -140,24 +116,23 @@ export class Embindings {
                 if (vector)
                     return this.insert(db, data.ID, data.FILE_ID, vector)
                 else {
-                    setTimeout(() => {
+                    setTimeout(async () => {
                         this.update(db, data.ID, 0)
-                        queueMicrotask(async () => Embindings.worker(db, data))
+                        await Embindings.worker(db, data)
                     }, 5000)
                 }
             }
         } catch (err: any) {
-            console.log('----------------------EMB-------------------------------')
-            console.log(err)
-            console.log('--------------------------------------------------------')
             if (retry) {
-                setTimeout(() => {
-                    console.log(`Task scheduler emb failed, next try from ${now.add(30, 'seconds').format('YYYY-MM-DD HH:mm:ss')} (${err.toString()})`)
+                setTimeout(async () => {
+                    let msg = `Task scheduler emb failed, next try from ${now.add(30, 'seconds').format('YYYY-MM-DD HH:mm:ss')} (${err.toString()})`
+                    await log_worked('EXCEPTION',  msg)
                     this.update(db, data.ID, 0)
-                    queueMicrotask(async () => await Embindings.worker(db, data))
+                     await Embindings.worker(db, data)
                 }, 30000)
             } else {
-                console.log(`Task scheduler emb failed, terminate with this error: ${err.toString()}`)
+                let msg = `Task scheduler emb failed, terminate with this error: ${err.toString()}`
+                await log_worked('EXCEPTION',  msg)
                 this.update(db, data.ID, 2)
                 return;
             }
