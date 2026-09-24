@@ -4,14 +4,11 @@ import {Command} from 'commander';
 import {Server} from "./command/Server.js";
 import {SqlDb} from "./database/database.js";
 import {HuggingFace} from "./api/HuggingFace.js";
-import {work} from "./worked/work.js";
-export const db = await new SqlDb().create()
-export const _class = await HuggingFace.instance()
 
-await work('CHUNK')
-await work('EMB')
+await new SqlDb().create()
+await HuggingFace.instance()
 
-const program = new Command();
+export const program = new Command();
 program
     .name('agentmd')
     .description('Custom CLI for prompt automation and context engineering')
@@ -19,5 +16,6 @@ program
 //----server----
 const server = new Server(program)
 server.getData()
-
 program.parse(process.argv);
+
+

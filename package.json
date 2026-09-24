@@ -16,7 +16,7 @@
     "build:be": "tsc",
     "copy:assets": "copyfiles -u 1 client/dist/**/* dist/public",
     "build": "npm run clean && npm run build:be &&  npm run build:fe && npm run copy:assets",
-    "dev:be": "cls && tsc && agentmd server"
+    "dev:be": "cls && npm run clean --force && tsc && agentmd server"
   },
   "files": [
     "dist",
@@ -51,6 +51,7 @@
     "openai": "^7.15.0",
     "ora": "^9.4.1",
     "pdf-parse": "^2.4.5",
+    "piscina": "^5.3.2",
     "sqlite-vec": "^0.1.9",
     "swagger-ui-express": "^5.0.1",
     "xlsx": "^0.18.5"

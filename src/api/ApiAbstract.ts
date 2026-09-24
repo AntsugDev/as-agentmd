@@ -4,7 +4,7 @@ import {Message} from "ollama";
 import Conf from "conf";
 import {configStore} from "../config.js";
 import Database from "better-sqlite3";
-import {db} from "../index.js";
+import {db} from "../database/database.js";
 import {files} from "@mistralai/mistralai";
 
 export abstract class ApiAbstract extends DataUtility {

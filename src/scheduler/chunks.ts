@@ -1,5 +1,4 @@
-import {SqlDb} from "../database/database.js";
-import {db} from "../index.js";
+import {SqlDb,db} from "../database/database.js";
 import {RecursiveCharacterTextSplitter} from "@langchain/textsplitters";
 import {getEncoding} from "js-tiktoken";
 import {clearInterval} from "node:timers";

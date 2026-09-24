@@ -1,6 +1,4 @@
 import Database from "better-sqlite3";
-import {HuggingFace} from "../api/HuggingFace.js";
-import {_class} from "../index.js";
 import dayjs from "dayjs";
 import {Chunks} from "../database/mapping.js";
 import {createVector} from "../utility/utility.js";

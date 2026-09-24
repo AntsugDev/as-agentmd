@@ -1,10 +1,10 @@
 import {pipeline} from '@huggingface/transformers';
-
+export let _class:any|null =  null;
 export class HuggingFace {
 
     public static async instance() {
         try {
-            return await pipeline('feature-extraction',
+            _class =  await pipeline('feature-extraction',
                 'Xenova/all-MiniLM-L6-v2');
         } catch (err: any) {
             throw err;

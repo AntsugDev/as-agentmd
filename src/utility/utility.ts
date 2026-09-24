@@ -11,10 +11,9 @@ import fs from "fs/promises";
 import {PDFParse} from 'pdf-parse';
 import mammoth from 'mammoth';
 import _xlsx from 'xlsx';
-import {HuggingFace} from "../api/HuggingFace.js";
-import {_class} from "../index.js";
+import {HuggingFace,_class} from "../api/HuggingFace.js";
 import {ClaudeThroughDeepSeek} from "../api/ClaudeThroughDeepSeek.js";
-import {logger, storage_append} from "./storage.js";
+import {logger} from "./storage.js";
 
 const XLSX = (_xlsx as any).default || _xlsx;
 

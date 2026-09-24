@@ -5,6 +5,9 @@ import path from "path";
 import {Scheduler} from "../scheduler/Scheduler.js";
 import {Embindings} from "../scheduler/Embindings.js";
 import {Status} from "./mapping.js";
+import {dd} from "../utility/utility.js";
+
+export let  db:Database.Database|undefined = undefined
 
 export class SqlDb {
 
@@ -12,8 +15,10 @@ export class SqlDb {
 
     constructor() {
         if (this._db) return;
-        const directory = path.join('src/database', `rag.db`)
+        const directory = path.resolve(process.cwd(), 'src/database', 'rag.db');
         this._db = new Database(directory);
+        this._db.pragma('journal_mode = WAL');
+        this._db.pragma('synchronous = NORMAL');
         sqliteVec.load(this._db);
     }
 
@@ -41,7 +46,7 @@ export class SqlDb {
                     this.init()
                 }, 3000)
             }
-            return this._db;
+            db =  this._db;
 
         } catch (err: any) {
             console.log('Eccezione creazione db', err)

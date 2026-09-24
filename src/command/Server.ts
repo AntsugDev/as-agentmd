@@ -7,6 +7,7 @@ import {fileURLToPath} from 'url';
 import {ApiFe} from "../fe/ApiFe.js";
 import {ChatFe} from "../fe/ChatFe.js";
 import {Request, Response} from "express"
+import pool from "../worked/istanza.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,6 +17,10 @@ export class Server extends AbstractProgram {
     private port: number;
     private server: any | null;
     private router: any | null;
+
+    public complete: boolean = false;
+
+    private cTimeout: any | null = null;
 
     constructor(program: Command) {
         super(program);
@@ -41,6 +46,42 @@ export class Server extends AbstractProgram {
         }
     }
 
+    protected startWorker() {
+        try {
+            this.cTimeout = setTimeout(async () => {
+                console.log('🏃 Trying to start worker ...')
+                if (!this.complete) {
+                    const rChunk = await pool.run('CHUNK')
+                    const rEmb = await pool.run('EMB')
+
+                    if (rEmb && rChunk) {
+                        this.complete = true
+                        if (this.cTimeout) {
+                            clearTimeout(this.cTimeout)
+                            this.cTimeout = null
+                        }
+                    } else {
+                        if (this.cTimeout) {
+                            clearTimeout(this.cTimeout)
+                            this.cTimeout = null
+                        }
+                        this.startWorker()
+                    }
+                } else {
+                    if (this.cTimeout) {
+                        clearTimeout(this.cTimeout)
+                        this.cTimeout = null
+                    }
+                    this.startWorker()
+                }
+            }, 30000)
+
+        } catch (e: any) {
+            throw e;
+        }
+    }
+
+
     getData(): void {
         this.program.command('server').description("Start server").action(() => {
             try {
@@ -59,6 +100,8 @@ export class Server extends AbstractProgram {
                         ChatFe.clearAll()
                         await ChatFe.clear_archive(false)
                         await ChatFe.clear_uploads()
+                        this.startWorker()
+
                     } catch (err: any) {
                         console.log('Server not started', err)
                     }

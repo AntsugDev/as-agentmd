@@ -1,27 +1,20 @@
-import {parentPort, workerData} from "node:worker_threads";
+import path from "path";
+import Database from "better-sqlite3";
 import {Scheduler} from "../scheduler/Scheduler.js";
-import {db} from "../index.js";
 import {Embindings} from "../scheduler/Embindings.js";
 
-const action = workerData
+const directory = path.resolve(process.cwd(), 'src/database', 'rag.db');
+const dbWorker = new Database(directory);
 
-export const executeWoeker = async () => {
+
+export default function (action: 'CHUNK' | 'EMB') {
     try {
-        if (action === 'CHUNK') {
-            new Scheduler(db)
-        } else if (action === 'EMB') {
-            new Embindings(db)
-        } else {
-            throw new Error(`Azione sconosciuta: ${action}`);
-        }
-        parentPort?.postMessage({
-            success: true
-        })
+       if (!dbWorker) throw new Error("Database non connesso")
+        if (action === 'CHUNK') new Scheduler(dbWorker)
+        else new Embindings(dbWorker)
 
     } catch (e: any) {
-        parentPort?.postMessage({
-            success: false, error: e.message
-        })
+        console.log('Worker exception', e)
+        return false
     }
 }
-await executeWoeker();

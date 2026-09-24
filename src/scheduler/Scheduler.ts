@@ -4,6 +4,7 @@ import {Chunks} from "./chunks.js";
 import dayjs from "dayjs";
 import {Files} from "../database/mapping.js";
 import {isActiveEmbending} from "./Embindings.js";
+import {dd} from "../utility/utility.js";
 
 export let isActiveScheduler: boolean = false;
 let clear: any | null = null;
@@ -15,7 +16,7 @@ export class Scheduler {
     private queue: any | null;
 
     constructor(db: Database.Database | undefined) {
-        if (!db) return;
+        if (!db) throw new Error("Database not found");
         this.db = db
         this.statusIn = [SqlDb._status(this.db), SqlDb._status(this.db, 'ko')]
         this.init(this.db)

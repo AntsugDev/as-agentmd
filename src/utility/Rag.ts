@@ -1,5 +1,5 @@
 import Database from "better-sqlite3";
-import {db} from "../index.js";
+import {db} from "../database/database.js";
 import {createVector} from "./utility.js";
 import {RagInt} from "../database/mapping.js";
 

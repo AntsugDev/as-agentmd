@@ -1,5 +1,5 @@
 import Database from "better-sqlite3";
-import {db} from "../index.js";
+import {db} from "../database/database.js";
 import {ListData} from "./mapping.js";
 
 export class DataList {
