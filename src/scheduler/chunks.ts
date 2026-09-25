@@ -60,7 +60,7 @@ export class Chunks {
             let len = data.length
             log_worked('INFO',`Len data ${len}. ${len > 1000 ? 'Divider data' : 'Not divider data'}`,db,'DATA DIVIDER CHUNK EXCEL')
             if (len > 1000) {
-                firstChunks = cArray(data, 500);
+                firstChunks = cArray(data, 250);
                 len = firstChunks.length
                 isDivider = true
                 log_worked('INFO',`Data dividend len=${len}`,db,'DATA DIVIDER CHUNK EXCEL')
