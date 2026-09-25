@@ -3,8 +3,7 @@ import {configStore, providers} from "../config.js";
 import {AgentConfig, ProvidersInt, RawGeminiModel} from "../interface/myInterface.js";
 import Conf from "conf";
 import {Request, NextFunction, Response} from "express"
-import {exec} from 'child_process';
-import {createVector, dd, getContent, getProviderModelUtility, providerModels, totalToken} from "../utility/utility.js";
+import {getContent, getProviderModelUtility, providerModels, totalToken} from "../utility/utility.js";
 import {ChatFe} from "./ChatFe.js";
 import * as os from "node:os";
 import path from "path";
@@ -12,7 +11,6 @@ import fs from "fs/promises";
 import multer from "multer";
 import {unlink} from "node:fs/promises";
 import {SqlDb,db} from "../database/database.js";
-import {Scheduler} from "../scheduler/Scheduler.js";
 import {ListData} from "../database/mapping.js";
 import {DataList} from "../database/dataList.js";
 import {Rag} from "../utility/Rag.js";

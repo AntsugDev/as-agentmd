@@ -20,6 +20,7 @@ export class SqlDb {
         this._db.pragma('journal_mode = WAL');
         this._db.pragma('synchronous = NORMAL');
         sqliteVec.load(this._db);
+        db=this._db
     }
 
     public version() {
@@ -75,7 +76,6 @@ export class SqlDb {
             Array.from(keys).forEach(e => {
                 v.push('?')
             })
-
             const ins = `INSERT INTO ${table} (${keys.join(', ')})
                          values (${v.join(',')})`;
             let r: any | null = null

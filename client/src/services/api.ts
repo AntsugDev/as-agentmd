@@ -26,8 +26,8 @@ const isSession = (url: string): boolean => {
 
 export const api = async (p: Payload): Promise<any | null> => {
     return new Promise(async (resolve, reject) => {
+        let session = sessionStorage.getItem('apikey')
         try {
-            let session = sessionStorage.getItem('apikey')
             let config: AxiosRequestConfig = {
                 baseURL: 'http://localhost:1010/api',
                 url: p.url,
@@ -61,12 +61,13 @@ export const api = async (p: Payload): Promise<any | null> => {
                 resolve(response)
             }
         } catch (err: any) {
-            console.log('Api error', err)
-            const errorMsg = err?.response?.data?.error || err?.message || 'Eccezione API'
-            snack.value = {
-                error: true,
-                msg: errorMsg,
-                view: true
+            if (session) {
+                const errorMsg = err?.response?.data?.error || err?.message || 'Eccezione API'
+                snack.value = {
+                    error: true,
+                    msg: errorMsg,
+                    view: true
+                }
             }
             reject(err)
         }

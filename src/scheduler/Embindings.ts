@@ -46,7 +46,7 @@ export class Embindings {
                         c++;
                         await Embindings.worker(this.db, task)
                     }
-                    if (c >= this.embeddings.length) isActiveEmbending = false
+                    if (c >= data.length) isActiveEmbending = false
                 }
                 await log_worked('INFO', msg)
             }
@@ -96,8 +96,9 @@ export class Embindings {
             const create: any | null = db.prepare("INSERT OR REPLACE INTO vss_chunks (chunk_id,file_id, embedding) VALUES (?,?,?);")
                 .run([BigInt(chunk_id), BigInt(file_id), JSON.stringify(content)]).lastInsertRowid
             if (create) {
+                const u =  this.update(db, chunk_id, 1)
                 db.exec('COMMIT')
-                return this.update(db, chunk_id, 1)
+                return u;
             }
         } catch (err: any) {
             if (!db) throw new Error("Database not found")
@@ -112,8 +113,8 @@ export class Embindings {
         try {
             if (!db) throw new Error("Database not found")
             if (retry) {
-                const vector = await createVector(data.CONTENT)
-                if (vector)
+                const vector:number[] = await createVector(data.CONTENT)
+                if (vector.length > 0)
                     return this.insert(db, data.ID, data.FILE_ID, vector)
                 else {
                     setTimeout(async () => {

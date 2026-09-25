@@ -1,7 +1,7 @@
 import {SqlDb} from "../database/database.js";
 import {RecursiveCharacterTextSplitter} from "@langchain/textsplitters";
 import {getEncoding} from "js-tiktoken";
-import {cArray} from "../utility/utility.js";
+import {cArray, dd} from "../utility/utility.js";
 import {log_worked, logger} from "../utility/storage.js";
 import dayjs from "dayjs";
 import Database from "better-sqlite3";
@@ -52,23 +52,11 @@ export class Chunks {
         try {
             msg +="\nStart Data chunck"
             const headers = data[0]
-            const len = headers.length
-            let increment = len >= 10 ? 3 : 5;
-            const lenData = (data.length - 1)
-            if (lenData >= 500) {
-                increment = len >= 10 ? 250 : 500;
-            }
             const keys = ['FILE_ID', 'CONTENT', 'TOKENS'];
-            msg += `\nChunk for size: ${increment}`
             data.shift()
-            const chunks = cArray(data, increment);
-            msg += `\nSize for loop: ${chunks.length}`
-            for (let i = 0; i < chunks.length; i++) {
-                const chunkRows = chunks[i];
-                let text: string = "";
-                chunkRows.map((row: any) => {
-                    text += headers.map((h: string, index: number) => `${h.toString().trim()}=${(row[index] || "")}`).join('|')+"\n"
-                })
+            for (let i = 0; i < data.length; i++) {
+                const row = data[i];
+                const text = headers.map((h: string, index: number) => `${h.toString().trim()}=${(row[index] || "")}`).join(';')
                 const values = [id, text, this.getToken(text)];
                 if(db)
                 SqlDb.insert(db, 'CHUNKS', keys, values)

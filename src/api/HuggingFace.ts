@@ -4,8 +4,10 @@ export class HuggingFace {
 
     public static async instance() {
         try {
-            _class =  await pipeline('feature-extraction',
+            const c  =  await pipeline('feature-extraction',
                 'Xenova/all-MiniLM-L6-v2');
+            _class = c;
+            return c;
         } catch (err: any) {
             throw err;
         }

@@ -1,3 +1,6 @@
+--SELECT load_extension('C:/web/Personali/vector-plugin/environment/Lib/site-packages/sqlite_vec/vec0.dll');
+--SELECT vec_version();
+
 DROP TABLE IF EXISTS CHUNKS;
 DROP TABLE IF EXISTS FILES;
 DROP TABLE IF EXISTS STATUS;
@@ -41,7 +44,7 @@ CREATE VIRTUAL TABLE IF NOT EXISTS vss_chunks USING vec0
 (
     chunk_id INTEGER PRIMARY KEY,
     file_id INTEGER,
-    embedding float [384]
+    embedding float [384] distance_metric=cosine
 );
 DROP VIEW IF EXISTS TAGS;
 

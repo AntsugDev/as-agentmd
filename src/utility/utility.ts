@@ -103,40 +103,40 @@ export const providerModels = async (models: string[] | null, status: 'init' | '
 export const getProviderModelUtility = async (p: string | null, msg: string | any[], input: string | null, files: any | null = null, model: string | null, rag?: string | null): Promise<any | null> => {
     try {
 
-        let _class: any | null = null;
+        let __class: any | null = null;
         let isInput = false;
         if (p) {
             if (p.toString().indexOf('ollama') !== -1)
-                _class = new OllamaApi(files, model);
+                __class = new OllamaApi(files, model);
             else if (p.toString().indexOf('gemini') !== -1) {
-                _class = new Gemini(files, model, (rag ? rag : null));
+                __class = new Gemini(files, model, (rag ? rag : null));
                 isInput = true;
             } else if (p.toString().indexOf('openai') !== -1) {
                 if (p.toString().indexOf('deep-seek') === -1)
                     isInput = true
-                _class = new OpenAiClass(files, model, !isInput);
+                __class = new OpenAiClass(files, model, !isInput);
             } else if (p.toString().indexOf('claude') !== -1) {
                 if (p.toString().indexOf('deep-seek') === -1) {
-                    _class = new Claude(files, model);
+                    __class = new Claude(files, model);
                     isInput = true
                 } else {
-                    _class = new ClaudeThroughDeepSeek(files, model, (rag ? rag : null))
+                    __class = new ClaudeThroughDeepSeek(files, model, (rag ? rag : null))
                 }
             } else if (p.toString().indexOf('deep-seek') !== -1)
-                _class = new DeepSeek(files, model);
+                __class = new DeepSeek(files, model);
             else if (p.toString().indexOf('mistral') !== -1)
-                _class = new MistralClass(files, model);
+                __class = new MistralClass(files, model);
 
             else {
                 console.error(`Provider not found (${p})`);
                 return;
             }
         }
-        if (_class && p) {
-            const chat = await _class.chat((isInput ? input : msg))
+        if (__class && p) {
+            const chat = await __class.chat((isInput ? input : msg))
             if (typeof chat === 'object' && chat?.message)
                 throw new Error(chat.message)
-            return {m: chat, c: _class}
+            return {m: chat, c: __class}
         }
         return null;
     } catch (err: any) {
@@ -187,7 +187,10 @@ export const getContent = async (filePath: string, ext: string) => {
 }
 export const createVector = async (content: any): Promise<number[]> => {
     try {
-        return await HuggingFace.embeddings(_class, content)
+        const c = await HuggingFace.instance()
+        if (c)
+            return await HuggingFace.embeddings(c, content)
+        else return [];
     } catch (err: any) {
         throw err;
     }
