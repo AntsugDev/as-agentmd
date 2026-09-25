@@ -5,6 +5,7 @@ import {log_worked, logger} from "../utility/storage.js";
 import dayjs from "dayjs";
 import Database from "better-sqlite3";
 import {Scheduler} from "./Scheduler.js";
+import {cArray} from "../utility/utility.js";
 
 export const enc = getEncoding("cl100k_base");
 
@@ -21,10 +22,10 @@ export class Chunks {
     }
 
 
-    public static async text_chunk(data: any, id: number,db:Database.Database|undefined) {
+    public static async text_chunk(data: any, id: number, db: Database.Database | undefined) {
 
         try {
-            log_worked('INFO',`Start work chunks text ...`,db)
+            log_worked('INFO', `Start work chunks text ...`, db)
             const splitter = new RecursiveCharacterTextSplitter({
                 chunkSize: 800,
                 chunkOverlap: 150,
@@ -39,32 +40,50 @@ export class Chunks {
                     SqlDb.insert(db, 'CHUNKS', keys, values)
                 })
             })
-            log_worked('INFO',`... terminate work chunks text`,db)
+            log_worked('INFO', `... terminate work chunks text`, db)
             return true;
         } catch (err: any) {
-            Scheduler.update(db,id,true)
+            Scheduler.update(db, id, true)
             throw err;
         }
     }
 
-    public static async data_chunk(data: any[], id: number,db:Database.Database|undefined) {
+    public static async data_chunk(data: any[], id: number, db: Database.Database | undefined) {
         let msg = "";
         try {
-            log_worked('INFO',`Start work chunks excel ...`,db)
+            log_worked('INFO', `Start work chunks excel ...`, db)
             const headers = data[0]
             const keys = ['FILE_ID', 'CONTENT', 'TOKENS'];
             data.shift()
-            for (let i = 0; i < data.length; i++) {
-                const row = data[i];
-                const text = headers.map((h: string, index: number) => `${h.toString().trim()}=${(row[index] || "")}`).join(';')
-                const values = [id, text, this.getToken(text)];
-                if(db)
-                SqlDb.insert(db, 'CHUNKS', keys, values)
+            let isDivider = false
+            let firstChunks = data
+            let len = data.length
+            log_worked('INFO',`Len data ${len}. ${len > 1000 ? 'Divider data' : 'Not divider data'}`,db,'DATA DIVIDER CHUNK EXCEL')
+            if (len > 1000) {
+                firstChunks = cArray(data, 500);
+                len = firstChunks.length
+                isDivider = true
+                log_worked('INFO',`Data dividend len=${len}`,db,'DATA DIVIDER CHUNK EXCEL')
             }
-            log_worked('INFO',`... terminate work chunks excel`,db)
+            for (let i = 0; i < len; i++) {
+                const row = !isDivider ? data[i] : firstChunks[i];
+                let text: string = ""
+                if (!isDivider) {
+                    text = headers.map((h: string, index: number) => `${h.toString().trim()}=${(row[index] || "")}`).join(';')
+                } else {
+                    row.map((e: any,i:number) => {
+                        text += headers.map((h: string, index: number) => `${h.toString().trim()}=${(e[index] || "")}`).join(';')
+                        text += "\n"
+                    })
+                }
+                const values = [id, text, this.getToken(text)];
+                if (db)
+                    SqlDb.insert(db, 'CHUNKS', keys, values)
+            }
+            log_worked('INFO', `... terminate work chunks excel`, db)
             return true;
         } catch (err: any) {
-            Scheduler.update(db,id,true)
+            Scheduler.update(db, id, true)
             throw err;
         }
     }

@@ -104,7 +104,6 @@ export class Server extends AbstractProgram {
                 setTimeout(async () => {
                     try {
                         if (!this.complete) {
-                            log_worked('INFO','Start worked ...',_db,'START')
                             this.complete = true
                             await this.intervalChunck(_db)
                             await this.intervalEmb(_db)

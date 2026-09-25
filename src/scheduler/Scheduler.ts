@@ -82,15 +82,15 @@ export class Scheduler {
             if (!db) throw new Error("Database not found")
             if (!error) {
                 const processing = SqlDb._status(db, status);
-                db.prepare("UPDATE FILES SET RETRY_COUNT = (SELECT F.RETRY_COUNT+1 FROM FILES F WHERE F.ID = ? ), UPDATED_AT = datetime('now'), STATUS_ID = ? WHERE ID = ? ").run([
-                    id, processing, id
+                db.prepare("UPDATE FILES SET UPDATED_AT = datetime('now'), STATUS_ID = ? WHERE ID = ? ").run([
+                    processing, id
                 ])
                 if (status === 'ok')
                     isActiveScheduler = false;
             } else {
                 const ko = SqlDb._status(db, 'ko');
-                db.prepare("UPDATE FILES SET RETRY_COUNT = 0, UPDATED_AT = datetime('now'), STATUS_ID = ? WHERE ID = ?").run([
-                    id, ko, id
+                db.prepare("UPDATE FILES SET  UPDATED_AT = datetime('now'), STATUS_ID = ? WHERE ID = ?").run([
+                    ko, id
                 ])
                 isActiveScheduler = false;
             }

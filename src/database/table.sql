@@ -6,15 +6,6 @@ DROP TABLE IF EXISTS FILES;
 DROP TABLE IF EXISTS STATUS;
 DROP TABLE IF EXISTS WORKED_LOG;
 
-CREATE TABLE IF NOT EXISTS WORKED_LOG
-(
-    ID   INTEGER PRIMARY KEY AUTOINCREMENT,
-    TYPE TEXT,
-    TAG TEXT NULL,
-    MESSAGE TEXT,
-    CREATED_AT DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
 CREATE TABLE IF NOT EXISTS STATUS
 (
     ID   INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -66,47 +57,6 @@ from (select F.TAG, d.ELABORATE, d.TOT_EMB
                     on d.FILE_ID in ((select group_concat(f1.ID, ',') from FILES f1 where f1.TAG = F.TAG))) tt
 group by tt.TAG
 order by tt.TAG;
-
-
-
-DROP VIEW IF EXISTS DATALIST_AMM;
-CREATE VIEW DATALIST_AMM AS
-SELECT F.ID                      FILE_ID,
-       C.ID                      CHUNK_ID,
-       (CASE
-            WHEN S.NAME = 'OK' AND C.STATUS = 1 THEN 'SUCCESS'
-            WHEN S.NAME = 'KO' THEN 'EXCEPTION FILE'
-            WHEN C.STATUS = 2 THEN 'EXCEPTION CHUNK'
-            WHEN C.STATUS = 0 AND S.NAME = 'pending' THEN 'WAIT CHUNK'
-            ELSE S.NAME
-           END)                  STATUS,
-       F.FILE_NAME,
-       LENGTH(F.CONTENT)         LEN_TEXT_FILE,
-       SUBSTR(F.CONTENT, 0, 100) PREVIEW_CONTENT_FILE,
-       F.CONTENT                 ALL_FILE_DATA,
-       C.CONTENT                 CHUNK_CONTENT,
-       (CASE
-            WHEN LENGTH(C.CONTENT) <= 30 THEN 'LITTLE'
-            WHEN LENGTH(C.CONTENT) >= 4000 THEN 'BIG'
-            ELSE 'OK'
-           END
-           )                     SUCCESS_CHUNK,
-       SUBSTR(C.CONTENT, 0, 100) PREVIEW_CONTENT_CHUNCK,
-       (CASE
-            WHEN V.embedding IS NOT NULL THEN (
-                CASE WHEN vec_length(V.embedding) = 384 THEN 'OK' ELSE 'KO' END
-                )
-            ELSE NULL END)       LEN_EMB,
-       F.TAG,
-       F.CREATED_AT,
-       F.UPDATED_AT              UPDATE_FILES,
-       C.UPDATED_AT              UPDATE_CHUNK
-FROM FILES F
-         JOIN STATUS S ON S.ID = F.STATUS_ID
-         LEFT JOIN CHUNKS C ON C.FILE_ID = F.ID
-         LEFT JOIN vss_chunks V ON V.CHUNK_ID = C.ID
-ORDER BY F.CREATED_AT, F.UPDATED_AT, C.UPDATED_AT;
-
 DROP VIEW IF EXISTS DATALIST;
 CREATE VIEW DATALIST AS
 SELECT F.ID                                                                  FILE_ID,
