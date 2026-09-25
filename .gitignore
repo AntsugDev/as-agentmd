@@ -7,7 +7,7 @@ files
 workflows
 uploads
 package-lock.json
-./src/database/rag.db
-./src/database/rag.db-journal
-./src/database/rag.db-shm
-./src/database/rag.db-wal
+src/database/rag.db
+src/database/rag.db-journal
+src/database/rag.db-shm
+src/database/rag.db-wal
