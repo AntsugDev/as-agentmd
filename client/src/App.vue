@@ -108,6 +108,9 @@ const goToCtrlChat = ()=>{
 const goToRag = () => {
   router.push({name:'rag'})
 }
+const goToLogs = () => {
+  router.push({name:'logs'})
+}
 </script>
 
 <template>
@@ -157,6 +160,16 @@ const goToRag = () => {
                   rounded="lg"
               >
                 {{ t('navigation.rag') }}
+              </v-btn>
+              <v-btn
+                  variant="text"
+                  :color="route.name === 'logs' ? 'primary' : 'default'"
+                  prepend-icon="mdi-text-box-search-outline"
+                  @click="goToLogs"
+                  class="font-weight-bold text-capitalize px-3"
+                  rounded="lg"
+              >
+                {{ t('navigation.logs') }}
               </v-btn>
               <v-btn
                   variant="text"
@@ -228,6 +241,9 @@ const goToRag = () => {
                 </v-btn>
                 <v-btn icon variant="text" size="small" @click="goToRag" :color="route.name === 'rag' ? 'primary' : 'default'">
                   <v-icon icon="mdi-file-document-multiple-outline" size="22"></v-icon>
+                </v-btn>
+                <v-btn icon variant="text" size="small" @click="goToLogs" :color="route.name === 'logs' ? 'primary' : 'default'">
+                  <v-icon icon="mdi-text-box-search-outline" size="22"></v-icon>
                 </v-btn>
                 <v-btn icon variant="text" size="small" @click="goToSettings" :color="route.name === 'settings' ? 'primary' : 'default'">
                   <v-icon icon="mdi-cog-outline" size="22"></v-icon>

@@ -3,6 +3,8 @@ import * as os from "node:os";
 import path from "path";
 import dayjs from "dayjs";
 import {awaitAllCallbacks} from "@langchain/core/callbacks/promises";
+import {db} from "../database/database.js";
+import Database from "better-sqlite3";
 
 const tmp = os.tmpdir();
 const files = path.join(tmp, 'files')
@@ -72,9 +74,10 @@ export const logger= async (status:'INFO'|'EXCEPTION',tag:string, msg:string, co
     }
 }
 
-export const log_worked =async (status:'INFO'|'EXCEPTION',msg:string) => {
+export const log_worked =(status:'INFO'|'EXCEPTION',msg:string, _db:Database.Database|undefined,tag:string|null = null) => {
     try{
-        await logger(status,'WORKED',msg,null,null,`${dayjs().format('YYYYMMDD')}_worked`)
+        if(!_db) _db = db;
+        _db?.prepare("INSERT INTO WORKED_LOG (TYPE,TAG,MESSAGE) VALUES (?,?,?)").run([status,tag,msg])
     }catch (err:any){
         throw err;
     }

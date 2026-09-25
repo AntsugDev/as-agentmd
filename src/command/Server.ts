@@ -12,7 +12,9 @@ import dayjs from "dayjs";
 import {ClearDirectory} from "../scheduler/clearDirectory.js";
 import {isActiveEmbending} from "../scheduler/Embindings.js";
 import {isActiveScheduler} from "../scheduler/Scheduler.js";
-import {logger} from "../utility/storage.js";
+import {log_worked, logger} from "../utility/storage.js";
+import Database from "better-sqlite3";
+import {db} from "../database/database.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -51,16 +53,15 @@ export class Server extends AbstractProgram {
         }
     }
 
-    protected intervalChunck() {
+    protected async intervalChunck(_db:Database.Database |undefined) {
         try {
             const delay = 2 * 60 * 1000
-            console.log('attivo interval ....', dayjs().add(2,'minutes').format('HH:mm:ss'), isActiveScheduler, isActiveEmbending)
             setInterval(async () => {
                 try {
-                    console.log('tentativo chunks delle ', dayjs().format('HH:mm:ss'),isActiveEmbending, isActiveScheduler)
+                    log_worked('INFO',`Check action the scheduler of the chunks ${isActiveEmbending && isActiveScheduler ? 'START' :'BLOCKED'} `,_db,'INTERVAL CHUNK')
                     if (!isActiveEmbending && !isActiveScheduler) {
                         await pool.run('CHUNK')
-                    } else console.log('tentativo chunks bloccato', isActiveScheduler, isActiveEmbending)
+                    }
                 } catch (ec: any) {
                     throw ec;
                 }
@@ -70,15 +71,15 @@ export class Server extends AbstractProgram {
         }
     }
 
-    protected intervalEmb(): void {
+    protected async intervalEmb(_db:Database.Database|undefined) {
         try {
             const delay = 3 * 60 * 1000
             setInterval(async () => {
                 try {
-                    console.log('tentativo emb delle ', dayjs().format('HH:mm:ss'), isActiveScheduler, isActiveEmbending)
+                    log_worked('INFO',`Check action the scheduler of the embeddings ${isActiveEmbending && isActiveScheduler ? 'START' :'BLOCKED'} `,_db,'INTERVAL EMBEDDINGS')
                     if (!isActiveEmbending && !isActiveScheduler) {
                         await pool.run('EMB')
-                    } else console.log('tentativo emb bloccato', isActiveScheduler, isActiveEmbending)
+                    }
                 } catch (eM: any) {
                     throw eM;
                 }
@@ -96,25 +97,22 @@ export class Server extends AbstractProgram {
     }
 
 
-    protected startWorker(): Promise<boolean> {
+    protected startWorker(_db:Database.Database |undefined): Promise<boolean> {
         return new Promise((resolve, reject) => {
             try {
                 const delay = 30 * 1000
-                console.log('tra ', dayjs().add(30,'s').format('HH:mm:ss'), this.complete)
                 setTimeout(async () => {
                     try {
                         if (!this.complete) {
+                            log_worked('INFO','Start worked ...',_db,'START')
                             this.complete = true
-                            this.intervalChunck()
-                            this.intervalEmb()
+                            await this.intervalChunck(_db)
+                            await this.intervalEmb(_db)
                             this._clear()
-                            const now = dayjs()
-                            let msg = `Worked start (scheduler start):Next Scheduler chunks start between ${now.add(5, 'minutes').format('YYYY-MM-DD HH:mm:ss')} and next scheduler emb start between ${now.add(6, 'minutes').format('YYYY-MM-DD HH:mm:ss')}`
-                            await logger('INFO', 'WORKED', msg, null, null, `${dayjs().format('YYYYMMDD')}_worked`)
                             resolve(true)
                         } else {
                             this._clear()
-                            await this.startWorker()
+                            await this.startWorker(_db)
                             resolve(false)
                         }
                     } catch (er: any) {
@@ -157,7 +155,7 @@ export class Server extends AbstractProgram {
                         ChatFe.clearAll()
                         await ChatFe.clear_archive(false)
                         await ChatFe.clear_uploads()
-                        await this.startWorker()
+                        await this.startWorker(db)
                     } catch (err: any) {
                         console.log('Server not started', err)
                     }

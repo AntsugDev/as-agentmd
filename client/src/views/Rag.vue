@@ -165,7 +165,7 @@ const getStatus = (item: {
     color = "#f59e0b"
     title = t('rag.wait')
   } else if (status.toString().toUpperCase() === 'OK') {
-    if (item.TOT_CHUNKS === item.ELABORATE) {
+    if ( item.ELABORATE === item.TOT_EMB) {
       icon = 'mdi-check-circle-outline'
       color = "#10b981"
       title = t('rag.success')

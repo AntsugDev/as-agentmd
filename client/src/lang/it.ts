@@ -1,4 +1,4 @@
-﻿export default {
+export default {
     exception: "Eccezione",
     success: "Successo",
     privacy: "Utilizzando differenti provider, potrebbero verificarsi errori di risposta o indisponibilità del servizio. Le chat vengono salvate in locale per un massimo di 30 giorni, mentre la gestione dei dati sensibili dipende esclusivamente dal provider scelto. Nello specifico, i documenti personali che selezioni per dare informazioni all'IA restano sul tuo dispositivo, ma i passaggi rilevanti vengono inviati al provider di volta in volta per permettere all'assistente di leggerli e risponderti.",
@@ -16,6 +16,7 @@
         archivia: 'Chat archiviate',
         compare: "Confronta Chat",
         rag: "Carica i documenti",
+        logs: "Log elaborazione",
     },
     rag: {
         title: 'Carica documenti',
@@ -91,5 +92,24 @@
         max: "Si possono selezionare al massimo 2 modelli",
         required: "Campo obbligatorio",
         generic: 'Error generico della chat'
+    },
+    logs: {
+        badge: 'Log',
+        title: 'Log di Elaborazione',
+        intro: 'Visualizza i log generati durante la trasformazione dei documenti in chunk e successivamente in embedding.',
+        total: 'Totale',
+        info: 'Info',
+        exception: 'Eccezione',
+        search: 'Cerca nel messaggio',
+        all: 'Tutti',
+        refresh: 'Aggiorna',
+        tableTitle: 'Registro degli eventi',
+        date: 'Data',
+        type: 'Tipologia',
+        message: 'Messaggio',
+        stack: 'Stack',
+        empty: 'Nessun log trovato.',
+        close: 'Chiudi',
+        tag:'Argomento'
     },
 }

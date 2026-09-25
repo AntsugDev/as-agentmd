@@ -3,7 +3,6 @@ import {SqlDb} from "../database/database.js";
 import {Chunks} from "./chunks.js";
 import dayjs from "dayjs";
 import {isActiveEmbending} from "./Embindings.js";
-import {dd} from "../utility/utility.js";
 import {log_worked, logger} from "../utility/storage.js";
 
 export let isActiveScheduler: boolean = false;
@@ -39,16 +38,14 @@ export class Scheduler {
         let msg = "";
         const now = dayjs();
         try {
-            msg += `\n[SCHED] Embedding attivo? ${isActiveEmbending ? 'SI' : 'NO'} - Scheduler attivo? ${isActiveScheduler ? 'SI' : 'NO'}`;
             if (!isActiveScheduler && !isActiveEmbending) {
                 const data: Files | undefined = this.search()
-                msg += ` \nScheduler chunks is worked (${(data && Object.keys(data).length > 0 ? 'FULL' : `EMPTY`)}) `
+                log_worked('INFO', `Data length is ${data && Object.keys(data).length > 0 ? 'FULL' : 'EMPTY'}`, this.db, 'CHECK DATA SCHEDULER CHUNK')
                 if (data) {
                     isActiveScheduler = true;
                     await Scheduler.worker(this.db, data)
                 }
             }
-            await log_worked('INFO', msg)
         } catch (e: any) {
             throw e;
         }
@@ -106,34 +103,19 @@ export class Scheduler {
     }
 
     public static async worker(db: Database.Database | undefined, data: Files) {
-        const retry = this.retry(db, data.ID);
-        const now = dayjs()
         try {
             if (!db) throw new Error("Database not found")
-            if (retry) {
-                this.update(db, data.ID)
-                let res: boolean = false;
-                if (['xlsx', 'xls', 'csv'].includes(data.EXT)) {
-                    res = await Chunks.data_chunk(JSON.parse(data.CONTENT), data.ID, db)
-                } else {
-                    res = await Chunks.text_chunk(data.CONTENT, data.ID, db)
-                }
-                if (res) this.update(db, data.ID, false, 'ok')
-            }
-        } catch (err: any) {
-            let msg = "";
-            if (retry) {
-                setTimeout(async () => {
-                    msg = `Task scheduler failed, next try from ${now.add(30, 'seconds').format('YYYY-MM-DD HH:mm:ss')} (${err.toString()})`
-                    await logger('EXCEPTION', 'WORKED', msg, 701, err, 'worked')
-                    await Scheduler.worker(db, data)
-                }, 3000)
+            let res: boolean = false;
+            log_worked('INFO', `Working in chunks for ${data.EXT}`, db)
+            if (['xlsx', 'xls', 'csv'].includes(data.EXT)) {
+                res = await Chunks.data_chunk(JSON.parse(data.CONTENT), data.ID, db)
             } else {
-                msg = `Task scheduler failed, terminate with this error: ${err.toString()}`
-                await logger('EXCEPTION', 'WORKED', msg, 700, err, 'worked')
-                this.update(db, data.ID, true)
-                return;
+                res = await Chunks.text_chunk(data.CONTENT, data.ID, db)
             }
+            if (res) this.update(db, data.ID, false, 'ok')
+        } catch (err: any) {
+            log_worked('EXCEPTION', `Scheduler chunks exception:${err.message || err.toString()}`, db)
+            throw err;
         }
     }
 }

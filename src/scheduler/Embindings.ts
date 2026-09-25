@@ -4,7 +4,6 @@ import {Chunks} from "../database/mapping.js";
 import {createVector} from "../utility/utility.js";
 import {isActiveScheduler} from "./Scheduler.js";
 import {log_worked, logger} from "../utility/storage.js";
-import {awaitAllCallbacks} from "@langchain/core/callbacks/promises";
 
 export let isActiveEmbending = false;
 let clear: any | null = null;
@@ -32,25 +31,28 @@ export class Embindings {
 
     public async start() {
         let msg = "";
-        const now = dayjs();
         try {
-            msg += `\n[SCHED EMB] Embedding attivo? ${isActiveEmbending ? 'SI' : 'NO'} - Scheduler attivo? ${isActiveScheduler ? 'SI' : 'NO'}`;
             if (!isActiveScheduler && !isActiveEmbending) {
                 const data: Chunks[] | undefined = this.search() ?? []
-                msg += ` \nScheduler emb is worked (${(data && data.length > 0 ? 'FULL' : `EMPTY`)}) `
+                log_worked('INFO', `Data length is ${data && data.length > 0 ? 'FULL' : 'EMPTY'}`, this.db, 'CHECK DATA SCHEDULER EMBEDDINGS')
                 if (data.length > 0) {
                     let c = 1;
+                    isActiveEmbending = true
+                    log_worked('INFO', `Start working embed ...`, this.db)
                     for (let i = 0; i < data.length; i++) {
-                        isActiveEmbending = true
-                        const task:Chunks = data[i]
-                        c++;
-                        await Embindings.worker(this.db, task)
+                        try {
+                            log_worked('INFO', `To work row number ${i + 1} ...`, this.db, 'ROW NUMBER WORKING')
+                            const task: Chunks = data[i]
+                            await Embindings.worker(this.db, task)
+                            c++;
+                        } catch (e: any) {
+                            throw e;
+                        }
                     }
+                    log_worked('INFO', `... terminate working embed`, this.db)
                     if (c >= data.length) isActiveEmbending = false
                 }
-                await log_worked('INFO', msg)
             }
-
         } catch (e: any) {
             throw e;
         }
@@ -89,17 +91,18 @@ export class Embindings {
         }
     }
 
-    protected static insert(db: Database.Database | undefined, chunk_id: number, file_id: number, content: any) {
+    protected static async insert(db: Database.Database | undefined, chunk_id: number, file_id: number, content: any) {
         try {
             if (!db) throw new Error("Database not found")
             db.exec('BEGIN TRANSACTION')
             const create: any | null = db.prepare("INSERT OR REPLACE INTO vss_chunks (chunk_id,file_id, embedding) VALUES (?,?,?);")
                 .run([BigInt(chunk_id), BigInt(file_id), JSON.stringify(content)]).lastInsertRowid
+            log_worked('INFO',`Insert last id: ${create}`,db,'INSERT ID VECTOR')
             if (create) {
-                const u =  this.update(db, chunk_id, 1)
+                const u = this.update(db, chunk_id, 1)
                 db.exec('COMMIT')
                 return u;
-            }
+            } else throw new Error("Non sono riusciuto ad inserire il vettore in tabella")
         } catch (err: any) {
             if (!db) throw new Error("Database not found")
             db.exec('ROLLBACK')
@@ -108,37 +111,18 @@ export class Embindings {
     }
 
     public static async worker(db: Database.Database | undefined, data: Chunks) {
-        const retry = this.retry(db, data.ID)
-        const now = dayjs()
         try {
             if (!db) throw new Error("Database not found")
-            if (retry) {
-                const vector:number[] = await createVector(data.CONTENT)
-                if (vector.length > 0)
-                    return this.insert(db, data.ID, data.FILE_ID, vector)
-                else {
-                    setTimeout(async () => {
-                        this.update(db, data.ID, 0)
-                        await Embindings.worker(db, data)
-                    }, 5000)
-                }
-            }
+            const vector: number[] = await createVector(data.CONTENT)
+            log_worked('INFO',`Vector length ${vector.length}`,db,'VECTOR LENGTH')
+            if (vector.length > 0)
+                return await this.insert(db, data.ID, data.FILE_ID, vector)
+            else throw new Error("Vettore non creato o di lunghezza pari a zero")
         } catch (err: any) {
-            if (retry) {
-                setTimeout(async () => {
-                    let msg = `Task scheduler emb failed, next try from ${now.add(30, 'seconds').format('YYYY-MM-DD HH:mm:ss')} (${err.toString()})`
-                    await log_worked('EXCEPTION',  msg)
-                    this.update(db, data.ID, 0)
-                     await Embindings.worker(db, data)
-                }, 30000)
-            } else {
-                let msg = `Task scheduler emb failed, terminate with this error: ${err.toString()}`
-                await log_worked('EXCEPTION',  msg)
-                this.update(db, data.ID, 2)
-                return;
-            }
+            log_worked('EXCEPTION', `Scheduler embed exception:${err.message || err.toString()}`, db)
+            this.update(db, data.ID, 2)
+            throw err;
         }
-
     }
 
 }

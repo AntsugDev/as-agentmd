@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import {configStore, providers} from "../config.js";
-import {AgentConfig, ProvidersInt, RawGeminiModel} from "../interface/myInterface.js";
+import {AgentConfig, ProvidersInt, RawGeminiModel, Worked} from "../interface/myInterface.js";
 import Conf from "conf";
 import {Request, NextFunction, Response} from "express"
 import {getContent, getProviderModelUtility, providerModels, totalToken} from "../utility/utility.js";
@@ -10,7 +10,7 @@ import path from "path";
 import fs from "fs/promises";
 import multer from "multer";
 import {unlink} from "node:fs/promises";
-import {SqlDb,db} from "../database/database.js";
+import {SqlDb, db} from "../database/database.js";
 import {ListData} from "../database/mapping.js";
 import {DataList} from "../database/dataList.js";
 import {Rag} from "../utility/Rag.js";
@@ -542,6 +542,19 @@ export class ApiFe {
         });
     }
 
+    public worked_log() {
+        this.router.get('/worked/log', [this.isUser, this.isConfig], async (req: Request, resp: Response) => {
+            try {
+               // @ts-ignore
+                const result:Worked[] = db?.prepare("SELECT * FROM WORKED_LOG ORDER BY CREATED_AT DESC LIMIT 100").all()
+                return resp.json(result)
+            } catch (err: any) {
+                console.log(err)
+                return this.exception(resp, err.toString())
+            }
+        });
+    }
+
     public api() {
         try {
             this.app.use('/api', this.router);
@@ -562,6 +575,7 @@ export class ApiFe {
             this.rag_file()
             this.rag_list()
             this.tags()
+            this.worked_log()
             //--------------------------
         } catch (err: any) {
             throw err;

@@ -6,8 +6,10 @@ import {Scheduler} from "../scheduler/Scheduler.js";
 import {Embindings} from "../scheduler/Embindings.js";
 import {Status} from "./mapping.js";
 import {dd} from "../utility/utility.js";
+import {awaitAllCallbacks} from "@langchain/core/callbacks/promises";
+import {unlink} from "node:fs/promises";
 
-export let  db:Database.Database|undefined = undefined
+export let db: Database.Database | undefined = undefined
 
 export class SqlDb {
 
@@ -20,7 +22,7 @@ export class SqlDb {
         this._db.pragma('journal_mode = WAL');
         this._db.pragma('synchronous = NORMAL');
         sqliteVec.load(this._db);
-        db=this._db
+        db = this._db
     }
 
     public version() {
@@ -32,7 +34,6 @@ export class SqlDb {
             console.log('Eccezione versione db', err)
         }
     }
-
     public async create(block: boolean = false) {
         try {
             if (block) {
@@ -47,7 +48,7 @@ export class SqlDb {
                     this.init()
                 }, 3000)
             }
-            db =  this._db;
+            db = this._db;
 
         } catch (err: any) {
             console.log('Eccezione creazione db', err)

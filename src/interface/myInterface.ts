@@ -63,3 +63,10 @@ export interface ChatText {
     tool_calls?: ToolCall[];
     tool_name?: string;
 }
+
+export interface Worked{
+    TYPE:string
+    TAG:string
+    MESSAGE:string
+    CREATED_AT:string
+}

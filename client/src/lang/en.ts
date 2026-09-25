@@ -1,4 +1,4 @@
-﻿export default {
+export default {
     exception: "Exception",
     success: "Success",
     privacy: "Using different providers may result in response errors or service unavailability. Chats are stored locally for up to 30 days, while the handling of sensitive data depends entirely on the chosen provider. Specifically, the personal documents you select to provide information to the AI ​​remain on your device, but the relevant excerpts are sent to the provider as needed to allow the assistant to read them and respond to you.",
@@ -15,7 +15,8 @@
         settings: 'Settings',
         archivia: 'Archived chats',
         compare: "Compare Chats",
-        rag: "Upload the files"
+        rag: "Upload the files",
+        logs: "Processing logs",
     },
     rag: {
         title: 'Upload the files',
@@ -93,5 +94,24 @@
         max: "A maximum of 2 models can be selected.",
         required: "Required field",
         generic: 'Generic chat error'
-    }
+    },
+    logs: {
+        badge: 'Logs',
+        title: 'Processing Logs',
+        intro: 'View the logs generated during the transformation of documents into chunks and then into embeddings.',
+        total: 'Total',
+        info: 'Info',
+        exception: 'Exception',
+        search: 'Search in message',
+        all: 'All',
+        refresh: 'Refresh',
+        tableTitle: 'Event log',
+        date: 'Date',
+        type: 'Type',
+        message: 'Message',
+        stack: 'Stack',
+        empty: 'No logs found.',
+        close: 'Close',
+        tag:'Topics'
+    },
 }
