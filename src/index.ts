@@ -10,7 +10,7 @@ import path from "path";
 import * as os from "node:os";
 import {Rag} from "./utility/Rag.js";
 
-await new SqlDb().create()
+await new SqlDb().create(true)
 await HuggingFace.instance()
 
 export const program = new Command();

@@ -51,15 +51,12 @@ export class Chunks {
     public static async data_chunk(data: any[], id: number, db: Database.Database | undefined) {
         let msg = "";
         try {
-            //todo @@@@
-            //da test fatti conviene a ritornare ad una riga o al massimo meno di 5, perchè il dato estratto dalla query attualmente è troppo
-            // (500*100 = 5000) oppure (250*1000=2500), aggiunte al system
             log_worked('INFO', `Start work chunks excel ...`, db)
             const headers = data[0]
             const keys = ['FILE_ID', 'CONTENT', 'TOKENS'];
             data.shift()
             let len = data.length
-            const chunks = cArray(data, 15)
+            const chunks = cArray(data, 5)
             log_worked('INFO', `Len data ${len}. ${len > 1000 ? 'Divider data' : 'Not divider data'}`, db, 'DATA DIVIDER CHUNK EXCEL')
             for (let i = 0; i < chunks.length; i++) {
                 const row = chunks[i];

@@ -37,11 +37,11 @@ export class Scheduler {
 
     public async start() {
         try {
-            if (!activeScheduler(this.db, false)) {
+            if (!activeScheduler(this.db, false,'ACTIVE_CHUNK')) {
                 const data: Files | null = this.search() ?? null
                 log_worked('INFO', `Data length is ${data && Object.keys(data).length > 0 ? 'FULL' : 'EMPTY'}`, this.db, 'CHECK DATA SCHEDULER CHUNK')
                 if (data) {
-                    activeScheduler(this.db, true, 1)
+                    activeScheduler(this.db, true, 'ACTIVE_CHUNK',1)
                     await Scheduler.worker(this.db, data)
                 }
             }
@@ -79,7 +79,7 @@ export class Scheduler {
     protected static deactive(db: Database.Database | undefined) {
         try {
             if (!db) throw new Error("Database not found")
-            activeScheduler(db, true, 0)
+            activeScheduler(db, true, 'ACTIVE_CHUNK',0)
         } catch (e: any) {
             throw e;
         }

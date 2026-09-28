@@ -59,7 +59,7 @@ export class Server extends AbstractProgram {
             const delay = 5 * 60 * 1000
             setInterval(async () => {
                 try {
-                    const activeOthers = activeScheduler(_db,false,1);
+                    const activeOthers = activeScheduler(_db,false,'ACTIVE_CHUNK',1);
                     console.log(`CHUNK activeOthers=${activeOthers};`)
                     log_worked('INFO',`Check action the scheduler of the chunks ${(!activeOthers ? 'START' :'BLOCKED')} `,_db,'INTERVAL CHUNK')
                     if (!activeOthers ) {
@@ -79,7 +79,7 @@ export class Server extends AbstractProgram {
             const delay = 2 * 60 * 1000
             setInterval(async () => {
                 try {
-                    const activeOthers = activeScheduler(_db,false,1);
+                    const activeOthers = activeScheduler(_db,false,'ACTIVE_EMB',1);
                     console.log(`EMB activeOthers=${activeOthers};`)
                     log_worked('INFO',`Check action the scheduler of the embeddings ${!activeOthers ? 'START' :'BLOCKED'} `,_db,'INTERVAL EMBEDDINGS')
                     if (!activeOthers) {

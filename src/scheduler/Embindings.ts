@@ -31,13 +31,13 @@ export class Embindings {
 
     public async start() {
         try {
-            if (!activeScheduler(this.db,false)) {
+            if (!activeScheduler(this.db, false, 'ACTIVE_EMB')) {
                 log_worked('INFO', `Start working embed ...`, this.db);
                 const data: Chunks[] = this.search() ?? [];
                 if (data.length === 0) {
                     return;
                 }
-                activeScheduler(this.db,true,1)
+                activeScheduler(this.db, true, 'ACTIVE_EMB', 1)
                 log_worked('INFO', `Processing block of ${data.length} chunks`, this.db, 'CHECK LOOP BLOCK EMBED');
                 //@ts-ignore
                 let loop = 0;
@@ -47,7 +47,7 @@ export class Embindings {
                     if (r) loop++
                 }
                 if (loop >= data.length)
-                    activeScheduler(this.db,true,0)
+                    activeScheduler(this.db, true, 'ACTIVE_EMB', 0)
 
                 log_worked('INFO', `... terminate working embed`, this.db);
             }
@@ -62,7 +62,7 @@ export class Embindings {
     private search(): Chunks[] | undefined {
         try {
             //@ts-ignore
-            const embeddings: Chunks[] | undefined = this.db?.prepare("select * from CHUNKS c where not exists(select 1 from vss_chunks v where v.CHUNK_ID = c.id) and c.STATUS in (0,2) limit 100;").all()
+            const embeddings: Chunks[] | undefined = this.db?.prepare("select * from CHUNKS c where not exists(select 1 from vss_chunks v where v.CHUNK_ID = c.id) and c.STATUS in (0,2) limit 250;").all()
             return embeddings;
         } catch (err: any) {
             throw err;

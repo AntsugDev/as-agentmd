@@ -56,8 +56,9 @@ CREATE VIRTUAL TABLE IF NOT EXISTS vss_chunks USING vec0
 );
 DROP VIEW IF EXISTS TAGS;
 CREATE VIEW TAGS AS
-select distinct tt.TAG, (case when sum(tt.ELABORATE) != 0 and sum(tt.TOT_EMB) != 0  and sum(tt.ELABORATE) =  sum(tt.TOT_EMB) then 1 else 0 end) ACTIVE
-from (select F.TAG, d.ELABORATE, d.TOT_EMB
+select distinct tt.TAG,
+                (case when sum(tt.ELABORATE) != 0 and sum(tt.TOT_EMB) != 0 and tt.TOT_CHUNKS  = sum(tt.ELABORATE)  and sum(tt.ELABORATE) =  sum(tt.TOT_EMB) then 1 else 0 end) ACTIVE
+from (select F.TAG, d.ELABORATE, d.TOT_EMB, d.TOT_CHUNKS
       from FILES F
                join DATALIST d
                     on d.FILE_ID in ((select group_concat(f1.ID, ',') from FILES f1 where f1.TAG = F.TAG))) tt

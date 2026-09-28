@@ -39,7 +39,7 @@ export default {
         wait:'File in attesa di essere lavorato',
         error:'Eccezione lavorazione del file',
         insert_OK: 'File caricati correttamente',
-        scheduledProcessing: 'Dopo il caricamento, il file verra elaborato tramite una schedulazione.'
+        scheduledProcessing: 'Dopo il caricamento, il file verra elaborato tramite una schedulazione. I tempi di attesa possono essere lunghi e dipendono dalla dimensione del file.'
     },
     home: {
         block: 'L\'argomento selezionato non riguarda quanto richiesto.Creare una nuova chat',

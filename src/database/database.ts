@@ -64,7 +64,8 @@ export class SqlDb {
                 const i: any = this._db?.prepare(`INSERT INTO STATUS (name)
                                                   VALUES (?)`).run(e).lastInsertRowid
             })
-            db?.prepare("INSERT INTO LOCK (KEY,VALUE) VALUES ('ACTIVE_SCHED',0);").run()
+            db?.prepare("INSERT INTO LOCK (KEY,VALUE) VALUES ('ACTIVE_CHUNK',0);").run()
+            db?.prepare("INSERT INTO LOCK (KEY,VALUE) VALUES ('ACTIVE_EMB',0);").run()
         } catch (err: any) {
             console.log('Init eccezione', err)
         }

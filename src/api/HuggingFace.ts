@@ -5,7 +5,10 @@ export class HuggingFace {
     public static async instance() {
         try {
             const c  =  await pipeline('feature-extraction',
-                'Xenova/all-MiniLM-L6-v2');
+                'Xenova/all-MiniLM-L6-v2',{
+                    device: 'cpu',
+                    dtype: 'q8',
+                });
             _class = c;
             return c;
         } catch (err: any) {
@@ -15,6 +18,7 @@ export class HuggingFace {
 
     public static async embeddings(_class: any, content: any) {
         try {
+            // basta il blocco dei chunks insieme
             const response = await _class(content, {
                 pooling: 'mean',
                 normalize: true
