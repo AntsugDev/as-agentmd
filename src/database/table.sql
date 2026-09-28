@@ -4,7 +4,14 @@
 DROP TABLE IF EXISTS CHUNKS;
 DROP TABLE IF EXISTS FILES;
 DROP TABLE IF EXISTS STATUS;
-DROP TABLE IF EXISTS WORKED_LOG;
+DROP TABLE IF EXISTS LOCK;
+
+CREATE TABLE IF NOT EXISTS LOCK
+(
+    ID   INTEGER PRIMARY KEY AUTOINCREMENT,
+    KEY TEXT NOT NULL,
+    VALUE INTEGER NOT NULL
+);
 
 CREATE TABLE IF NOT EXISTS STATUS
 (
@@ -48,15 +55,17 @@ CREATE VIRTUAL TABLE IF NOT EXISTS vss_chunks USING vec0
     embedding float [384] distance_metric=cosine
 );
 DROP VIEW IF EXISTS TAGS;
-
 CREATE VIEW TAGS AS
-select distinct tt.TAG, (case when sum(tt.ELABORATE) =  sum(tt.TOT_EMB) then 1 else 0 end) ACTIVE
+select distinct tt.TAG, (case when sum(tt.ELABORATE) != 0 and sum(tt.TOT_EMB) != 0  and sum(tt.ELABORATE) =  sum(tt.TOT_EMB) then 1 else 0 end) ACTIVE
 from (select F.TAG, d.ELABORATE, d.TOT_EMB
       from FILES F
                join DATALIST d
                     on d.FILE_ID in ((select group_concat(f1.ID, ',') from FILES f1 where f1.TAG = F.TAG))) tt
 group by tt.TAG
 order by tt.TAG;
+
+
+
 DROP VIEW IF EXISTS DATALIST;
 CREATE VIEW DATALIST AS
 SELECT F.ID                                                                  FILE_ID,

@@ -547,22 +547,21 @@ export class ApiFe {
             try {
                 const file = path.join(os.tmpdir(), `/files/${dayjs().format('YYYYMMDD')}_worked.txt`)
                 const content = await fs.readFile(file, 'utf-8')
+                if (!content) return resp.json([]);
                 let result: Worked[] = []
-                if (content) {
-                    const s = content.split("\n")
-                    for (const r of s) {
-                        if(r !== "") {
-                            const row = r.split('|')
-                            result.push({
-                                TYPE: row[1], TAG: row[2], MESSAGE: row[3], CREATED_AT: row[0]
-                            } as Worked)
-                        }
+                const s = content.split("\n")
+                for (const r of s) {
+                    if (r !== "") {
+                        const row = r.split('|')
+                        result.push({
+                            TYPE: row[1], TAG: row[2], MESSAGE: row[3], CREATED_AT: row[0]
+                        } as Worked)
                     }
                 }
                 //@ts-ignore
-                result = result.sort((a,b) => {
-                    const aDate = dayjs(a.CREATED_AT,'YYY-MM-DD HH:mm:ss')
-                    const bDate = dayjs(b.CREATED_AT,'YYY-MM-DD HH:mm:ss')
+                result = result.sort((a, b) => {
+                    const aDate = dayjs(a.CREATED_AT, 'YYY-MM-DD HH:mm:ss')
+                    const bDate = dayjs(b.CREATED_AT, 'YYY-MM-DD HH:mm:ss')
 
                     return bDate.isAfter(aDate)
                 })

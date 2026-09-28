@@ -8,8 +8,9 @@ import {createVector} from "./utility/utility.js";
 import fs from "fs/promises";
 import path from "path";
 import * as os from "node:os";
+import {Rag} from "./utility/Rag.js";
 
-await new SqlDb().create(true)
+await new SqlDb().create()
 await HuggingFace.instance()
 
 export const program = new Command();
@@ -20,19 +21,21 @@ program
 //----server----
 const server = new Server(program)
 server.getData()
-program.name('create_vector').command('create-vector <input>').action(async (input: string) => {
+//@@ Command for testing ---------------------------------------------------
+program.name('create_vector').command('create-vector <input> <tag>').action(async (input: string, tag: string) => {
     try {
-        const result = await createVector(input);
-        if (result.length > 0) {
-            const file = path.join(os.tmpdir(), '/files/vector.json')
-            await fs.writeFile(file, JSON.stringify(result), 'utf-8')
-            console.log('file creato', file)
-        } else
-            console.log('Vector not created')
+        const content = await new Rag(input, tag).result()
+        const textConvert = await createVector(input);
+        const fContent = path.join(os.tmpdir(), '/files/content.txt')
+        const file = path.join(os.tmpdir(), '/files/vector.json')
+        await fs.writeFile(file, JSON.stringify(textConvert), 'utf-8')
+        await fs.writeFile(fContent, JSON.stringify(content), 'utf-8')
+        console.log(`File creati. Vector=${file};Content=${fContent}`)
     } catch (e: any) {
         console.log('eccezione creazione vettore ...', e)
     }
 })
+//-------------------------------------------------------------------------
 
 program.parse(process.argv);
 

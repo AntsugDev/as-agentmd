@@ -38,7 +38,8 @@ export default {
         success:'File worked',
         wait:'File in status wait',
         error:'Exception to work the file',
-        insert_OK: 'Files uploaded successfully'
+        insert_OK: 'Files uploaded successfully',
+        scheduledProcessing: 'After upload, the file will be processed on a scheduled basis.'
 
 
     },
@@ -66,7 +67,24 @@ export default {
         clear: "New Chat",
         tokenIn: "Input token {t}",
         tokenOut: "Output token {t}",
-        accept: "File format not accepted ({format})"
+        accept: "File format not accepted ({format})",
+        tagDetailReminder: 'Remember to make your requests as detailed as possible to receive a more accurate answer.',
+        incorrectRequestExample: {
+            open: 'View example',
+            title: 'Example of an request',
+            intro: 'When you select a topic, always state clearly which data you are referring to.',
+            firstQuestion: 'Show the traffic data for Italy in August.',
+            trafficAnswer: 'During the summer, road traffic in Italy averaged 18.4 million trips per day. Rome recorded about 1.9 million daily trips, Milan 1.6 million, and Palermo 420 thousand.',
+            secondQuestion: 'And in Rome?',
+            incorrectAnswer: 'During the summer, the Colosseum recorded about 3.2 million admissions: 870 thousand in June, 1.1 million in July, and 1.23 million in August.',
+            outcome: 'The assistant did not make a mistake: the question "And in Rome?" does not state that the traffic data should be filtered. To receive the expected answer, the request must explicitly include the context.',
+            correctRequestTitle: 'How to phrase the question',
+            userTyping: 'The user is typing',
+            assistantThinking: 'The assistant is preparing the answer',
+            correctQuestion: 'During the same period, what was the traffic in Rome?',
+            correctAnswer: 'During the same period, Rome recorded about 1.9 million daily trips. This figure refers to summer road traffic, consistently with the previous answer.',
+            close: 'Close'
+        }
     },
     settings: {
         title: 'Settings',

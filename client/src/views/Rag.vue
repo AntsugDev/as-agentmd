@@ -297,7 +297,11 @@ onMounted(() => {
               />
             </v-card>
 
-            <div class="d-flex justify-end">
+            <div class="d-flex flex-column flex-sm-row align-sm-center justify-space-between ga-3">
+              <div class="processing-schedule-note">
+                <v-icon icon="mdi-clock-outline" size="16"></v-icon>
+                <span>{{ t('rag.scheduledProcessing') }}</span>
+              </div>
               <v-btn
                   color="success"
                   :loading="loading"
@@ -395,5 +399,13 @@ onMounted(() => {
 
 .bg-slate-50 {
   background-color: #f8fafc;
+}
+
+.processing-schedule-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #64748b;
+  font-size: 0.78rem;
 }
 </style>

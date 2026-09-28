@@ -15,6 +15,7 @@ import {isActiveScheduler} from "../scheduler/Scheduler.js";
 import {log_worked, logger} from "../utility/storage.js";
 import Database from "better-sqlite3";
 import {db} from "../database/database.js";
+import {activeScheduler} from "../scheduler/ActiveScheduler.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -55,11 +56,13 @@ export class Server extends AbstractProgram {
 
     protected async intervalChunck(_db:Database.Database |undefined) {
         try {
-            const delay = 2 * 60 * 1000
+            const delay = 5 * 60 * 1000
             setInterval(async () => {
                 try {
-                    log_worked('INFO',`Check action the scheduler of the chunks ${isActiveEmbending && isActiveScheduler ? 'START' :'BLOCKED'} `,_db,'INTERVAL CHUNK')
-                    if (!isActiveEmbending && !isActiveScheduler) {
+                    const activeOthers = activeScheduler(_db,false,1);
+                    console.log(`CHUNK activeOthers=${activeOthers};`)
+                    log_worked('INFO',`Check action the scheduler of the chunks ${(!activeOthers ? 'START' :'BLOCKED')} `,_db,'INTERVAL CHUNK')
+                    if (!activeOthers ) {
                         await pool.run('CHUNK')
                     }
                 } catch (ec: any) {
@@ -73,11 +76,13 @@ export class Server extends AbstractProgram {
 
     protected async intervalEmb(_db:Database.Database|undefined) {
         try {
-            const delay = 3 * 60 * 1000
+            const delay = 2 * 60 * 1000
             setInterval(async () => {
                 try {
-                    log_worked('INFO',`Check action the scheduler of the embeddings ${isActiveEmbending && isActiveScheduler ? 'START' :'BLOCKED'} `,_db,'INTERVAL EMBEDDINGS')
-                    if (!isActiveEmbending && !isActiveScheduler) {
+                    const activeOthers = activeScheduler(_db,false,1);
+                    console.log(`EMB activeOthers=${activeOthers};`)
+                    log_worked('INFO',`Check action the scheduler of the embeddings ${!activeOthers ? 'START' :'BLOCKED'} `,_db,'INTERVAL EMBEDDINGS')
+                    if (!activeOthers) {
                         await pool.run('EMB')
                     }
                 } catch (eM: any) {

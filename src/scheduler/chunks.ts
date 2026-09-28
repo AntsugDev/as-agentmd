@@ -51,31 +51,23 @@ export class Chunks {
     public static async data_chunk(data: any[], id: number, db: Database.Database | undefined) {
         let msg = "";
         try {
+            //todo @@@@
+            //da test fatti conviene a ritornare ad una riga o al massimo meno di 5, perchè il dato estratto dalla query attualmente è troppo
+            // (500*100 = 5000) oppure (250*1000=2500), aggiunte al system
             log_worked('INFO', `Start work chunks excel ...`, db)
             const headers = data[0]
             const keys = ['FILE_ID', 'CONTENT', 'TOKENS'];
             data.shift()
-            let isDivider = false
-            let firstChunks = data
             let len = data.length
-            log_worked('INFO',`Len data ${len}. ${len > 1000 ? 'Divider data' : 'Not divider data'}`,db,'DATA DIVIDER CHUNK EXCEL')
-            if (len > 1000) {
-                firstChunks = cArray(data, 250);
-                len = firstChunks.length
-                isDivider = true
-                log_worked('INFO',`Data dividend len=${len}`,db,'DATA DIVIDER CHUNK EXCEL')
-            }
-            for (let i = 0; i < len; i++) {
-                const row = !isDivider ? data[i] : firstChunks[i];
-                let text: string = ""
-                if (!isDivider) {
-                    text = headers.map((h: string, index: number) => `${h.toString().trim()}=${(row[index] || "")}`).join(';')
-                } else {
-                    row.map((e: any,i:number) => {
-                        text += headers.map((h: string, index: number) => `${h.toString().trim()}=${(e[index] || "")}`).join(';')
-                        text += "\n"
-                    })
-                }
+            const chunks = cArray(data, 15)
+            log_worked('INFO', `Len data ${len}. ${len > 1000 ? 'Divider data' : 'Not divider data'}`, db, 'DATA DIVIDER CHUNK EXCEL')
+            for (let i = 0; i < chunks.length; i++) {
+                const row = chunks[i];
+                let text = "";
+                row.map(e => {
+                    text += headers.map((h: string, index: number) => `${h.toString().trim()}=${(e[index] || "")}`).join(';')
+                    text +="\n"
+                })
                 const values = [id, text, this.getToken(text)];
                 if (db)
                     SqlDb.insert(db, 'CHUNKS', keys, values)

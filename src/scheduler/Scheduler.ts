@@ -4,6 +4,7 @@ import {Chunks} from "./chunks.js";
 import dayjs from "dayjs";
 import {isActiveEmbending} from "./Embindings.js";
 import {log_worked, logger} from "../utility/storage.js";
+import {activeScheduler} from "./ActiveScheduler.js";
 
 export let isActiveScheduler: boolean = false;
 let clear: any | null = null;
@@ -35,14 +36,12 @@ export class Scheduler {
     }
 
     public async start() {
-        let msg = "";
-        const now = dayjs();
         try {
-            if (!isActiveScheduler && !isActiveEmbending) {
-                const data: Files | undefined = this.search()
+            if (!activeScheduler(this.db, false)) {
+                const data: Files | null = this.search() ?? null
                 log_worked('INFO', `Data length is ${data && Object.keys(data).length > 0 ? 'FULL' : 'EMPTY'}`, this.db, 'CHECK DATA SCHEDULER CHUNK')
                 if (data) {
-                    isActiveScheduler = true;
+                    activeScheduler(this.db, true, 1)
                     await Scheduler.worker(this.db, data)
                 }
             }
@@ -77,6 +76,15 @@ export class Scheduler {
         }
     }
 
+    protected static deactive(db: Database.Database | undefined) {
+        try {
+            if (!db) throw new Error("Database not found")
+            activeScheduler(db, true, 0)
+        } catch (e: any) {
+            throw e;
+        }
+    }
+
     public static update(db: Database.Database | undefined, id: number, error: boolean = false, status: 'processing' | 'ok' | 'ko' = 'processing') {
         try {
             if (!db) throw new Error("Database not found")
@@ -86,19 +94,20 @@ export class Scheduler {
                     processing, id
                 ])
                 if (status === 'ok')
-                    isActiveScheduler = false;
+                    this.deactive(db)
             } else {
                 const ko = SqlDb._status(db, 'ko');
                 db.prepare("UPDATE FILES SET  UPDATED_AT = datetime('now'), STATUS_ID = ? WHERE ID = ?").run([
                     ko, id
                 ])
-                isActiveScheduler = false;
+                this.deactive(db)
+
             }
         } catch (err: any) {
             throw err;
         } finally {
             if (status === 'ok' || status === 'ko')
-                isActiveScheduler = false;
+                this.deactive(db)
         }
     }
 

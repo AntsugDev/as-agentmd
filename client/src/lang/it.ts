@@ -38,7 +38,8 @@ export default {
         success:'File lavorato',
         wait:'File in attesa di essere lavorato',
         error:'Eccezione lavorazione del file',
-        insert_OK: 'File caricati correttamente'
+        insert_OK: 'File caricati correttamente',
+        scheduledProcessing: 'Dopo il caricamento, il file verra elaborato tramite una schedulazione.'
     },
     home: {
         block: 'L\'argomento selezionato non riguarda quanto richiesto.Creare una nuova chat',
@@ -64,7 +65,24 @@ export default {
         clear: "Nuova Chat",
         tokenIn: "Input token {t}",
         tokenOut: "Output token {t}",
-        accept: "Formato file non accettato ({format})"
+        accept: "Formato file non accettato ({format})",
+        tagDetailReminder: 'Ricordati di formulare richieste il piu dettagliate possibile, per ottenere una risposta piu precisa.',
+        incorrectRequestExample: {
+            open: 'Vedi esempio',
+            title: 'Esempio di richiesta',
+            intro: 'Quando selezioni un argomento, indica sempre con chiarezza i dati a cui ti riferisci.',
+            firstQuestion: 'Esponi i dati relativi al traffico in Italia ad Agosto.',
+            trafficAnswer: 'Nel periodo estivo il traffico stradale in Italia ha registrato in media 18,4 milioni di spostamenti al giorno. Roma ha rilevato circa 1,9 milioni di spostamenti giornalieri, Milano 1,6 milioni e Palermo 420 mila.',
+            secondQuestion: 'E a Roma?',
+            incorrectAnswer: 'Nel periodo estivo gli ingressi al Colosseo sono stati circa 3,2 milioni: 870 mila a giugno, 1,1 milioni a luglio e 1,23 milioni ad agosto.',
+            outcome: 'L\'assistente non ha sbagliato: la domanda "E a Roma?" non specifica che si vogliono filtrare i dati sul traffico. Per ottenere la risposta attesa, la richiesta deve indicare esplicitamente il contesto.',
+            correctRequestTitle: 'Come formulare la domanda',
+            userTyping: 'L\'utente sta scrivendo',
+            assistantThinking: 'L\'assistente sta elaborando la risposta',
+            correctQuestion: 'Nello stesso periodo, qual e stato il traffico a Roma?',
+            correctAnswer: 'Nello stesso periodo, Roma ha registrato circa 1,9 milioni di spostamenti giornalieri. Questo dato si riferisce al traffico stradale estivo, coerentemente con la risposta precedente.',
+            close: 'Chiudi'
+        }
     },
     settings: {
         title: 'Settings',

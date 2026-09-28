@@ -4,6 +4,7 @@ import {useI18n} from 'vue-i18n'
 import type {AiModel, ChatMessage} from '../types/chat'
 import {api, type Payload} from "../services/api.ts";
 import MarkdownIt from "markdown-it";
+import IncorrectRequestExampleModal from './IncorrectRequestExampleModal.vue'
 
 const {t} = useI18n()
 
@@ -26,6 +27,7 @@ const formError = ref('')
 const modelItems = ref([])
 const tagsItems = ref([])
 const dialog = ref<boolean>(false)
+const incorrectRequestExampleDialog = ref(false)
 const snack = inject('snack')
 
 const loadModel = ref<boolean>(false)
@@ -36,7 +38,14 @@ const loadTags = async () => {
     const response = await api({
       url: 'tags', method: 'GET'
     } as Payload)
-    if (response) tagsItems.value = response.data
+    if (response) tagsItems.value = response.data.filter((ef: { TAG: string, ACTIVE: 1 | 0 }) => {
+      return ef.ACTIVE === 1
+    }).map((e: { TAG: string, ACTIVE: 1 | 0 }) => {
+      return {
+        title: e.TAG,
+        value: e.TAG,
+      }
+    })
   } catch (err) {
     console.log(err)
   } finally {
@@ -92,7 +101,7 @@ const scrollToBottom = () => {
 
 watch(messages, () => {
   scrollToBottom()
-}, { deep: true })
+}, {deep: true})
 
 const submitMessage = async () => {
   formError.value = ''
@@ -111,7 +120,7 @@ const submitMessage = async () => {
 
   // Optimistically push user prompt & scroll
   const mdRender = new MarkdownIt({html: true});
-  messages.value.push({ role: 'user', content: mdRender.render(text) })
+  messages.value.push({role: 'user', content: mdRender.render(text)})
   prompt.value = "";
   isLoading.value = true
   scrollToBottom()
@@ -289,7 +298,7 @@ onMounted(() => {
       </div>
 
       <v-skeleton-loader v-if="isLoading && messages.length === 0" type="article, actions" rounded="xl"/>
-      
+
       <template v-else>
         <div v-if="messages.length === 0" class="empty-state">
           <v-icon icon="mdi-message-text-outline" size="48" class="empty-state-icon mb-2"></v-icon>
@@ -323,7 +332,8 @@ onMounted(() => {
 
     <!-- Chat Controls & Prompt Card -->
     <v-sheet class="panel chat-panel pa-5" rounded="xl" border>
-      <v-alert v-if="formError" type="error" variant="tonal" density="comfortable" rounded="lg" closable class="mb-4" @click:close="formError = ''">
+      <v-alert v-if="formError" type="error" variant="tonal" density="comfortable" rounded="lg" closable class="mb-4"
+               @click:close="formError = ''">
         {{ formError }}
       </v-alert>
 
@@ -349,8 +359,6 @@ onMounted(() => {
             v-model="selectedTag"
             :model-value="selectedTag"
             :items="tagsItems"
-            item-title="TAG"
-            item-value="TAG"
             :label="t('home.tag')"
             variant="outlined"
             density="comfortable"
@@ -361,6 +369,20 @@ onMounted(() => {
             clearable
             class="flex-grow-1"
         />
+      </div>
+
+      <div v-if="selectedTag" class="tag-detail-reminder mb-4">
+        <v-icon icon="mdi-information-outline" size="16"></v-icon>
+        <span>{{ t('home.tagDetailReminder') }}</span>
+        <v-btn
+            color="primary"
+            variant="text"
+            density="compact"
+            append-icon="mdi-open-in-new"
+            @click="incorrectRequestExampleDialog = true"
+        >
+          {{ t('home.incorrectRequestExample.open') }}
+        </v-btn>
       </div>
 
       <!-- Attached Files Preview -->
@@ -408,7 +430,8 @@ onMounted(() => {
       <!-- Footer Actions & Token Chips -->
       <div class="d-flex flex-column flex-sm-row align-center justify-space-between ga-4 pt-2 border-t mt-2">
         <div class="d-flex align-center ga-2">
-          <div class="d-flex align-center ga-2" v-if="(token?.input && token?.output && token.input > 0 && token.output > 0)">
+          <div class="d-flex align-center ga-2"
+               v-if="(token?.input && token?.output && token.input > 0 && token.output > 0)">
             <span class="token-pill">
               <v-icon icon="mdi-tray-arrow-up" size="12"></v-icon>
               {{ t('home.tokenIn', {t: token.input}) }}
@@ -470,6 +493,8 @@ onMounted(() => {
       </div>
     </v-sheet>
 
+    <IncorrectRequestExampleModal v-model="incorrectRequestExampleDialog"/>
+
     <!-- File Upload Dialog -->
     <v-dialog v-model="dialog" persistent max-width="520">
       <v-card rounded="xl" border class="elevation-6">
@@ -480,9 +505,10 @@ onMounted(() => {
           </div>
           <v-btn size="32" icon="mdi-close" variant="text" color="grey" @click="closeDialog"></v-btn>
         </v-card-title>
-        
+
         <v-card-text class="pa-4">
-          <v-alert variant="tonal" rounded="lg" class="mb-3" density="comfortable" v-if="errorAccept" color="warning" icon="mdi-alert">
+          <v-alert variant="tonal" rounded="lg" class="mb-3" density="comfortable" v-if="errorAccept" color="warning"
+                   icon="mdi-alert">
             {{ t('home.accept', {format: accept}) }}
           </v-alert>
 
@@ -576,6 +602,15 @@ onMounted(() => {
   gap: 12px;
 }
 
+.tag-detail-reminder {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
 .attached-files-container {
   padding: 10px 14px;
   background: #f8fafc;
@@ -611,7 +646,7 @@ onMounted(() => {
   .row-selectors {
     grid-template-columns: 1fr;
   }
-  
+
   .message-item--assistant,
   .message-item--user {
     width: 100%;

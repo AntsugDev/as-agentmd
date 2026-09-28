@@ -1,9 +1,9 @@
 import Database from "better-sqlite3";
-import dayjs from "dayjs";
 import {Chunks} from "../database/mapping.js";
-import {createVector} from "../utility/utility.js";
+import {cArray, createVector} from "../utility/utility.js";
 import {isActiveScheduler} from "./Scheduler.js";
-import {log_worked, logger} from "../utility/storage.js";
+import {log_worked} from "../utility/storage.js";
+import {activeScheduler} from "./ActiveScheduler.js";
 
 export let isActiveEmbending = false;
 let clear: any | null = null;
@@ -30,39 +30,39 @@ export class Embindings {
     }
 
     public async start() {
-        let msg = "";
         try {
-            if (!isActiveScheduler && !isActiveEmbending) {
-                const data: Chunks[] | undefined = this.search() ?? []
-                log_worked('INFO', `Data length is ${data && data.length > 0 ? 'FULL' : 'EMPTY'}`, this.db, 'CHECK DATA SCHEDULER EMBEDDINGS')
-                if (data.length > 0) {
-                    let c = 1;
-                    isActiveEmbending = true
-                    log_worked('INFO', `Start working embed ...`, this.db)
-                    for (let i = 0; i < data.length; i++) {
-                        try {
-                            log_worked('INFO', `To work row number ${i + 1} ...`, this.db, 'ROW NUMBER WORKING')
-                            const task: Chunks = data[i]
-                            await Embindings.worker(this.db, task)
-                            c++;
-                        } catch (e: any) {
-                            throw e;
-                        }
-                    }
-                    log_worked('INFO', `... terminate working embed`, this.db)
-                    if (c >= data.length) isActiveEmbending = false
+            if (!activeScheduler(this.db,false)) {
+                log_worked('INFO', `Start working embed ...`, this.db);
+                const data: Chunks[] = this.search() ?? [];
+                if (data.length === 0) {
+                    return;
                 }
+                activeScheduler(this.db,true,1)
+                log_worked('INFO', `Processing block of ${data.length} chunks`, this.db, 'CHECK LOOP BLOCK EMBED');
+                //@ts-ignore
+                let loop = 0;
+                for (let i = 0; i < data.length; i++) {
+                    const task: Chunks = data[i]
+                    const r = await Embindings.worker(this.db, task);
+                    if (r) loop++
+                }
+                if (loop >= data.length)
+                    activeScheduler(this.db,true,0)
+
+                log_worked('INFO', `... terminate working embed`, this.db);
             }
         } catch (e: any) {
+            if (isActiveEmbending)
+                isActiveEmbending = false;
+            log_worked('EXCEPTION', `Start embed fatal error: ${e.message || e.toString()}`, this.db);
             throw e;
         }
     }
 
-
     private search(): Chunks[] | undefined {
         try {
             //@ts-ignore
-            const embeddings: Chunks[] | undefined = this.db?.prepare("SELECT * FROM CHUNKS WHERE STATUS in (0,2)").all()
+            const embeddings: Chunks[] | undefined = this.db?.prepare("select * from CHUNKS c where not exists(select 1 from vss_chunks v where v.CHUNK_ID = c.id) and c.STATUS in (0,2) limit 100;").all()
             return embeddings;
         } catch (err: any) {
             throw err;
@@ -82,8 +82,8 @@ export class Embindings {
     private static update(db: Database.Database | undefined, id: number, terminate: number = 0) {
         try {
             if (!db) throw new Error("Database not found")
-            db.prepare("UPDATE CHUNKS SET RETRY_COUNT = (SELECT F.RETRY_COUNT+1 FROM CHUNKS F WHERE F.ID = ? ), UPDATED_AT = datetime('now'), STATUS = ?").run([
-                id, terminate
+            db.prepare("UPDATE CHUNKS SET UPDATED_AT = datetime('now'), STATUS = ? WHERE ID = ?").run([
+                terminate, id
             ])
             return true;
         } catch (err: any) {
@@ -94,34 +94,31 @@ export class Embindings {
     protected static async insert(db: Database.Database | undefined, chunk_id: number, file_id: number, content: any) {
         try {
             if (!db) throw new Error("Database not found")
-            db.exec('BEGIN TRANSACTION')
-            const create: any | null = db.prepare("INSERT OR REPLACE INTO vss_chunks (chunk_id,file_id, embedding) VALUES (?,?,?);")
-                .run([BigInt(chunk_id), BigInt(file_id), JSON.stringify(content)]).lastInsertRowid
-            log_worked('INFO',`Insert last id: ${create}`,db,'INSERT ID VECTOR')
-            if (create) {
-                const u = this.update(db, chunk_id, 1)
-                db.exec('COMMIT')
-                return u;
-            } else throw new Error("Non sono riusciuto ad inserire il vettore in tabella")
+            const run = db.transaction((chunk_id: number, file_id: number, content: any) => {
+                const create: any | null = db.prepare("INSERT OR REPLACE INTO vss_chunks (chunk_id,file_id, embedding) VALUES (?,?,?);")
+                    .run([BigInt(chunk_id), BigInt(file_id), JSON.stringify(content)]).lastInsertRowid
+                if (create) {
+                    return this.update(db, chunk_id, 1)
+                } else throw new Error("Cannot created embed")
+            });
+            return run(chunk_id, file_id, content)
         } catch (err: any) {
             if (!db) throw new Error("Database not found")
-            db.exec('ROLLBACK')
+            this.update(db, chunk_id, 2)
             throw err;
         }
     }
 
-    public static async worker(db: Database.Database | undefined, data: Chunks) {
+    public static async worker(db: Database.Database | undefined, row: any | Chunks) {
         try {
             if (!db) throw new Error("Database not found")
-            const vector: number[] = await createVector(data.CONTENT)
-            log_worked('INFO',`Vector length ${vector.length}`,db,'VECTOR LENGTH')
-            if (vector.length > 0)
-                return await this.insert(db, data.ID, data.FILE_ID, vector)
-            else throw new Error("Vettore non creato o di lunghezza pari a zero")
+            const vector: number[] = await createVector(row.CONTENT) ?? []
+            log_worked('INFO', `Vector length ${vector.length}`, db, 'VECTOR LENGTH')
+            if (vector.length === 0) return this.update(db, row.ID, 2)
+            return await this.insert(db, row.ID, row.FILE_ID, vector)
         } catch (err: any) {
             log_worked('EXCEPTION', `Scheduler embed exception:${err.message || err.toString()}`, db)
-            this.update(db, data.ID, 2)
-            throw err;
+            return true;
         }
     }
 
