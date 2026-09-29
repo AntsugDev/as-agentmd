@@ -16,14 +16,15 @@ export class HuggingFace {
         }
     }
 
-    public static async embeddings(_class: any, content: any) {
+    public static async embeddings(_class: any, content: string|string[]) {
         try {
             // basta il blocco dei chunks insieme
+            if(!Array.isArray(content)) content =[content]
             const response = await _class(content, {
                 pooling: 'mean',
                 normalize: true
             })
-            return Array.from(response.data) as number[];
+            return response.tolist();
         } catch (err: any) {
             throw err;
         }

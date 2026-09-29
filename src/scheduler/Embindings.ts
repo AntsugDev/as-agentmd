@@ -22,8 +22,6 @@ interface IntEmb {
 export class Embindings {
 
     private db: Database.Database | undefined
-    private embeddings: any | null = null;
-    private polling: any | null;
 
     constructor(db: Database.Database | undefined) {
         this.db = db
@@ -40,14 +38,8 @@ export class Embindings {
                 activeScheduler(this.db, true, 'ACTIVE_EMB', 1)
                 log_worked('INFO', `Processing block of ${data.length} chunks`, this.db, 'CHECK LOOP BLOCK EMBED');
                 //@ts-ignore
-                let loop = 0;
-                for (let i = 0; i < data.length; i++) {
-                    const task: Chunks = data[i]
-                    const r = await Embindings.worker(this.db, task);
-                    if (r) loop++
-                }
-                if (loop >= data.length)
-                    activeScheduler(this.db, true, 'ACTIVE_EMB', 0)
+                const text = data.map(e => e.CONTENT)
+                const r = await Embindings.worker(this.db, text, data);
 
                 log_worked('INFO', `... terminate working embed`, this.db);
             }
@@ -62,7 +54,7 @@ export class Embindings {
     private search(): Chunks[] | undefined {
         try {
             //@ts-ignore
-            const embeddings: Chunks[] | undefined = this.db?.prepare("select * from CHUNKS c where not exists(select 1 from vss_chunks v where v.CHUNK_ID = c.id) and c.STATUS in (0,2) limit 250;").all()
+            const embeddings: Chunks[] | undefined = this.db?.prepare("select * from CHUNKS c where not exists(select 1 from vss_chunks v where v.CHUNK_ID = c.id) and c.STATUS in (0,2) limit 50;").all()
             return embeddings;
         } catch (err: any) {
             throw err;
@@ -109,13 +101,22 @@ export class Embindings {
         }
     }
 
-    public static async worker(db: Database.Database | undefined, row: any | Chunks) {
+    public static async worker(db: Database.Database | undefined, row: any | Chunks, data: any[]) {
         try {
+            let loop = 0;
             if (!db) throw new Error("Database not found")
-            const vector: number[] = await createVector(row.CONTENT) ?? []
+            const vector: any[] = await createVector(row) ?? []
+            for (let i = 0; i < data.length; i++) {
+                const vectorId: any[] = vector[i]
+                if (vectorId.length === 0) return this.update(db, row.ID, 2)
+                const chunkId = data[i].ID
+                const fileId = data[i].FILE_ID
+                const insert = await this.insert(db, chunkId, fileId, vectorId)
+                if(insert)loop++
+            }
+            if(loop >= data.length)
+                activeScheduler(db, true, 'ACTIVE_EMB', 0)
             log_worked('INFO', `Vector length ${vector.length}`, db, 'VECTOR LENGTH')
-            if (vector.length === 0) return this.update(db, row.ID, 2)
-            return await this.insert(db, row.ID, row.FILE_ID, vector)
         } catch (err: any) {
             log_worked('EXCEPTION', `Scheduler embed exception:${err.message || err.toString()}`, db)
             return true;

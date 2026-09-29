@@ -37,7 +37,7 @@ export class Rag {
             const vector = await createVector(this.message)
             let r: string = "";
             if (vector.length > 0) {
-                const floatArray = new Float32Array(vector);
+                const floatArray = new Float32Array(vector[0]);
                 const vectorBuffer = Buffer.from(floatArray.buffer);
                 const result = this.db?.prepare(queryRag).all([vectorBuffer, this.tag,limit]);
                 // @ts-ignore

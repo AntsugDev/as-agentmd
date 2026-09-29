@@ -28,7 +28,7 @@ program.name('create_vector').command('create-vector <input> <tag>').action(asyn
         const textConvert = await createVector(input);
         const fContent = path.join(os.tmpdir(), '/files/content.txt')
         const file = path.join(os.tmpdir(), '/files/vector.json')
-        await fs.writeFile(file, JSON.stringify(textConvert), 'utf-8')
+        await fs.writeFile(file, JSON.stringify(textConvert[0]), 'utf-8')
         await fs.writeFile(fContent, JSON.stringify(content), 'utf-8')
         console.log(`File creati. Vector=${file};Content=${fContent}`)
     } catch (e: any) {

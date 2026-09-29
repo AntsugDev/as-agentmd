@@ -56,15 +56,15 @@ export class Chunks {
             const keys = ['FILE_ID', 'CONTENT', 'TOKENS'];
             data.shift()
             let len = data.length
-            const chunks = cArray(data, 5)
             log_worked('INFO', `Len data ${len}. ${len > 1000 ? 'Divider data' : 'Not divider data'}`, db, 'DATA DIVIDER CHUNK EXCEL')
-            for (let i = 0; i < chunks.length; i++) {
-                const row = chunks[i];
-                let text = "";
-                row.map(e => {
-                    text += headers.map((h: string, index: number) => `${h.toString().trim()}=${(e[index] || "")}`).join(';')
-                    text +="\n"
-                })
+            for (let i = 0; i < data.length; i++) {
+                const row = data[i];
+                const text = JSON.stringify(
+                    Object.fromEntries(headers.map((h: string, index: number) => [
+                        h ? h.toString().trim() : `col_${index}`,
+                        row[index] ?? ""
+                    ]))
+                );
                 const values = [id, text, this.getToken(text)];
                 if (db)
                     SqlDb.insert(db, 'CHUNKS', keys, values)
