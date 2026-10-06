@@ -13,7 +13,7 @@
     "clean": "rimraf dist",
     "build:fe": "cd client && vite build",
     "dev:fe": "cd client && vite",
-    "build:be": "tsc",
+    "build:be": "npm run clean && tsc",
     "copy:assets": "copyfiles -u 1 client/dist/**/* dist/public",
     "build": "npm run clean && npm run build:be &&  npm run build:fe && npm run copy:assets",
     "dev:be": "cls && npm run clean --force && tsc && agentmd server"
@@ -30,7 +30,7 @@
     "@langchain/textsplitters": "^1.0.1",
     "@mistralai/mistralai": "^2.6.1",
     "@types/better-sqlite3": "^9.6.0",
-    "antsug-llma.ccp": "file:../antsug-llma.ccp",
+    "antsug-llma.ccp": "^1.0.63",
     "axios": "^1.19.0",
     "better-sqlite3": "^13.0.3",
     "cli-color": "^2.0.4",

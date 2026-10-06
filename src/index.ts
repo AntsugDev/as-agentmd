@@ -10,10 +10,11 @@ import path from "path";
 import * as os from "node:os";
 import {Rag} from "./utility/Rag.js";
 import {Nolimits} from "./api/nolimits.js";
+import { InstanceAntSug83LLama } from 'antsug-llma.ccp';
 
 await new SqlDb().create(true)
 await HuggingFace.instance()
-await new Nolimits()._instance()
+await InstanceAntSug83LLama()
 
 export const program = new Command();
 program
