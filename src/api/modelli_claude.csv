@@ -1,0 +1,6 @@
+Nome modello;ID modello;Descrizione,Disponibilita
+Claude Opus 5;claude-opus-5;Il modello di punta per coding agentico complesso e lavoro enterprise; massima capacita tra i modelli ad accesso generale.,Pubblico (API, Claude Platform, Claude Code, claude.ai)
+Claude Sonnet 5;claude-sonnet-5;Il modello che stai usando ora: il miglior equilibrio tra velocita e intelligenza per coding, agenti e lavoro di conoscenza quotidiano.,Pubblico (API, Claude Platform, Claude Code, claude.ai)
+Claude Haiku 4.5;claude-haiku-4-5-20251001;Il modello piu veloce ed economico della gamma, con intelligenza vicina ai modelli di punta.,Pubblico (API, Claude Platform, Claude Code, claude.ai)
+Claude Fable 5.1;claude-fable-5-1;Modello di livello Mythos reso sicuro per uso generale: massima capacita disponibile pubblicamente, pensato per ragionamento complesso e compiti agentici di lunga durata. Include classificatori di sicurezza aggiuntivi su biologia/chimica, cybersecurity e distillazione dei modelli.,Pubblico (API, Claude Platform, Claude Code, piani Enterprise a consumo)
+Claude Mythos 5.1;(non ha un ID pubblico);Stesso modello sottostante di Fable 5.1 ma con alcune misure di sicurezza rimosse. Riservato a un piccolo gruppo di partner fidati tramite il Project Glasswing di Anthropic (es. difensori informatici).,Accesso riservato/invito (Project Glasswing)

@@ -1,0 +1,76 @@
+{
+  "name": "agentmd",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "bin": {
+    "agentmd": "./dist/index.js"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "clean": "rimraf dist",
+    "build:fe": "cd client && vite build",
+    "dev:fe": "cd client && vite",
+    "build:be": "tsc",
+    "copy:assets": "copyfiles -u 1 client/dist/**/* dist/public",
+    "build": "npm run clean && npm run build:be &&  npm run build:fe && npm run copy:assets",
+    "dev:be": "cls && npm run clean --force && tsc && agentmd server"
+  },
+  "files": [
+    "dist",
+    "bin"
+  ],
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.125.0",
+    "@google/genai": "^2.17.1",
+    "@huggingface/transformers": "^4.2.0",
+    "@langchain/core": "^1.2.9",
+    "@langchain/textsplitters": "^1.0.1",
+    "@mistralai/mistralai": "^2.6.1",
+    "@types/better-sqlite3": "^9.6.0",
+    "antsug-llma.ccp": "file:../antsug-llma.ccp",
+    "axios": "^1.19.0",
+    "better-sqlite3": "^13.0.3",
+    "cli-color": "^2.0.4",
+    "commander": "^12.0.0",
+    "conf": "^15.1.0",
+    "cors": "^2.8.6",
+    "csv-writer": "^1.6.0",
+    "dayjs": "^1.11.21",
+    "express": "^5.2.1",
+    "express-list-endpoints": "^7.1.1",
+    "js-tiktoken": "^1.0.21",
+    "mammoth": "^1.12.2",
+    "marked": "^15.0.12",
+    "marked-terminal": "^7.3.0",
+    "mime-types": "^3.0.2",
+    "multer": "^2.2.0",
+    "node-llama-cpp": "^3.22.1",
+    "ollama": "^0.6.3",
+    "open": "^11.0.0",
+    "openai": "^7.15.0",
+    "ora": "^9.4.1",
+    "pdf-parse": "^2.4.5",
+    "piscina": "^5.3.2",
+    "sqlite-vec": "^0.1.9",
+    "swagger-ui-express": "^5.0.1",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/marked-terminal": "^6.1.1",
+    "@types/mime-types": "^3.0.1",
+    "@types/multer": "^2.2.0",
+    "@types/node": "^22.0.0",
+    "@types/pdf-parse": "^1.1.5",
+    "copyfiles": "^2.4.1",
+    "rimraf": "^6.1.3",
+    "swagger-autogen": "^2.23.7",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}

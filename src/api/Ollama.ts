@@ -1,0 +1,147 @@
+import {callbackApi} from "../utility/api.js";
+import {AgentConfig, ChatText, RawGeminiModel} from "../interface/myInterface.js";
+import {ApiAbstract} from "./ApiAbstract.js";
+import ollama, {EmbedRequest, EmbedResponse} from "ollama";
+import fs from "fs/promises";
+import {btoa} from "node:buffer";
+
+
+export class OllamaApi extends ApiAbstract {
+
+
+    constructor(files: any | null, model: string | null) {
+        super('ollama', "http://localhost:11434", null, files, model);
+    }
+
+    protected async validateModel() {
+        try {
+            const config = this.config
+            if (!config) return false;
+            const models: RawGeminiModel[] = config.get(`providers.ollama.models`)
+            const filter = models.filter((e: RawGeminiModel) => {
+                return e.name.toString().indexOf('bge-m3') !== -1
+            })
+            if (filter.length === 0) {
+                await ollama.pull({model: "bge-m3", stream: false});
+            }
+
+        } catch (err: any) {
+            console.log('Eccezione ollama nella ricerca del modello')
+        }
+    }
+
+
+
+
+    // @ts-ignore
+    async uri_file(): Promise<any | null> {
+        try {
+            const image: string[] = []
+            if (this.files && Array.isArray(this.files)) {
+                for (let i = 0; i < this.files.length; i++) {
+                    const ele = this.files[i]
+                    const content = await fs.readFile(ele.path, 'utf-8')
+                    if (content) {
+                        image.push(btoa(content))
+                    }
+                }
+            }
+            return {
+                role: 'user', images: image
+            };
+        } catch (err: any) {
+            throw err;
+        }
+    }
+
+    // @ts-ignore
+    async chat(text: any[]): null | string | object {
+        try {
+            const model = !this.model ? this.getModelSelect() : this.model
+            if (!model) {
+                console.error("Impossibile estrarre il modello da utilizzare")
+                return null;
+            }
+            const images = await this.uri_file()
+            if (images && images.images.length > 0)
+                text.push(images)
+
+            let response = await ollama.chat({
+                model: model,
+                messages: text,
+                stream: false,
+                options: {
+                    temperature: 0.5,
+                },
+            });
+            if (response && response?.message && response?.message?.content)
+                return response.message.content.toString();
+            return null;
+
+        } catch (err: any) {
+            throw new Error(`Ollama exception ${JSON.stringify(err)}`);
+        }
+    }
+
+    OllamaRun = async (): Promise<boolean | undefined> => {
+        try {
+            if (this.endPointChat === null) return false;
+            const response = await callbackApi({
+                url: this.endPointChat.toString(),
+                method: 'GET'
+            })
+            console.log('ollama chek',response)
+            if (response && parseInt(response.status) === 200)
+                return true;
+
+            return false;
+
+        } catch (err: any) {
+            console.log(`Ollama check runnig error ${err.toString()}`)
+        }
+    }
+
+// @ts-ignore
+    async sincro(): boolean {
+        try {
+            // @ts-ignore
+            this.preProviderInstance()
+                // @ts-ignore
+                const response = await ollama.list()
+                if (response?.models) {
+                    this.clearModels()
+                    const $models: RawGeminiModel[] = [];
+                    response.models.map((e: any) => {
+                        const name = e.name
+                        const displayName = e.model
+                        const description = null
+                        const limitIn = null
+                        const limitOut = null
+                        const v = e.modified_at
+                        $models.push({
+                            name: name,
+                            displayName: displayName,
+                            description: description,
+                            inputTokenLimit: limitIn,
+                            outputTokenLimit: limitOut,
+                            version: v
+                        })
+                    })
+                    if ($models.length > 0) {
+                        this.setModels($models)
+                        console.log("Ollama models update")
+                        return true;
+                    } else {
+                        console.log("Ollama models not found or exception system")
+                        return false;
+                    }
+                }
+
+        } catch (err: any) {
+            console.log(`Ollama sync runnig error ${err.toString()}`)
+            return false;
+        }
+    }
+
+}
+

@@ -1,0 +1,78 @@
+import fs from "fs/promises";
+import * as os from "node:os";
+import path from "path";
+import dayjs from "dayjs";
+import {awaitAllCallbacks} from "@langchain/core/callbacks/promises";
+import {db} from "../database/database.js";
+import Database from "better-sqlite3";
+
+const tmp = os.tmpdir();
+const files = path.join(tmp, 'files')
+
+export const storage_put = async (nameFile: string, text: any) => {
+    try {
+        const fileDir = path.join(files, nameFile)
+        await fs.writeFile(fileDir, text, 'utf-8');
+        console.log(`File created in ${fileDir}`)
+    } catch (err: any) {
+        console.log('File not created', err)
+    }
+}
+
+export const storage_exist = async (nameFile: string) => {
+    try {
+        const fileDir = path.join(files, nameFile)
+        await fs.stat(fileDir)
+        return true;
+    } catch (err: any) {
+        if (err.code === 'ENOENT') {
+            return false;
+        }
+        throw err;
+    }
+}
+
+export const storage_append = async (nameFile: string, text: any) => {
+    try {
+        const fileDir = path.join(files, nameFile)
+        const dataFile = await storage_exist(nameFile)
+        if (!dataFile) return storage_put(nameFile, text)
+        await fs.appendFile(fileDir, `\n${text}`, 'utf-8')
+    } catch (err: any) {
+        console.log('File not updated', err)
+    }
+}
+
+export const storage_del = async (nameFile: string) => {
+    try {
+        const fileDir = path.join(files, nameFile)
+        const dataFile = await storage_exist(nameFile)
+        if (!dataFile) {
+            throw new Error("File not found")
+        }
+        await fs.unlink(fileDir)
+        console.log(`${fileDir} deleted`)
+    } catch (err: any) {
+        console.log('File not deleted', err)
+    }
+}
+
+export const logger = async (status: 'INFO' | 'EXCEPTION', tag: string, msg: string, code?: number | string | null, stack?: string | null, name?: string) => {
+        const now = dayjs().format('YYYY_MM_DD');
+        let fileName = `${now}_log.txt`;
+        if (name) fileName = `${name}.txt`
+        const time = dayjs().format('HH:mm:ss')
+        let audit = `[${time}](${status}),${tag}: ${msg}`
+        if (code || stack) {
+            audit += `\n--------------------------------------------------\n- CODE:${(code ? code : 0)}\n- STACK:\n${stack}\n--------------------------------------------------------------------\n`
+        }
+        storage_append(fileName, audit).catch(e => console.log('Riga non appesa al file',e))
+}
+
+export const log_worked = (status: 'INFO' | 'EXCEPTION', msg: string, _db: Database.Database | undefined, tag: string | null = null) => {
+    const file = path.join(os.tmpdir(), `/files/${dayjs().format('YYYYMMDD')}_worked.txt`)
+    const audit = `\n${dayjs().format('YYYY-MM-DD HH:mm:ss')}|${status}|${(tag ? tag : '')}|${msg}`
+    fs.appendFile(file, audit).catch(e => {
+        console.log('Eccezione aggiunta log nel file', e)
+    })
+}

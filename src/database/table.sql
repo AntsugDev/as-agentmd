@@ -1,0 +1,94 @@
+--SELECT load_extension('C:/web/Personali/vector-plugin/environment/Lib/site-packages/sqlite_vec/vec0.dll');
+--SELECT vec_version();
+
+DROP TABLE IF EXISTS CHUNKS;
+DROP TABLE IF EXISTS FILES;
+DROP TABLE IF EXISTS STATUS;
+DROP TABLE IF EXISTS LOCK;
+
+CREATE TABLE IF NOT EXISTS LOCK
+(
+    ID   INTEGER PRIMARY KEY AUTOINCREMENT,
+    KEY TEXT NOT NULL,
+    VALUE INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS STATUS
+(
+    ID   INTEGER PRIMARY KEY AUTOINCREMENT,
+    NAME TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS FILES
+(
+    ID          INTEGER PRIMARY KEY AUTOINCREMENT,
+    FILE_NAME   TEXT     NOT NULL,
+    CONTENT     TEXT     NOT NULL,
+    TAG         TEXT     NOT NULL,
+    STATUS_ID   INTEGER  NOT NULL,
+    MODEL_USED  TEXT     NULL,
+    CREATED_AT  DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UPDATED_AT  DATETIME NULL,
+    RETRY_COUNT INTEGER  DEFAULT 0,
+    MIME_TYPE   TEXT     NOT NULL,
+    EXT         TEXT     NOT NULL,
+    FOREIGN KEY (STATUS_ID) REFERENCES STATUS (ID) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS CHUNKS
+(
+    ID          INTEGER PRIMARY KEY AUTOINCREMENT,
+    FILE_ID     INTEGER,
+    CONTENT     TEXT     NOT NULL,
+    TOKENS      INTEGER,
+    STATUS      INTEGER  DEFAULT 0,
+    RETRY_COUNT INTEGER  DEFAULT 0,
+    CREATED_AT  DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UPDATED_AT  DATETIME NULL,
+    FOREIGN KEY (FILE_ID) REFERENCES FILES (ID) ON DELETE CASCADE
+);
+DROP TABLE IF EXISTS vss_chunks;
+CREATE VIRTUAL TABLE IF NOT EXISTS vss_chunks USING vec0
+(
+    chunk_id INTEGER PRIMARY KEY,
+    file_id INTEGER,
+    embedding float [384] distance_metric=cosine
+);
+DROP VIEW IF EXISTS TAGS;
+CREATE VIEW TAGS AS
+select distinct tt.TAG,
+                (case when sum(tt.ELABORATE) != 0 and sum(tt.TOT_EMB) != 0 and tt.TOT_CHUNKS  = sum(tt.ELABORATE)  and sum(tt.ELABORATE) =  sum(tt.TOT_EMB) then 1 else 0 end) ACTIVE
+from (select F.TAG, d.ELABORATE, d.TOT_EMB, d.TOT_CHUNKS
+      from FILES F
+               join DATALIST d
+                    on d.FILE_ID in ((select group_concat(f1.ID, ',') from FILES f1 where f1.TAG = F.TAG))) tt
+group by tt.TAG
+order by tt.TAG;
+
+
+
+DROP VIEW IF EXISTS DATALIST;
+CREATE VIEW DATALIST AS
+SELECT F.ID                                                                  FILE_ID,
+       S.NAME                                                                STATUS_NAME,
+       (SELECT COUNT(*) FROM CHUNKS C WHERE C.FILE_ID = F.ID)                TOT_CHUNKS,
+       (SELECT COUNT(*) FROM CHUNKS C WHERE C.FILE_ID = F.ID AND STATUS = 0) NOT_ELABORATE,
+       (SELECT COUNT(*) FROM CHUNKS C WHERE C.FILE_ID = F.ID AND STATUS = 2) EXCEPTION,
+       (SELECT COUNT(*) FROM CHUNKS C WHERE C.FILE_ID = F.ID AND STATUS = 1) ELABORATE,
+       (SELECT COUNT(*) FROM vss_chunks V WHERE V.FILE_ID = F.ID)            TOT_EMB,
+       F.FILE_NAME,
+       F.TAG,
+       F.CREATED_AT,
+       F.UPDATED_AT
+FROM FILES F
+         JOIN STATUS S ON S.ID = F.STATUS_ID
+ORDER BY F.CREATED_AT, F.UPDATED_AT;
+
+SELECT C.CONTENT,
+       vec_distance_cosine(v.embedding, ?) AS distance
+FROM vss_chunks V
+         JOIN CHUNKS C ON C.ID = V.CHUNK_ID
+         JOIN FILES F ON F.ID = C.FILE_ID
+WHERE F.TAG = ?
+ORDER BY distance
+LIMIT 3;
