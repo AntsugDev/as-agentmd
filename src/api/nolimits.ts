@@ -1,12 +1,13 @@
 import dayjs from "dayjs";
 import {ApiAbstract} from "./ApiAbstract.js";
 import {ChatAntSugLLama} from "antsug-llma.ccp"
+import { sessionChat, useSessionChat } from "../utility/utility.js";
 
 
 export class Nolimits extends ApiAbstract {
 
-    constructor() {
-        super('no-limits', '', '', null, null);
+    constructor(rag?:string|null) {
+        super('no-limits', '', '', null, null, (rag ? rag : null));
     }
     
     sincro(): Promise<boolean> | boolean {
@@ -26,16 +27,16 @@ export class Nolimits extends ApiAbstract {
 
             console.log('---------CHAT RESPONSE-----------')
             console.log('start:', dayjs().format('HH:mm:ss'))
-            console.log('previous', this.previous)
-            const response:any = await ChatAntSugLLama(text.toString(),this.previous)
-            console.log(response)
+            console.log('sessionChat',sessionChat)
+            const response:any = await ChatAntSugLLama(request.toString(),this.previous)
             console.log('end:', dayjs().format('HH:mm:ss'))
             console.log('--------------------------')
             if(response){
-                //todo @@ bug fix
-                this.previous = response.name_history
+                //@ts-ignore
+                useSessionChat((response?.name_history ?? null))
                 return response.response
             }
+            else throw new Error("Chat noLimits exception")
         } catch (err: any) {
             throw err;
         }
@@ -46,4 +47,4 @@ export class Nolimits extends ApiAbstract {
         return null;
     }
 
-}
+} 

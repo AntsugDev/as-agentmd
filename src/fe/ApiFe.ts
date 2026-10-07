@@ -12,6 +12,7 @@ import {
     getContent,
     getProviderModelUtility,
     providerModels,
+    sessionChat,
     totalToken,
 } from "../utility/utility.js";
 import { ChatFe } from "./ChatFe.js";
@@ -458,6 +459,7 @@ export class ApiFe {
                             totalToken: tt,
                             time: time,
                             name_file: nameFile,
+                            previous: sessionChat
                         });
                     } else {
                         return resp.status(200).json({
