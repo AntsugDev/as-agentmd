@@ -16,7 +16,7 @@ interface IntEmb {
     STATUS: number
     RETRY_COUNT: number | null
     CREATED_AT: string
-    UPDATED_AT: string | null
+    UPDATED_AT: string | null 
 }
 
 export class Embindings {

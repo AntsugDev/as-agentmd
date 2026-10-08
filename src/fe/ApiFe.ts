@@ -9,6 +9,7 @@ import {
 import Conf from "conf";
 import { Request, NextFunction, Response } from "express";
 import {
+    destroySessionChat,
     getContent,
     getProviderModelUtility,
     providerModels,
@@ -411,6 +412,7 @@ export class ApiFe {
                     let tt = 0;
                     if (!goto) {
                         if (status === "init") {
+                            destroySessionChat();
                             const role =
                                 provider?.toString().indexOf("gemini") === -1 ||
                                 provider

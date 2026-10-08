@@ -228,6 +228,7 @@ const archivia = async () => {
       input: 0, output: 0
     }
     selectedTag.value = null
+    //todo svuota la sessionChat 
   } catch (err: any) {
     console.error("Archiviazione fallita", err)
   } finally {

@@ -25,12 +25,7 @@ export class Nolimits extends ApiAbstract {
                     request += text[filter]?.content ?? ""
             } else request += text
 
-            console.log('---------CHAT RESPONSE-----------')
-            console.log('start:', dayjs().format('HH:mm:ss'))
-            console.log('sessionChat',sessionChat)
             const response:any = await ChatAntSugLLama(request.toString(),this.previous)
-            console.log('end:', dayjs().format('HH:mm:ss'))
-            console.log('--------------------------')
             if(response){
                 //@ts-ignore
                 useSessionChat((response?.name_history ?? null))

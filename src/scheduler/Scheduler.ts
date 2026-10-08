@@ -14,7 +14,7 @@ interface Files {
     FILE_NAME: string
     CONTENT: string
     TAG: string,
-    STATUS_ID: number
+    STATUS_ID: number 
     MODEL_USED?: string | null
     CREATED_AT: string
     UPDATED_AT: string | null
@@ -113,7 +113,6 @@ export class Scheduler {
 
     public static async worker(db: Database.Database | undefined, data: Files) {
         try {
-            if (!db) throw new Error("Database not found")
             let res: boolean = false;
             log_worked('INFO', `Working in chunks for ${data.EXT}`, db)
             if (['xlsx', 'xls', 'csv'].includes(data.EXT)) {

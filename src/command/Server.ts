@@ -7,16 +7,11 @@ import {fileURLToPath} from 'url';
 import {ApiFe} from "../fe/ApiFe.js";
 import {ChatFe} from "../fe/ChatFe.js";
 import {Request, Response} from "express"
-import pool from "../worked/istanza.js";
-import dayjs from "dayjs";
-import {ClearDirectory} from "../scheduler/clearDirectory.js";
-import {isActiveEmbending} from "../scheduler/Embindings.js";
-import {isActiveScheduler} from "../scheduler/Scheduler.js";
-import {log_worked, logger} from "../utility/storage.js";
+import {poolScheduler,poolEmb} from "../worked/istanza.js";
+import {log_worked} from "../utility/storage.js";
 import Database from "better-sqlite3";
 import {db} from "../database/database.js";
 import {activeScheduler} from "../scheduler/ActiveScheduler.js";
-import {Nolimits} from "../api/nolimits.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -63,7 +58,8 @@ export class Server extends AbstractProgram {
                     const activeOthers = activeScheduler(_db, false, 'ACTIVE_CHUNK', 1);
                     log_worked('INFO', `Check action the scheduler of the chunks ${(!activeOthers ? 'START' : 'BLOCKED')} `, _db, 'INTERVAL CHUNK')
                     if (!activeOthers) {
-                        await pool.run('CHUNK')
+                        //@ts-ignore
+                        await poolScheduler.run('CHUNK')
                     }
                 } catch (ec: any) {
                     throw ec;
@@ -82,7 +78,8 @@ export class Server extends AbstractProgram {
                     const activeOthers = activeScheduler(_db, false, 'ACTIVE_EMB', 1);
                     log_worked('INFO', `Check action the scheduler of the embeddings ${!activeOthers ? 'START' : 'BLOCKED'} `, _db, 'INTERVAL EMBEDDINGS')
                     if (!activeOthers) {
-                        await pool.run('EMB')
+                        //@ts-ignore
+                        await poolEmb.run('EMB')
                     }
                 } catch (eM: any) {
                     throw eM;
@@ -146,7 +143,8 @@ export class Server extends AbstractProgram {
                     console.log('Shutdown...');
 
                     this.server.close(async () => {
-                        await pool.destroy();
+                        await poolScheduler.destroy();
+                        await poolEmb.destroy();
                         process.exit(0);
                     });
                 });

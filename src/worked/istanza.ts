@@ -1,11 +1,17 @@
 import Piscina from 'piscina';
 
 // @ts-ignore
-const pool = new Piscina({
+export const poolScheduler = new Piscina({
     filename: new URL('./index.js', import.meta.url).href,
     minThreads:2,
     maxThreads:5,
     maxQueue:10
 });
 
-export default pool;
+//@ts-ignore
+export const poolEmb = new Piscina({
+    filename: new URL('./index.js', import.meta.url).href,
+    minThreads:2,
+    maxThreads:5,
+    maxQueue:10
+});
