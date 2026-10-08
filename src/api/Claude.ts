@@ -59,7 +59,6 @@ export class Claude extends ApiAbstract {
                 }
             }
         } catch (e) {
-            console.log('chat claude deep seek exception ...')
             throw e;
         }
     }

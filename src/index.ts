@@ -33,7 +33,6 @@ program.name('create_vector').command('create-vector <input> <tag>').action(asyn
         const file = path.join(os.tmpdir(), '/files/vector.json')
         await fs.writeFile(file, JSON.stringify(textConvert[0]), 'utf-8')
         await fs.writeFile(fContent, JSON.stringify(content), 'utf-8')
-        console.log(`File creati. Vector=${file};Content=${fContent}`)
     } catch (e: any) {
         console.log('eccezione creazione vettore ...', e)
     }
