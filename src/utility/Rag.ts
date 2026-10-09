@@ -35,11 +35,13 @@ export class Rag {
             let limit:number = 5;
             if(this.pre()) limit = 100;
             const vector = await createVector(this.message)
+            console.log('vettore=> ', vector)
             let r: string = "";
             if (vector.length > 0) {
                 const floatArray = new Float32Array(vector[0]);
                 const vectorBuffer = Buffer.from(floatArray.buffer);
-                const result = this.db?.prepare(queryRag).all([vectorBuffer, this.tag,limit]);
+                const result = this.db?.prepare(queryRag).all([vectorBuffer,limit, this.tag]);
+                console.log('result vector ', result)
                 // @ts-ignore
                 result?.map((e: RagInt) => {
                     let content: string = e.CONTENT
