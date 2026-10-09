@@ -82,7 +82,7 @@ watch(() => props.item, (v) => {
     if (v) {
         list.value = v.split('~').map((t: string) => {
             return mdRender.render(t)
-        })
+        }).slice(0,30)
     }
 })
 
