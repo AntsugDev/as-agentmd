@@ -32,7 +32,7 @@ export class Rag {
 
     public async result() {
         try {
-            let limit:number = 3;
+            let limit:number = 5;
             if(this.pre()) limit = 100;
             const vector = await createVector(this.message)
             let r: string = "";

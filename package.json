@@ -30,7 +30,7 @@
     "@langchain/textsplitters": "^1.0.1",
     "@mistralai/mistralai": "^2.6.1",
     "@types/better-sqlite3": "^9.6.0",
-    "antsug-llma.ccp": "^1.0.63",
+    "antsug-llma.ccp": "^1.0.64",
     "axios": "^1.19.0",
     "better-sqlite3": "^13.0.3",
     "cli-color": "^2.0.4",

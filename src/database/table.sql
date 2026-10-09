@@ -68,7 +68,7 @@ order by tt.TAG;
 
 
 DROP VIEW IF EXISTS DATALIST;
-CREATE VIEW DATALIST AS
+CREATE VIEW DATALIST as 
 SELECT F.ID                                                                  FILE_ID,
        S.NAME                                                                STATUS_NAME,
        (SELECT COUNT(*) FROM CHUNKS C WHERE C.FILE_ID = F.ID)                TOT_CHUNKS,
@@ -76,6 +76,7 @@ SELECT F.ID                                                                  FIL
        (SELECT COUNT(*) FROM CHUNKS C WHERE C.FILE_ID = F.ID AND STATUS = 2) EXCEPTION,
        (SELECT COUNT(*) FROM CHUNKS C WHERE C.FILE_ID = F.ID AND STATUS = 1) ELABORATE,
        (SELECT COUNT(*) FROM vss_chunks V WHERE V.FILE_ID = F.ID)            TOT_EMB,
+       (select  group_concat(c.CONTENT, '~') from CHUNKS C WHERE C.FILE_ID = F.ID) TEXT_CHUNKS,
        F.FILE_NAME,
        F.TAG,
        F.CREATED_AT,

@@ -731,8 +731,6 @@ export class ApiFe {
             async (req: Request, resp: Response) => {
                 try {
                     const response: ListData[] = new DataList().table();
-                    //const dir = path.join(os.tmpdir(),'files')
-                    //await fs.writeFile(path.join(dir,'rag_list.json'), JSON.stringify(response), 'utf-8')
                     return resp.json(response);
                 } catch (err: any) {
                     console.log(err);

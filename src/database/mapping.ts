@@ -44,6 +44,7 @@ export interface ListData{
     TAG:string
     CREATED_AT:string
     UPDATED_AT:string
+    TEXT_CHUNKS:string
 }
 
 export interface RagInt{

@@ -1,11 +1,12 @@
 <script setup lang="ts">
 
-import {useI18n} from "vue-i18n";
-import {onMounted, reactive, ref} from "vue";
-import {api, type Payload} from "../services/api.ts";
+import { useI18n } from "vue-i18n";
+import { onMounted, reactive, ref, watch } from "vue";
+import { api, type Payload } from "../services/api.ts";
 import dayjs from "dayjs";
+import ChunksDialog from "./ChunksDialog.vue";
 
-const {t} = useI18n()
+const { t } = useI18n()
 const tagItems = ref<any[]>([])
 const loading = ref<boolean>(false)
 const valid = ref<boolean>(false)
@@ -104,7 +105,7 @@ const invertView = () => {
     alt.value = t('alt.open')
   }
 }
-const table = ref<any []>([])
+const table = ref<any[]>([])
 const loadTable = ref<boolean>(false)
 const listTable = async () => {
   try {
@@ -137,11 +138,12 @@ const invertViewTable = () => {
   }
 }
 const headers = [
-  {title: t('rag.fileName'), key: 'FILE_NAME'},
-  {title: t('rag.tagTable'), key: 'TAG'},
-  {title: t('rag.status'), key: 'STATUS', align: 'center'},
-  {title: t('rag.created'), key: 'CREATED_AT'},
-  {title: t('rag.update'), key: 'UPDATED_AT'},
+  { title: t('rag.fileName'), key: 'FILE_NAME' },
+  { title: t('rag.tagTable'), key: 'TAG' },
+  { title: t('rag.status'), key: 'STATUS', align: 'center' },
+  { title: t('rag.created'), key: 'CREATED_AT' },
+  { title: t('rag.update'), key: 'UPDATED_AT' },
+  { title: '', key: 'action' },
 ]
 const getStatus = (item: {
   FILE_ID: number
@@ -155,6 +157,7 @@ const getStatus = (item: {
   TAG: string
   CREATED_AT: string
   UPDATED_AT: string
+  TEXT_CHUNKS: string
 }) => {
   const status = item.STATUS_NAME
   let title = null;
@@ -165,7 +168,7 @@ const getStatus = (item: {
     color = "#f59e0b"
     title = t('rag.wait')
   } else if (status.toString().toUpperCase() === 'OK') {
-    if ( item.ELABORATE === item.TOT_EMB) {
+    if (item.ELABORATE === item.TOT_EMB) {
       icon = 'mdi-check-circle-outline'
       color = "#10b981"
       title = t('rag.success')
@@ -189,6 +192,19 @@ const getStatus = (item: {
   }
   return `<span style="vertical-align: middle; display: inline-flex; align-items: center;"><i class="mdi ${icon}" style="font-size: 26px; color:${color};" title="${title}"></i></span>`
 }
+const dialog = ref<boolean>(false)
+const propsDialog = ref<string | null>(null)
+
+watch(dialog,(v) => {
+if(!v && propsDialog.value) propsDialog.value = null
+})
+
+const viewChunks = (str: string) => {
+  dialog.value = true
+  if (propsDialog.value) propsDialog.value = null
+  propsDialog.value = str
+}
+
 onMounted(() => {
   listTable()
 })
@@ -235,36 +251,15 @@ onMounted(() => {
 
               <v-row density="comfortable">
                 <v-col cols="12" md="6">
-                  <v-text-field
-                      :label="t('rag.topic_create')"
-                      density="comfortable"
-                      variant="outlined"
-                      v-model="formData.tagCreate"
-                      @update:focused="resetError"
-                      :disabled="loading"
-                      rounded="lg"
-                      prepend-inner-icon="mdi-plus-box-outline"
-                      hide-details="auto"
-                  ></v-text-field>
+                  <v-text-field :label="t('rag.topic_create')" density="comfortable" variant="outlined"
+                    v-model="formData.tagCreate" @update:focused="resetError" :disabled="loading" rounded="lg"
+                    prepend-inner-icon="mdi-plus-box-outline" hide-details="auto"></v-text-field>
                 </v-col>
                 <v-col cols="12" md="6">
-                  <v-autocomplete
-                      v-model="formData.tag"
-                      :model-value="formData.tag"
-                      :items="tagItems"
-                      item-title="TAG"
-                      item-value="TAG"
-                      :label="t('rag.topics')"
-                      variant="outlined"
-                      density="comfortable"
-                      prepend-inner-icon="mdi-brain"
-                      hide-details="auto"
-                      :loading="loading"
-                      @update:focused="resetError"
-                      :disabled="loading"
-                      rounded="lg"
-                      clearable
-                  />
+                  <v-autocomplete v-model="formData.tag" :model-value="formData.tag" :items="tagItems" item-title="TAG"
+                    item-value="TAG" :label="t('rag.topics')" variant="outlined" density="comfortable"
+                    prepend-inner-icon="mdi-brain" hide-details="auto" :loading="loading" @update:focused="resetError"
+                    :disabled="loading" rounded="lg" clearable />
                 </v-col>
               </v-row>
               <p class="obbligatorio text-caption mt-2 ml-1" v-if="rulesTag">{{ t('rag.obbligatorio') }}</p>
@@ -278,23 +273,10 @@ onMounted(() => {
               </div>
               <p class="text-caption text-grey-darken-1 mb-3">{{ t('rag.only_file') }}</p>
 
-              <v-file-input
-                  v-model="formData.files"
-                  clearable
-                  chips
-                  counter
-                  show-size
-                  :label="t('rag.file')"
-                  accept=".txt,.md,.pdf,.doc,.docx,.xls,.xlsx,.csv,text/plain,text/markdown,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
-                  variant="outlined"
-                  multiple
-                  :rules="[v => !!v || t('obbligatorio')]"
-                  :disabled="loading"
-                  rounded="lg"
-                  density="comfortable"
-                  prepend-icon=""
-                  prepend-inner-icon="mdi-cloud-upload-outline"
-              />
+              <v-file-input v-model="formData.files" clearable chips counter show-size :label="t('rag.file')"
+                accept=".txt,.md,.pdf,.doc,.docx,.xls,.xlsx,.csv,text/plain,text/markdown,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
+                variant="outlined" multiple :rules="[v => !!v || t('obbligatorio')]" :disabled="loading" rounded="lg"
+                density="comfortable" prepend-icon="" prepend-inner-icon="mdi-cloud-upload-outline" />
             </v-card>
 
             <div class="d-flex flex-column flex-sm-row align-sm-center justify-space-between ga-3">
@@ -302,17 +284,8 @@ onMounted(() => {
                 <v-icon icon="mdi-clock-outline" size="16"></v-icon>
                 <span>{{ t('rag.scheduledProcessing') }}</span>
               </div>
-              <v-btn
-                  color="success"
-                  :loading="loading"
-                  :disabled="loading"
-                  append-icon="mdi-cloud-upload"
-                  @click="uploaded"
-                  variant="flat"
-                  size="large"
-                  class="font-weight-bold px-6"
-                  rounded="lg"
-              >
+              <v-btn color="success" :loading="loading" :disabled="loading" append-icon="mdi-cloud-upload"
+                @click="uploaded" variant="flat" size="large" class="font-weight-bold px-6" rounded="lg">
                 {{ t('rag.up') }}
               </v-btn>
             </div>
@@ -335,59 +308,52 @@ onMounted(() => {
 
       <v-slide-y-transition>
         <div v-if="viewTable" class="mt-4 pt-3 border-t">
-          <v-data-table
-              :headers="headers"
-              :items="table"
-              :loading="loadTable"
-              class="elevation-0 rounded-lg border"
-          >
+          <v-data-table :headers="headers" :items="table" :loading="loadTable" class="elevation-0 rounded-lg border">
             <template #top>
               <div class="d-flex align-center justify-space-between pa-3 border-b">
                 <span class="text-subtitle-2 font-weight-bold text-grey-darken-2">Documenti memorizzati</span>
-                <v-btn
-                    icon="mdi-refresh"
-                    variant="tonal"
-                    color="primary"
-                    size="small"
-                    :loading="loadTable"
-                    @click="listTable()"
-                    title="Aggiorna lista"
-                />
+                <v-btn icon="mdi-refresh" variant="tonal" color="primary" size="small" :loading="loadTable"
+                  @click="listTable()" title="Aggiorna lista" />
               </div>
             </template>
+            <template v-slot:[`item.action`]="{ item }">
+              <v-btn icon="mdi-division" variant="tonal" color="primary" size="small" :loading="loadTable"
+                @click="viewChunks(item?.TEXT_CHUNKS)" title="Chunks" v-if="item?.TEXT_CHUNKS" />
+            </template>
 
-            <template v-slot:[`item.CREATED_AT`]="{item}">
+            <template v-slot:[`item.CREATED_AT`]="{ item }">
               <span v-if="item.CREATED_AT" class="text-caption font-weight-medium">
                 {{ dayjs(item.CREATED_AT).format('DD/MM/YYYY HH:mm') }}
               </span>
             </template>
 
-            <template v-slot:[`item.UPDATED_AT`]="{item}">
+            <template v-slot:[`item.UPDATED_AT`]="{ item }">
               <span v-if="item.UPDATED_AT" class="text-caption text-grey-darken-1">
                 {{ dayjs(item.UPDATED_AT).format('DD/MM/YYYY HH:mm') }}
               </span>
             </template>
 
-            <template v-slot:[`item.FILE_NAME`]="{item}">
+            <template v-slot:[`item.FILE_NAME`]="{ item }">
               <div class="d-flex align-center gap-2 font-weight-bold text-body-2">
                 <v-icon icon="mdi-file-text-outline" color="primary" size="18"></v-icon>
                 <span>{{ item.FILE_NAME }}</span>
               </div>
             </template>
 
-            <template v-slot:[`item.TAG`]="{item}">
+            <template v-slot:[`item.TAG`]="{ item }">
               <v-chip size="x-small" color="secondary" variant="tonal" class="font-weight-bold">
                 {{ item.TAG }}
               </v-chip>
             </template>
 
-            <template v-slot:[`item.STATUS`]="{item}">
+            <template v-slot:[`item.STATUS`]="{ item }">
               <div v-html="getStatus(item)"></div>
             </template>
           </v-data-table>
         </div>
       </v-slide-y-transition>
     </v-sheet>
+    <ChunksDialog v-model="dialog" :item="propsDialog"></ChunksDialog>
   </section>
 </template>
 

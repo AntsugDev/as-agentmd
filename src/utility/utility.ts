@@ -23,7 +23,6 @@ export let totalToken: number = 0;
 export let sessionChat: string | null = null;
 
 export const useSessionChat = (str: string | null) => {
-    console.log(`Assigned new session chat: ${str}`);
     sessionChat = str;
 };
 export const destroySessionChat = () => {
