@@ -39,7 +39,8 @@ export default {
         wait:'File in status wait',
         error:'Exception to work the file',
         insert_OK: 'Files uploaded successfully',
-        scheduledProcessing: 'After upload, the file will be processed on a scheduled basis. Processing times may be long and depend on the file size.'
+        scheduledProcessing: 'After upload, the file will be processed on a scheduled basis. Processing times may be long and depend on the file size.',
+        notice:"The chunk creation process has been successfully restarted"
 
 
     },

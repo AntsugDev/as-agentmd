@@ -194,15 +194,21 @@ const getStatus = (item: {
 }
 const dialog = ref<boolean>(false)
 const propsDialog = ref<string | null>(null)
+const fileIdDialog = ref<number | null>(null)
+const fileNameDialog = ref<string | null>(null)
 
-watch(dialog,(v) => {
-if(!v && propsDialog.value) propsDialog.value = null
+watch(dialog, (v) => {
+  if (!v) { propsDialog.value = null; fileIdDialog.value = null; fileNameDialog.value = null }
 })
 
-const viewChunks = (str: string) => {
+const viewChunks = (str: string, id: number, name:string|null = null) => {
   dialog.value = true
   if (propsDialog.value) propsDialog.value = null
+  if (propsDialog.value) propsDialog.value = null
+  if (fileNameDialog.value) fileNameDialog.value = null
   propsDialog.value = str
+  fileIdDialog.value = id
+  fileNameDialog.value = name
 }
 
 onMounted(() => {
@@ -318,7 +324,7 @@ onMounted(() => {
             </template>
             <template v-slot:[`item.action`]="{ item }">
               <v-btn icon="mdi-division" variant="tonal" color="primary" size="small" :loading="loadTable"
-                @click="viewChunks(item?.TEXT_CHUNKS)" title="Chunks" v-if="item?.TEXT_CHUNKS" />
+                @click="viewChunks(item?.TEXT_CHUNKS, item?.FILE_ID, item?.FILE_NAME)" title="Chunks" v-if="item?.TEXT_CHUNKS" />
             </template>
 
             <template v-slot:[`item.CREATED_AT`]="{ item }">
@@ -353,7 +359,7 @@ onMounted(() => {
         </div>
       </v-slide-y-transition>
     </v-sheet>
-    <ChunksDialog v-model="dialog" :item="propsDialog"></ChunksDialog>
+    <ChunksDialog v-model="dialog" :item="propsDialog" :file-id="fileIdDialog" :file-name="fileNameDialog"></ChunksDialog>
   </section>
 </template>
 
