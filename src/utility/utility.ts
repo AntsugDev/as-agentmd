@@ -26,7 +26,6 @@ export const useSessionChat = (str: string | null) => {
     sessionChat = str;
 };
 export const destroySessionChat = () => {
-    console.log("Session chat destroy");
     sessionChat = null;
 };
 

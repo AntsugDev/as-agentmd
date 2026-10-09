@@ -9,6 +9,7 @@ import {
 import Conf from "conf";
 import { Request, NextFunction, Response } from "express";
 import {
+    createVector,
     destroySessionChat,
     getContent,
     getProviderModelUtility,
@@ -461,7 +462,7 @@ export class ApiFe {
                             totalToken: tt,
                             time: time,
                             name_file: nameFile,
-                            previous: sessionChat
+                            previous: sessionChat,
                         });
                     } else {
                         return resp.status(200).json({
@@ -740,6 +741,37 @@ export class ApiFe {
         );
     }
 
+    public prechat() {
+        this.router.post(
+            "/test/prechat",
+            [this.isUser, this.isConfig],
+            async (
+                req: Request<
+                    null,
+                    {
+                        input: string;
+                        tag: string;
+                    }
+                >,
+                resp: Response,
+            ) => {
+                try {
+                    if (!req.body?.input && !req.body?.tag)
+                        throw new Error("Bad request");
+                    const input = req.body.input;
+                    const tag = req.body.tag;
+                    const content = await new Rag(input, tag).result();
+                    return resp.json({
+                        content: content,
+                    });
+                } catch (err: any) {
+                    console.log(err);
+                    return this.exception(resp, err.toString());
+                }
+            },
+        );
+    }
+
     public worked_log() {
         this.router.get(
             "/worked/log",
@@ -803,6 +835,7 @@ export class ApiFe {
             this.rag_list();
             this.tags();
             this.worked_log();
+            this.prechat();
             //--------------------------
         } catch (err: any) {
             throw err;

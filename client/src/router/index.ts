@@ -5,6 +5,8 @@ import DocsView from "../views/DocsView.vue";
 import DoubleChat from "../views/DoubleChat.vue";
 import Rag from "../views/Rag.vue";
 import LogsView from "../views/LogsView.vue";
+import PreChat from '../views/test/PreChat.vue';
+import Index from '../views/test/Index.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -39,6 +41,17 @@ const router = createRouter({
       name: 'logs',
       component: LogsView,
     },
+    {
+      path:'/test',
+      component:Index,
+      children:[
+        {
+          path:'/prechat',
+          name:'prechat',
+          component:PreChat
+        }
+      ]
+    }
   ],
 })
 

@@ -16,6 +16,9 @@ const goToHome = () => {
 const goToSettings = () => {
   router.push({name: 'settings'})
 }
+const goTopreChat = () => {
+  router.push({name: 'prechat'})
+}
 
 const toggleLocale = () => {
   locale.value = locale.value === 'it' ? 'en' : 'it'
@@ -181,6 +184,17 @@ const goToLogs = () => {
               >
                 {{ t('navigation.settings') }}
               </v-btn>
+
+               <v-btn
+                  variant="text"
+                  :color="route.name === 'prechat' ? 'primary' : 'default'"
+                  prepend-icon="mdi-chat"
+                  @click="goTopreChat"
+                  class="font-weight-bold text-capitalize px-3"
+                  rounded="lg"
+              >
+                {{ t('navigation.prechat') }}
+              </v-btn>
             </nav>
 
             <div class="header-actions d-flex align-center ga-3">
@@ -247,6 +261,9 @@ const goToLogs = () => {
                 </v-btn>
                 <v-btn icon variant="text" size="small" @click="goToSettings" :color="route.name === 'settings' ? 'primary' : 'default'">
                   <v-icon icon="mdi-cog-outline" size="22"></v-icon>
+                </v-btn>
+                <v-btn icon variant="text" size="small" @click="goTopreChat" :color="route.name === 'prechat' ? 'primary' : 'default'">
+                  <v-icon icon="mdi-chat" size="22"></v-icon>
                 </v-btn>
               </div>
 

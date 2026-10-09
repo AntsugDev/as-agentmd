@@ -1,11 +1,9 @@
 import { SqlDb } from "../database/database.js";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { getEncoding } from "js-tiktoken";
-import { log_worked, logger } from "../utility/storage.js";
-import dayjs from "dayjs";
+import { log_worked } from "../utility/storage.js";
 import Database from "better-sqlite3";
 import { Scheduler } from "./Scheduler.js";
-import { cArray } from "../utility/utility.js";
 
 export const enc = getEncoding("cl100k_base");
 
@@ -19,6 +17,18 @@ export class Chunks {
         }
     }
 
+    protected static normalize(text: string): string {
+        return text
+            .replace(/\r\n/g, "\n")
+            .replace(/\f/g, "\n\n") // form feed -> separatore di paragrafo
+            .replace(/\u00a0/g, " ") // spazi non-breaking
+            .replace(/[ \t]+/g, " ") // spazi multipli
+            .replace(/\n{3,}/g, "\n\n") // troppe righe vuote
+            .trim();
+    }
+
+
+    
     public static async text_chunk(
         data: any,
         id: number,
@@ -29,10 +39,11 @@ export class Chunks {
             const splitter = new RecursiveCharacterTextSplitter({
                 chunkSize: 800,
                 chunkOverlap: 150,
-                separators: ["#", "\n## ", "\n### ", "\n\n", "\n", " "],
+                separators: ["\n\n", "\n", ". ", " ", ""],
             });
             const keys = ["FILE_ID", "CONTENT", "TOKENS"];
-            const outputChunks = await splitter.createDocuments([data]);
+            const outputChunks = await (await (splitter
+                .createDocuments([this.normalize(data)])))?.filter((d:any) => d.pageContent.trim().length > 0);
             outputChunks.map((e) => {
                 const text = e.pageContent;
                 const values = [id, text, this.getToken(text)];

@@ -113,17 +113,13 @@ export class Scheduler {
 
     public static async worker(db: Database.Database | undefined, data: Files) {
         try {
-            console.log(`Estenzione del file ${data.EXT}`)
             let res: boolean = false;
             log_worked('INFO', `Working in chunks for ${data.EXT}`, db)
             if (['xlsx', 'xls', 'csv'].includes(data.EXT)) {
-                console.log('Chunck tabellare ....')
                 res = await Chunks.data_chunk(JSON.parse(data.CONTENT), data.ID, db)
             } else {
-                console.log('Chunck di testo ....')
                 res = await Chunks.text_chunk(data.CONTENT, data.ID, db)
             }
-            console.log(`Divisione in chunk terminata con successo ${res}`)
             if (res) this.update(db, data.ID, false, 'ok')
         } catch (err: any) {
             log_worked('EXCEPTION', `Scheduler chunks exception:${err.message || err.toString()}`, db)

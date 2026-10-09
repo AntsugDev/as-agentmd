@@ -5,7 +5,7 @@ import {RagInt} from "../database/mapping.js";
 
 const preQuery = "SELECT COUNT(*) AS TOTAL FROM FILES WHERE TAG = ? AND EXT in ('xlsx', 'xls', 'csv')"
 
-const queryRag = "SELECT C.CONTENT FROM vss_chunks V JOIN CHUNKS C ON C.ID = V.CHUNK_ID JOIN FILES F ON F.ID = C.FILE_ID WHERE  v.embedding MATCH ? AND  F.TAG = ?  AND k = ?;"
+const queryRag = "SELECT C.CONTENT, V.distance FROM vss_chunks V JOIN CHUNKS C ON C.ID = V.rowid WHERE V.embedding MATCH ?  AND k = ?  AND V.rowid IN (SELECT C2.ID  FROM CHUNKS C2 JOIN FILES F ON F.ID = C2.FILE_ID  WHERE F.TAG = ? ) ORDER BY V.distance;"
 
 export class Rag {
 

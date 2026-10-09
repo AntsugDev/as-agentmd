@@ -3,7 +3,6 @@ import Database from "better-sqlite3";
 import {Scheduler} from "../scheduler/Scheduler.js";
 import {Embindings} from "../scheduler/Embindings.js";
 import {ClearDirectory} from "../scheduler/clearDirectory.js";
-import * as sqlite from "node:sqlite";
 import * as sqliteVec from "sqlite-vec";
 
 const directory = path.resolve(process.cwd(), 'src/database', 'rag.db');

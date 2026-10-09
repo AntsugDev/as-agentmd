@@ -13,7 +13,7 @@ export let db: Database.Database | undefined = undefined;
 
 export class SqlDb {
     private _db: Database.Database | undefined;
-
+   
     constructor() {
         if (this._db) return;
         const directory = path.resolve(process.cwd(), "src/database", "rag.db");
@@ -59,6 +59,8 @@ export class SqlDb {
             console.log("Eccezione creazione db", err);
         }
     }
+
+   
 
     private async init() {
         const status: string[] = ["pending", "ok", "ko", "processing"];

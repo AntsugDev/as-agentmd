@@ -76,7 +76,7 @@ const resetChunk = async () => {
 }
 
 const list = ref<any[]>([])
-const mdRender = new MarkdownIt({ html: false });
+const mdRender = new MarkdownIt();
 
 watch(() => props.item, (v) => {
     if (v) {

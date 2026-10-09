@@ -17,6 +17,7 @@ export default {
         compare: "Confronta Chat",
         rag: "Carica i documenti",
         logs: "Log elaborazione",
+        prechat: "Verifica risposta documenti"
     },
     rag: {
         title: 'Carica documenti',
@@ -131,4 +132,7 @@ export default {
         close: 'Chiudi',
         tag:'Argomento'
     },
+    prechat:{
+        title:"Verifica risposta documenti"
+    }
 }
