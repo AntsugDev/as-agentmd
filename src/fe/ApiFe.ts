@@ -402,7 +402,7 @@ export class ApiFe {
 
                     const nameFile = req.query.name_file;
                     const tag = req.body?.tag ?? null;
-                    let ragSystem: string | null = null;
+                    let ragSystem: any | null = null;
                     let goto = false;
                     if (tag) {
                         ragSystem = await new Rag(msg, tag).result();
@@ -760,10 +760,7 @@ export class ApiFe {
                         throw new Error("Bad request");
                     const input = req.body.input;
                     const tag = req.body.tag;
-                    const content = await new Rag(input, tag).result();
-                    return resp.json({
-                        content: content,
-                    });
+                    return resp.json(await new Rag(input, tag).result(true));
                 } catch (err: any) {
                     console.log(err);
                     return this.exception(resp, err.toString());

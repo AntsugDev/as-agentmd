@@ -30,18 +30,18 @@ export class Rag {
         }
     }
 
-    public async result() {
+    public async result(notWorK:boolean = false) {
         try {
             let limit:number = 5;
             if(this.pre()) limit = 100;
             const vector = await createVector(this.message)
-            console.log('vettore=> ', vector)
             let r: string = "";
             if (vector.length > 0) {
                 const floatArray = new Float32Array(vector[0]);
                 const vectorBuffer = Buffer.from(floatArray.buffer);
                 const result = this.db?.prepare(queryRag).all([vectorBuffer,limit, this.tag]);
-                console.log('result vector ', result)
+                
+                if(notWorK) return result;
                 // @ts-ignore
                 result?.map((e: RagInt) => {
                     let content: string = e.CONTENT

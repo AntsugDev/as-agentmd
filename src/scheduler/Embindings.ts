@@ -1,7 +1,6 @@
 import Database from "better-sqlite3";
 import {Chunks} from "../database/mapping.js";
-import {cArray, createVector} from "../utility/utility.js";
-import {isActiveScheduler} from "./Scheduler.js";
+import {createVector} from "../utility/utility.js";
 import {log_worked} from "../utility/storage.js";
 import {activeScheduler} from "./ActiveScheduler.js";
 

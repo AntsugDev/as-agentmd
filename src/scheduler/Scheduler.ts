@@ -118,7 +118,7 @@ export class Scheduler {
             if (['xlsx', 'xls', 'csv'].includes(data.EXT)) {
                 res = await Chunks.data_chunk(JSON.parse(data.CONTENT), data.ID, db)
             } else {
-                res = await Chunks.text_chunk(data.CONTENT, data.ID, db)
+                res = await Chunks.text_chunk(data.CONTENT, data.ID, db,data.EXT)
             }
             if (res) this.update(db, data.ID, false, 'ok')
         } catch (err: any) {

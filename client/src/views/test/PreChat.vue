@@ -34,9 +34,15 @@ const loadTags = async () => {
     }
 }
 const md = new MarkdownIt()
+const clear = () => {
+    isLoading.value = false
+}
+
+
 const submitMessage = async () => {
     try {
         isLoading.value = true
+        risposta.value = null
 
         const response = await api({
             method: 'POST', url: 'test/prechat', body: {
@@ -45,9 +51,8 @@ const submitMessage = async () => {
 
         } as Payload)
         if (response) {
-            risposta.value = md.render(response.content)
+            risposta.value = response.data
         }
-
 
     } catch (e) {
         console.log(e)
@@ -56,6 +61,9 @@ const submitMessage = async () => {
         isLoading.value = false
     }
 
+}
+const getContent = (c: string) => {
+    return md.render(c)
 }
 onBeforeMount(() => {
     loadTags()
@@ -76,21 +84,17 @@ onBeforeMount(() => {
         </div>
         <v-sheet class="panel" rounded="xl" border style="height: max-content">
 
-            <v-autocomplete v-model="selectedTag"  :items="tagsItems" :label="t('home.tag')"
-                variant="outlined" density="comfortable" prepend-inner-icon="mdi-tag-multiple-outline"
-                hide-details="auto" :loading="loadTag" 
-                rounded="lg" clearable class="flex-grow-1" :disabled="isLoading" />
+            <v-autocomplete v-model="selectedTag" :items="tagsItems" :label="t('home.tag')" variant="outlined"
+                density="comfortable" prepend-inner-icon="mdi-tag-multiple-outline" hide-details="auto"
+                :loading="loadTag" rounded="lg" clearable class="flex-grow-1" :disabled="isLoading" />
 
             <div class="d-flex flex-column mt-2 mb-3 ">
                 <v-textarea v-model="domanda" :label="t('home.message')" :placeholder="t('home.messagePlaceholder')"
                     variant="outlined" rows="3" auto-grow hide-details="auto" :disabled="isLoading"
-                    @keydown.ctrl.enter.prevent="submitMessage" rounded="lg" />
+                    rounded="lg" @update:focused="clear" />
 
                 <div class="d-flex flex-row justify-end mt-2">
-                    <div class=" mt-1 mr-3">
-                        <v-icon icon="mdi-keyboard-return" size="14" class="mr-1"></v-icon>
-                        <span>Press <strong>Ctrl + Enter</strong> to send</span>
-                    </div>
+                   
                     <v-btn color="primary" :loading="isLoading" append-icon="mdi-send" @click="submitMessage"
                         variant="flat" size="large" class="px-6 font-weight-bold">
                         {{ (isLoading ? t('home.waiting') : t('home.start')) }}
@@ -100,7 +104,10 @@ onBeforeMount(() => {
             </div>
         </v-sheet>
 
-        <v-sheet class="panel" rounded="xl" border style="height: max-content" v-if="risposta" v-html="risposta">
+        <v-sheet class="panel" rounded="xl" border style="height: max-content" v-if="risposta">
+            <pre style="max-width:250px;word-break: break-all;" class="pa-2">{{
+                risposta
+            }}</pre>
         </v-sheet>
 
 

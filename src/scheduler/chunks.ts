@@ -7,6 +7,8 @@ import { Scheduler } from "./Scheduler.js";
 
 export const enc = getEncoding("cl100k_base");
 
+type FileType = "pdf" | "word" | "md" | "txt";
+
 export class Chunks {
     private static getToken(text: string): number {
         try {
@@ -19,32 +21,39 @@ export class Chunks {
 
     protected static normalize(text: string): string {
         return text
-            .replace(/\r\n/g, "\n")
-            .replace(/\f/g, "\n\n") // form feed -> separatore di paragrafo
-            .replace(/\u00a0/g, " ") // spazi non-breaking
-            .replace(/[ \t]+/g, " ") // spazi multipli
-            .replace(/\n{3,}/g, "\n\n") // troppe righe vuote
-            .trim();
+            .replace(/([^\n])\n([^\n])/g, "$1 $2") // a capo singolo -> spazio
+            .replace(/[ \t]+/g, " "); // spazi multipli -> uno solo
     }
 
-
-    
     public static async text_chunk(
         data: any,
         id: number,
         db: Database.Database | undefined,
+        ext: string,
     ) {
         try {
             log_worked("INFO", `Start work chunks text ...`, db);
-            const splitter = new RecursiveCharacterTextSplitter({
-                chunkSize: 800,
-                chunkOverlap: 150,
-                separators: ["\n\n", "\n", ". ", " ", ""],
-            });
+            let splitter: any | null = null;
+            if (ext === "md")
+                splitter = RecursiveCharacterTextSplitter.fromLanguage(
+                    "markdown",
+                    {
+                        chunkSize: 800,
+                        chunkOverlap: 100,
+                    },
+                );
+            else
+                splitter = new RecursiveCharacterTextSplitter({
+                    chunkSize: 800,
+                    chunkOverlap: 100,
+                    separators: ["\n\n", "\n", ". ", "? ", "! ", " ", ""],
+                    keepSeparator: true,
+                });
             const keys = ["FILE_ID", "CONTENT", "TOKENS"];
-            const outputChunks = await (await (splitter
-                .createDocuments([this.normalize(data)])))?.filter((d:any) => d.pageContent.trim().length > 0);
-            outputChunks.map((e) => {
+            const outputChunks = await (
+                await splitter.createDocuments([this.normalize(data)])
+            )?.filter((d: any) => d.pageContent.trim().length > 0);
+            outputChunks.map((e:any) => {
                 const text = e.pageContent;
                 const values = [id, text, this.getToken(text)];
                 SqlDb.insert(db, "CHUNKS", keys, values);
