@@ -7,7 +7,6 @@ import { Scheduler } from "./Scheduler.js";
 
 export const enc = getEncoding("cl100k_base");
 
-type FileType = "pdf" | "word" | "md" | "txt";
 
 export class Chunks {
     private static getToken(text: string): number {
@@ -19,10 +18,14 @@ export class Chunks {
         }
     }
 
-    protected static normalize(text: string): string {
+    protected static normalize(text: string, ext: string): string {
+        text = text.replace(/\r\n?/g, "\n");
+        if (ext === "txt" || ext === "md") {
+            return text;
+        }
         return text
             .replace(/([^\n])\n([^\n])/g, "$1 $2") // a capo singolo -> spazio
-            .replace(/[ \t]+/g, " "); // spazi multipli -> uno solo
+            .replace(/[ \t]+/g, " ");
     }
 
     public static async text_chunk(
@@ -51,9 +54,9 @@ export class Chunks {
                 });
             const keys = ["FILE_ID", "CONTENT", "TOKENS"];
             const outputChunks = await (
-                await splitter.createDocuments([this.normalize(data)])
+                await splitter.createDocuments([this.normalize(data,ext)])
             )?.filter((d: any) => d.pageContent.trim().length > 0);
-            outputChunks.map((e:any) => {
+            outputChunks.map((e: any) => {
                 const text = e.pageContent;
                 const values = [id, text, this.getToken(text)];
                 SqlDb.insert(db, "CHUNKS", keys, values);
