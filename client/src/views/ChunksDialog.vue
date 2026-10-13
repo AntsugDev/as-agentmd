@@ -23,7 +23,7 @@
                                 nr. {{ i + 1
                                 }}</span><br />
                         </v-list-item-title>
-                        <span v-html="e"></span>
+                        <code>{{ e }}</code>
                     </v-list-item>
                 </v-list>
             </v-card-text>
@@ -80,9 +80,7 @@ const mdRender = new MarkdownIt();
 
 watch(() => props.item, (v) => {
     if (v) {
-        list.value = v.split('~').map((t: string) => {
-            return mdRender.render(t)
-        }).slice(0,30)
+        list.value = v.split('~').slice(0,30)
     }
 })
 

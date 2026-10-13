@@ -4,9 +4,12 @@ import { getEncoding } from "js-tiktoken";
 import { log_worked } from "../utility/storage.js";
 import Database from "better-sqlite3";
 import { Scheduler } from "./Scheduler.js";
+import fs from "fs/promises";
+import path from "path";
+import os from "os";
+import dayjs from "dayjs";
 
 export const enc = getEncoding("cl100k_base");
-
 
 export class Chunks {
     private static getToken(text: string): number {
@@ -18,14 +21,15 @@ export class Chunks {
         }
     }
 
-    protected static normalize(text: string, ext: string): string {
-        text = text.replace(/\r\n?/g, "\n");
-        if (ext === "txt" || ext === "md") {
-            return text;
-        }
+    protected static normalize(text: string): string {
         return text
-            .replace(/([^\n])\n([^\n])/g, "$1 $2") // a capo singolo -> spazio
-            .replace(/[ \t]+/g, " ");
+            .replaceAll(/\r\n?/g, "\n")
+            .replaceAll(/\n\n?/g, "\n")
+            .replaceAll("#", "")
+            .replaceAll("*", "")
+            .replaceAll("---", "")
+            .toString()
+            .toUpperCase();
     }
 
     public static async text_chunk(
@@ -36,25 +40,29 @@ export class Chunks {
     ) {
         try {
             log_worked("INFO", `Start work chunks text ...`, db);
-            let splitter: any | null = null;
+            // let splitter: any | null = null;
+            /*
             if (ext === "md")
                 splitter = RecursiveCharacterTextSplitter.fromLanguage(
-                    "markdown",
-                    {
-                        chunkSize: 800,
-                        chunkOverlap: 100,
-                    },
+                    "markdown"
                 );
             else
-                splitter = new RecursiveCharacterTextSplitter({
-                    chunkSize: 800,
-                    chunkOverlap: 100,
-                    separators: ["\n\n", "\n", ". ", "? ", "! ", " ", ""],
-                    keepSeparator: true,
-                });
+                */
+
+            const splitter = new RecursiveCharacterTextSplitter({
+                separators: ["\n", ". ", "! ", " ", ""],
+                keepSeparator: true,
+            });
             const keys = ["FILE_ID", "CONTENT", "TOKENS"];
+            const cleanText = this.normalize(data);
+            const p = path.join(
+                os.tmpdir(),
+                "files",
+                `normalize_${dayjs().format("YYYYMMDDHHmm")}.txt`,
+            );
+            await fs.writeFile(p, cleanText, "utf-8");
             const outputChunks = await (
-                await splitter.createDocuments([this.normalize(data,ext)])
+                await splitter.createDocuments([cleanText])
             )?.filter((d: any) => d.pageContent.trim().length > 0);
             outputChunks.map((e: any) => {
                 const text = e.pageContent;

@@ -5,7 +5,9 @@ import {RagInt} from "../database/mapping.js";
 
 const preQuery = "SELECT COUNT(*) AS TOTAL FROM FILES WHERE TAG = ? AND EXT in ('xlsx', 'xls', 'csv')"
 
-const queryRag = "SELECT C.CONTENT, V.distance FROM vss_chunks V JOIN CHUNKS C ON C.ID = V.chunk_id WHERE V.embedding MATCH ?  AND k = ?  AND V.chunk_id IN (SELECT C2.ID  FROM CHUNKS C2 JOIN FILES F ON F.ID = C2.FILE_ID  WHERE F.TAG = ? ) ORDER BY V.distance;"
+//const queryRag = "SELECT C.CONTENT, V.distance FROM vss_chunks V JOIN CHUNKS C ON C.ID = V.chunk_id WHERE V.embedding MATCH ?  AND k = ?  AND V.chunk_id IN (SELECT C2.ID  FROM CHUNKS C2 JOIN FILES F ON F.ID = C2.FILE_ID  WHERE F.TAG = ? ) ORDER BY V.distance;"
+
+const queryRag = "SELECT C.CONTENT, vec_distance_cosine(embedding, ?) distance FROM vss_chunks V JOIN CHUNKS C ON C.ID = V.chunk_id WHERE V.chunk_id IN (SELECT C2.ID FROM CHUNKS C2 JOIN FILES F ON F.ID = C2.FILE_ID WHERE F.TAG = ? ) ORDER BY V.distance limit ?;";
 
 export class Rag {
 
@@ -34,12 +36,12 @@ export class Rag {
         try {
             let limit:number = 5;
             if(this.pre()) limit = 100;
-            const vector = await createVector(this.message)
+            const vector = await createVector(this.message.toUpperCase())
             let r: string = "";
             if (vector.length > 0) {
                 const floatArray = new Float32Array(vector[0]);
                 const vectorBuffer = Buffer.from(floatArray.buffer);
-                const result = this.db?.prepare(queryRag).all([vectorBuffer,limit, this.tag]);
+                const result = this.db?.prepare(queryRag).all([vectorBuffer,this.tag, limit]);
                 
                 if(notWorK) return result;
                 // @ts-ignore

@@ -2,12 +2,6 @@ import Database from "better-sqlite3";
 import * as sqliteVec from "sqlite-vec";
 import fs from "fs/promises";
 import path from "path";
-import { Scheduler } from "../scheduler/Scheduler.js";
-import { Embindings } from "../scheduler/Embindings.js";
-import { Status } from "./mapping.js";
-import { dd } from "../utility/utility.js";
-import { awaitAllCallbacks } from "@langchain/core/callbacks/promises";
-import { unlink } from "node:fs/promises";
 
 export let db: Database.Database | undefined = undefined;
 
