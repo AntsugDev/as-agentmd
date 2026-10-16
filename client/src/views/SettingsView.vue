@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {computed, onMounted, reactive, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
-import type {AiModel, UserSettings} from '../types/chat'
+import type {AiModel, ProviderConfig, UserSettings} from '../types/chat'
 import {api, snack, type Payload} from "../services/api.ts";
 import Accordion from 'primevue/accordion'
 import AccordionContent from 'primevue/accordioncontent'
@@ -28,6 +28,43 @@ const isSyncing = ref(false)
 const savingProvider = ref<string | null>(null)
 const notice = ref('')
 const modelItems = ref<ModelOption[]>([])
+
+const normalizeProviders = (value: unknown): ProviderConfig[] => {
+  const entries: [string | undefined, unknown][] = Array.isArray(value)
+    ? value.map((provider) => [undefined, provider])
+    : value && typeof value === 'object'
+      ? Object.entries(value)
+      : []
+
+  if (!Array.isArray(value) && (!value || typeof value !== 'object')) {
+    throw new TypeError('Invalid settings response: providers must be an array or object')
+  }
+
+  return entries.map(([key, entry]) => {
+    if (!entry || typeof entry !== 'object') {
+      throw new TypeError('Invalid settings response: provider configuration must be an object')
+    }
+
+    const provider = entry as Record<string, unknown>
+    const name = typeof provider.name === 'string' ? provider.name : key
+    if (!name) {
+      throw new TypeError('Invalid settings response: provider name is missing')
+    }
+
+    const models = provider.models
+    if (models !== undefined && models !== null && !Array.isArray(models)) {
+      throw new TypeError(`Invalid settings response: models for ${name} must be an array`)
+    }
+
+    return {
+      name,
+      apiKey: typeof provider.apiKey === 'string' ? provider.apiKey : '',
+      models: (Array.isArray(models) ? models : []).filter(
+        (model): model is AiModel => !!model && typeof model === 'object' && typeof model.name === 'string',
+      ),
+    }
+  })
+}
 
 const formattedLastUpdated = computed(() => {
   if (!settings.value?.lastUpdated) {
@@ -84,9 +121,13 @@ const loadSettings = async () => {
       method: 'GET'
     } as Payload)
     if (r) {
-      settings.value = r.data
+      const data = r.data as UserSettings
+      settings.value = {
+        ...data,
+        providers: normalizeProviders(data?.providers),
+      }
       hydrateApiKeys()
-      modelName.value = r.data?.modelSelected ?? null
+      modelName.value = data?.modelSelected ?? null
     }
   } catch (e) {
     console.error('eccezione', e)
@@ -423,6 +464,19 @@ onMounted(() => {
   grid-template-columns: minmax(0, 2fr) minmax(170px, 1fr) auto;
   align-items: end;
   gap: 20px;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 100% 0, rgba(6, 182, 212, 0.07), transparent 35%),
+    #fff !important;
+}
+
+.settings-summary::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--brand-gradient);
+  content: '';
 }
 
 .settings-summary__model,
@@ -436,6 +490,10 @@ onMounted(() => {
   color: #475569;
   font-size: 0.875rem;
   font-weight: 600;
+}
+
+.settings-summary__model .settings-field-label {
+  color: var(--color-text-main);
 }
 
 .settings-model-control {
@@ -470,7 +528,21 @@ onMounted(() => {
 }
 
 .provider-name {
+  display: flex;
+  align-items: center;
+  gap: 9px;
   color: var(--color-primary);
+}
+
+.provider-name > .mdi {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid #e0e7ff;
+  border-radius: 10px;
+  background: #eef2ff;
+  font-size: 1.05rem;
 }
 
 .provider-name strong {
@@ -481,6 +553,7 @@ onMounted(() => {
 .provider-key-status {
   max-width: 55%;
   overflow: hidden;
+  padding: 0.35rem 0.6rem;
   font-family: var(--font-mono);
   font-size: 0.7rem;
   text-overflow: ellipsis;
@@ -520,7 +593,7 @@ onMounted(() => {
 
 .settings-key-control:focus-within {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 1px var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
 }
 
 .settings-key-control > .mdi {
@@ -577,6 +650,11 @@ onMounted(() => {
   min-width: 0;
   padding: 10px;
   border-radius: 8px;
+  transition: background-color 0.18s ease;
+}
+
+.provider-model:hover {
+  background: #f8fafc;
 }
 
 .provider-model + .provider-model {
@@ -589,7 +667,8 @@ onMounted(() => {
   height: 32px;
   flex: 0 0 auto;
   place-items: center;
-  border-radius: 50%;
+  border: 1px solid #e0e7ff;
+  border-radius: 10px;
   color: var(--color-primary);
   background: #eef2ff;
 }
@@ -638,13 +717,30 @@ onMounted(() => {
   margin-bottom: 10px;
   overflow: hidden;
   border: 1px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: 14px;
   background: #fff;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.provider-panels :deep(.p-accordionpanel:hover) {
+  border-color: #c7d2fe;
+}
+
+.provider-panels :deep(.p-accordionpanel[data-p-active='true']) {
+  border-color: #c7d2fe;
+  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.07);
 }
 
 .provider-panels :deep(.p-accordionheader) {
-  padding: 14px 16px;
-  background: #fff;
+  padding: 12px 16px;
+  background: linear-gradient(90deg, #fff 0%, #fbfcff 100%);
+}
+
+.provider-panels :deep(.p-accordionheader:focus-visible) {
+  position: relative;
+  z-index: 1;
+  outline: 3px solid rgba(79, 70, 229, 0.28);
+  outline-offset: -3px;
 }
 
 .provider-panels :deep(.p-accordioncontent-content) {
@@ -671,6 +767,10 @@ onMounted(() => {
 }
 
 @media (max-width: 520px) {
+  .settings-summary {
+    gap: 16px;
+  }
+
   .settings-summary {
     grid-template-columns: 1fr;
   }
@@ -699,6 +799,10 @@ onMounted(() => {
 
   .provider-model .token-pill {
     margin-left: 44px;
+  }
+
+  .provider-panels :deep(.p-accordionheader) {
+    padding: 12px;
   }
 }
 </style>

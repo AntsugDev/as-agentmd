@@ -78,7 +78,7 @@ const loadModels = async () => {
     if (response) {
       modelItems.value = response.data
       modelSuggestions.value = modelItems.value
-      setTimeout(() => settingsModel(), 1500)
+      void settingsModel()
     }
   } catch (err) {
     console.error(err)
@@ -407,6 +407,7 @@ onMounted(() => {
             :aria-label="t('home.model')"
             :loading="loadModel"
             loading-icon="mdi mdi-loading mdi-spin"
+            :delay="0"
             force-selection
             dropdown
             fluid
@@ -436,6 +437,7 @@ onMounted(() => {
             :aria-label="t('home.tag')"
             :loading="loadTag"
             loading-icon="mdi mdi-loading mdi-spin"
+            :delay="0"
             force-selection
             dropdown
             show-clear

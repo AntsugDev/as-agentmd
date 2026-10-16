@@ -202,6 +202,7 @@ onMounted(fetchLogs)
     <Dialog
       v-model:visible="stackDialog"
       modal
+      :closable="false"
       :draggable="false"
       :style="{ width: 'min(720px, calc(100vw - 2rem))' }"
       :breakpoints="{ '640px': '100vw' }"

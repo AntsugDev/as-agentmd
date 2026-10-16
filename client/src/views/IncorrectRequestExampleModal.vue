@@ -56,6 +56,7 @@ onBeforeUnmount(clearSequence)
   <Dialog
     v-model:visible="model"
     modal
+    :closable="false"
     :draggable="false"
     :style="{ width: 'min(840px, calc(100vw - 2rem))' }"
     :breakpoints="{ '640px': '100vw' }"

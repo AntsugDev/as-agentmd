@@ -50,6 +50,7 @@ export default {
         chunks: 'Chunks',
         chunkNumber: 'Chunk n. {number}',
         noChunks: 'Nessun chunk disponibile.',
+        downloadChunks: 'Scarica TXT',
         close: 'Chiudi',
         success:'File lavorato',
         wait:'File in attesa di essere lavorato',

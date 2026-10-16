@@ -97,7 +97,7 @@ watch(snack, (notification) => {
     severity: notification.error ? 'error' : 'success',
     summary: notification.error ? t('eccezione') : t('success'),
     detail: notification.msg || 'Generico',
-    life: 60000,
+    life: 8000,
   })
 }, { deep: true })
 
