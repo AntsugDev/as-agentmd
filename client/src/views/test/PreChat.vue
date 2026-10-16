@@ -2,8 +2,11 @@
 import { onBeforeMount, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { api, type Payload } from '../../services/api';
-import MarkdownIt from 'markdown-it';
 import dayjs from 'dayjs';
+import Button from 'primevue/button'
+import Select from 'primevue/select'
+import Tag from 'primevue/tag'
+import Textarea from 'primevue/textarea'
 
 
 const { t } = useI18n()
@@ -36,7 +39,6 @@ const loadTags = async () => {
         loadTag.value = false
     }
 }
-const md = new MarkdownIt({ html: true })
 const clear = () => {
     isLoading.value = false
     start.value = null
@@ -83,7 +85,7 @@ const submitMessage = async () => {
                 CONTENT: string, distance: number
             }) => {
                 return {
-                    distance: e.distance.toFixed(3),
+                    distance: e.distance,
                     content: e.CONTENT
                 }
             })
@@ -111,72 +113,105 @@ onBeforeMount(() => {
 
     <section class="content-grid">
         <div class="section-heading">
-            <div class="d-flex align-center gap-2">
-                <v-chip color="secondary" variant="tonal" size="small" class="font-weight-bold">
-                    <v-icon icon="mdi-file-document-multiple-outline" size="14" class="mr-1"></v-icon>
-                    PreChat
-                </v-chip>
-            </div>
+            <Tag :value="t('prechat.badge')" icon="mdi mdi-file-document-multiple-outline" severity="secondary" class="prechat-badge" />
             <h1>{{ t('prechat.title') }}</h1>
         </div>
-        <v-sheet class="panel" rounded="xl" border style="height: max-content">
+        <section class="panel prechat-form">
+            <div class="prechat-field">
+                <label class="prechat-field__label" for="prechat-topic">{{ t('home.tag') }}</label>
+                <Select
+                    v-model="selectedTag"
+                    input-id="prechat-topic"
+                    :options="tagsItems"
+                    option-label="title"
+                    option-value="value"
+                    :placeholder="t('home.tag')"
+                    :loading="loadTag"
+                    :disabled="isLoading"
+                    show-clear
+                    class="prechat-select"
+                >
+                    <template #dropdownicon><i class="mdi mdi-chevron-down" aria-hidden="true"></i></template>
+                    <template #loadingicon><i class="mdi mdi-loading mdi-spin" aria-hidden="true"></i></template>
+                </Select>
+            </div>
 
-            <v-autocomplete v-model="selectedTag" :items="tagsItems" :label="t('home.tag')" variant="outlined"
-                density="comfortable" prepend-inner-icon="mdi-tag-multiple-outline" hide-details="auto"
-                :loading="loadTag" rounded="lg" clearable class="flex-grow-1" :disabled="isLoading" />
-
-            <div class="d-flex flex-column mt-2 mb-3 ">
-                <v-textarea v-model="domanda" :label="t('home.message')" :placeholder="t('home.messagePlaceholder')"
-                    variant="outlined" rows="3" auto-grow hide-details="auto" :disabled="isLoading" rounded="lg"
-                    @update:focused="clear" />
-
-                <div class="d-flex flex-row justify-end mt-2">
-
-                    <v-btn color="primary" :loading="isLoading" append-icon="mdi-send" @click="submitMessage"
-                        variant="flat" size="large" class="px-6 font-weight-bold">
-                        {{ (isLoading ? t('home.waiting') : t('home.start')) }}
-                    </v-btn>
+            <div class="prechat-field">
+                <label class="prechat-field__label" for="prechat-question">{{ t('home.message') }}</label>
+                <Textarea
+                    id="prechat-question"
+                    v-model="domanda"
+                    :placeholder="t('home.messagePlaceholder')"
+                    rows="3"
+                    auto-resize
+                    :disabled="isLoading"
+                    class="prechat-textarea"
+                    @focus="clear"
+                />
+                <div class="prechat-actions">
+                    <Button
+                        :label="isLoading ? t('home.waiting') : t('home.start')"
+                        icon="mdi mdi-send"
+                        icon-pos="right"
+                        :loading="isLoading"
+                        :disabled="!domanda || isLoading"
+                        @click="submitMessage"
+                    />
                 </div>
-
             </div>
-            <div class="d-flex flex-row justify-space-around pa-2 mb-2" v-if="start">
-                <p><strong>Duration:</strong></p>
-                <v-btn small variant="outlined" color="warning" class="mr-2" v-if="start">StartTime: {{ start }}</v-btn>
-                <v-progress-linear class="ml-3 mr-2 pa-2" indeterminate color="info" v-if="!end" model-value="100" striped></v-progress-linear>
-                <v-btn small variant="outlined" color="success" v-if="end">EndTime: {{ end }}</v-btn>
+            <div v-if="start" class="prechat-timing" aria-live="polite">
+                <strong>{{ t('prechat.duration') }}</strong>
+                <Tag :value="`${t('prechat.startTime')}: ${start}`" severity="warn" />
+                <i v-if="!end" class="mdi mdi-loading mdi-spin prechat-timing__loading" aria-hidden="true"></i>
+                <Tag v-if="end" :value="`${t('prechat.endTime')}: ${end}`" severity="success" />
             </div>
-        </v-sheet>
+        </section>
 
+        <section v-if="risposta.length > 0" class="panel prechat-results">
+            <header class="panel-title">
+                <div class="prechat-results__heading">
+                    <i class="mdi mdi-vector-difference" aria-hidden="true"></i>
+                    <h2>{{ t('prechat.results') }}</h2>
+                </div>
+            </header>
 
-        <v-sheet class="panel" rounded="xl" border style="height: max-content" v-if="risposta.length > 0">
-
-            <div class="d-flex flex-row justify-space-around pa-2 mb-2" v-if="minMax">
-                <p><strong>Distance:</strong></p>
-                <v-btn small variant="elevated" color="success" class="mr-2" v-if="minMax?.min">Min: {{ minMax?.min
-                    }}</v-btn>
-                <v-btn small variant="elevated" color="error" class="mr-2" v-if="minMax?.max">Max: {{ minMax?.max
-                    }}</v-btn>
-                <v-btn small variant="elevated" color="info" class="mr-2" v-if="minMax?.max && minMax?.min">Difference
-                    Min max: {{
-                        (minMax?.max - minMax?.min).toFixed(3) }}</v-btn>
-
-                <v-btn small variant="elevated" color="warning" v-if="minMax?.min">Similarity: {{
-                    (1 - minMax?.min).toFixed(3) }}</v-btn>
+            <div v-if="minMax && minMax.min !== null && minMax.max !== null" class="prechat-metrics">
+                <Tag :value="`${t('prechat.minimum')}: ${minMax.min}`" severity="success" />
+                <Tag :value="`${t('prechat.maximum')}: ${minMax.max}`" severity="danger" />
+                <Tag :value="`${t('prechat.difference')}: ${(minMax.max - minMax.min).toFixed(3)}`" severity="info" />
+                <Tag :value="`${t('prechat.similarity')}: ${(1 - minMax.min).toFixed(3)}`" severity="warn" />
             </div>
 
-            <v-list denisty="compact">
-                <v-list-item v-for="(e, i) in risposta" :key="i" class="pa-1 mb-2" border rounder="5">
-                    <v-list-item-title class="mb-2 pa-3"><span style="font-weight: 700;border-bottom: 1px solid;">
-                        Distance:  {{ e.distance }}
-                        </span>
-                    </v-list-item-title>
-                    <code>{{ e.content }}</code>
-                </v-list-item>
-            </v-list>
-        </v-sheet>
-
-
+            <ol class="prechat-results-list">
+                <li v-for="(result, index) in risposta" :key="index" class="prechat-result">
+                    <header class="prechat-result__header">
+                        <strong>{{ t('prechat.distance') }}: {{ result.distance.toFixed(3) }}</strong>
+                        <Tag :value="`${t('prechat.resultNumber')} ${index + 1}`" severity="secondary" />
+                    </header>
+                    <pre>{{ result.content }}</pre>
+                </li>
+            </ol>
+        </section>
     </section>
-
-
 </template>
+
+<style scoped>
+.prechat-badge { width: fit-content; }
+.prechat-form,
+.prechat-results { display: grid; gap: 18px; }
+.prechat-field { display: grid; gap: 8px; }
+.prechat-field__label { color: #475569; font-size: 0.875rem; font-weight: 600; }
+.prechat-select,
+.prechat-textarea { width: 100%; }
+.prechat-actions { display: flex; justify-content: flex-end; }
+.prechat-timing,
+.prechat-metrics { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.prechat-timing { padding-top: 14px; border-top: 1px solid var(--color-border); }
+.prechat-timing__loading { color: var(--color-info); }
+.prechat-results__heading { display: flex; align-items: center; gap: 8px; }
+.prechat-results__heading > .mdi { color: var(--color-primary); font-size: 1.2rem; }
+.prechat-results-list { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.prechat-result { min-width: 0; padding: 14px; border: 1px solid var(--color-border); border-radius: 12px; background: #f8fafc; }
+.prechat-result__header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; color: #334155; font-size: 0.82rem; }
+.prechat-result pre { margin: 0; color: #475569; font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+</style>

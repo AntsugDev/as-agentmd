@@ -1,353 +1,306 @@
 <script setup lang="ts">
-import {computed, inject, onMounted, ref, watch} from 'vue'
-import {useI18n} from 'vue-i18n'
-import type {AiModel, ChatMessage} from '../types/chat'
-import {api, type Payload} from "../services/api.ts";
-import MarkdownIt from "markdown-it";
-import {filterItems} from "vuetify/lib/composables/filter";
+import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import MarkdownIt from 'markdown-it'
+import Button from 'primevue/button'
+import Message from 'primevue/message'
+import MultiSelect from 'primevue/multiselect'
+import Skeleton from 'primevue/skeleton'
+import Tag from 'primevue/tag'
+import Textarea from 'primevue/textarea'
+import { api, type Payload } from '../services/api.ts'
 
-const {t} = useI18n()
+interface ModelOption {
+  text: string
+  value: string
+}
+
+interface ComparisonMessage {
+  role: string
+  content: string
+}
+
+interface ComparisonResult {
+  uuid: string | null
+  model: string
+  name_file: string | null
+  msg: ComparisonMessage[]
+  error: string | null
+}
+
+const { t } = useI18n()
 const isLoading = ref(false)
-let messages = ref<any>({})
-let errors = ref<any>({})
-let errorGeneral = ref<null|string>(null)
-const selectedModel = ref([])
-const prompt = ref(null)
-const modelItems = ref([])
+const messages = ref<Record<string, ComparisonMessage[]>>({})
+const errors = ref<Record<string, string | null>>({})
+const errorGeneral = ref<string | null>(null)
+const selectedModel = ref<string[]>([])
+const prompt = ref('')
+const modelItems = ref<ModelOption[]>([])
 const loadModel = ref(false)
-const standard = ref({
+const standard = ref<{
+  status: 'init' | 'next'
+  next: Record<string, { uuid: string | null, nameFile: string | null }>
+}>({
   status: 'init',
   next: {},
 })
+const modelError = ref(false)
+const promptError = ref(false)
+
 const validate = computed(() => {
-  let error = 0;
-  tError.value = {
-    is: false, text: ""
-  }
-  if (selectedModel.value.length !== 2)
-    error++
-  if (!prompt) {
-    tError.value = {
-      is: true, text: t('double_chat.required')
-    }
-    error++
-  }
-  return error === 0
+  modelError.value = selectedModel.value.length !== 2
+  promptError.value = !prompt.value.trim()
+  return !modelError.value && !promptError.value
 })
 
 const submitMessage = async () => {
-  //todo
+  if (!validate.value || isLoading.value) return
+
   try {
     errorGeneral.value = null
-    isLoading.value = true;
-    const f = new FormData()
-    if (validate.value) {
-
-      const url = `chat/compare/${standard.value.status}`
-
-      let body = {
+    isLoading.value = true
+    const response = await api({
+      url: `chat/compare/${standard.value.status}`,
+      method: 'POST',
+      body: {
         message: prompt.value,
         models: selectedModel.value,
-        next: (Object.keys(standard.value.next).length > 0 ? standard.value.next : null)
-      }
+        next: Object.keys(standard.value.next).length > 0 ? standard.value.next : null,
+      },
+    } as Payload)
 
-      let payload = {
-        url: url, method: 'POST', body: body
-      } as Payload
-      const response = await api(payload)
-      if (response) {
-        standard.value.status = 'next'
-        response.data.map((e: {
-          uuid: string | null,
-          model: string,
-          name_file: string | null,
-          msg: string,
-          error:string|null
-        }) => {
-          standard.value.next[e.model] = {
-            uuid: e.uuid, nameFile: e.name_file
-          }
-          messages.value[e.model] = e.msg
-          errors.value[e.model]= e.error
-        })
-        prompt.value = null
-      }
+    if (response) {
+      standard.value.status = 'next'
+      ;(response.data as ComparisonResult[]).forEach((result) => {
+        standard.value.next[result.model] = {
+          uuid: result.uuid,
+          nameFile: result.name_file,
+        }
+        messages.value[result.model] = result.msg
+        errors.value[result.model] = result.error
+      })
+      prompt.value = ''
     }
-
-  } catch (err: any) {
-    console.error("Form submit exc", err)
-    // errorGeneral.value = err.response.data?.error ?? t('double_chat.generic')
+  } catch (err) {
+    console.error('Errore invio confronto chat', err)
+    errorGeneral.value = t('double_chat.generic')
   } finally {
     isLoading.value = false
   }
-
 }
+
 const clearChats = () => {
   selectedModel.value = []
-  messages.value = []
-  prompt.value = null
-
+  messages.value = {}
+  errors.value = {}
+  prompt.value = ''
+  standard.value = { status: 'init', next: {} }
+  modelError.value = false
+  promptError.value = false
+  errorGeneral.value = null
 }
-const filterModels = ref([])
+
 const loadModels = async () => {
   try {
     loadModel.value = true
     const response = await api({
       url: 'models', method: 'GET'
     } as Payload)
-    if (response) {
-      modelItems.value = response.data
-      filterModels.value = response.data
-    }
+    if (response) modelItems.value = response.data
   } catch (err) {
-    console.error(err)
+    console.error('Errore caricamento modelli', err)
   } finally {
     loadModel.value = false
   }
 }
-const aError = ref({
-  is: false, text: ""
-})
-const tError = ref({
-  is: false, text: ""
-})
 
 const verifyModel = () => {
-  if (selectedModel.value.length === 0) {
-    filterModels.value = modelItems.value
-    return
-  }
-  ;
-  if (selectedModel.value.length === 1) {
-    const first = selectedModel.value[0]
-    let all = modelItems.value
-    filterModels.value = all.filter((e: any) => {
-      return e.value.toString().indexOf(first?.toString().split('|')[0]) === -1
-    })
-  }
-  if (selectedModel.value.length > 2)
-    aError.value = {
-      is: true, text: t('double_chat.max')
-    }
-  else
-    aError.value = {
-      is: false, text: ""
-    }
-}
-const loading = computed(() => {
-  if (aError.value.is) return true;
-  else return isLoading.value
-})
-const getContentHtml = (content: string) => {
-  const m = new MarkdownIt({html: true})
-  return m.render(content)
+  modelError.value = selectedModel.value.length > 2
 }
 
-onMounted(() => {
-  loadModels()
-})
+const getContentHtml = (content: string) => new MarkdownIt({ html: true }).render(content)
+const hasMessages = computed(() => Object.keys(messages.value).length > 0)
 
+onMounted(loadModels)
 </script>
 
 <template>
   <section class="content-grid">
     <div class="section-heading">
-      <div class="d-flex align-center ga-2">
-        <v-chip color="secondary" variant="tonal" size="small" class="font-weight-bold">
-          <v-icon icon="mdi-scale-balance" size="14" class="mr-1"></v-icon>
-          Model Arena
-        </v-chip>
-      </div>
+      <Tag :value="t('double_chat.badge')" icon="mdi mdi-scale-balance" severity="secondary" class="compare-badge" />
       <h1>{{ t('double_chat.title') }}</h1>
       <p>{{ t('double_chat.intro') }}</p>
     </div>
 
-    <!-- Comparison Conversation Panel -->
-    <v-sheet class="panel conversation-panel" rounded="xl" border>
-      <div class="panel-title">
-        <div class="d-flex align-center ga-2">
-          <v-icon icon="mdi-compare-horizontal" color="primary"></v-icon>
+    <section class="panel conversation-panel">
+      <header class="panel-title">
+        <div class="compare-panel-title">
+          <i class="mdi mdi-compare-horizontal" aria-hidden="true"></i>
           <h2>{{ t('home.conversation') }}</h2>
         </div>
+      </header>
+
+      <div v-if="!hasMessages && !isLoading" class="empty-state">
+        <i class="mdi mdi-scale-balance empty-state-icon" aria-hidden="true"></i>
+        <strong>{{ t('home.emptyConversation') }}</strong>
+        <small>{{ t('double_chat.selectTwoModels') }}</small>
       </div>
 
-      <div v-if="Object.keys(messages).length === 0" class="empty-state">
-        <v-icon icon="mdi-scale-balance" size="48" class="empty-state-icon mb-2"></v-icon>
-        <div class="font-weight-bold text-subtitle-1 text-grey-darken-2">
-          {{ t('home.emptyConversation') }}
-        </div>
-        <small class="text-grey-darken-1">Seleziona 2 modelli e invia un messaggio per confrontare le risposte.</small>
+      <div v-if="isLoading && !hasMessages" class="comparison-loading" aria-busy="true">
+        <Skeleton height="18rem" border-radius="1rem" />
+        <Skeleton height="18rem" border-radius="1rem" />
       </div>
 
-      <v-skeleton-loader v-if="isLoading && Object.keys(messages).length === 0" type="article, actions" rounded="xl"/>
-      
-      <template v-else>
-        <div class="d-flex flex-column flex-md-row justify-space-between ga-4">
-          <template v-for="(data, model) in messages" :key="model">
-            <v-card class="comparison-column flex-1-1 pa-4 border shadow-sm" rounded="xl">
-              <!-- Model Header Badge -->
-              <div class="d-flex align-center justify-space-between pb-3 border-b mb-3">
-                <v-chip color="primary" variant="flat" class="font-weight-bold" rounded="lg">
-                  <v-icon icon="mdi-chip" size="16" class="mr-1"></v-icon>
-                  {{ model }}
-                </v-chip>
-                <v-chip size="x-small" color="secondary" variant="tonal">Model Output</v-chip>
+      <div v-else-if="hasMessages" class="comparison-columns">
+        <article v-for="(data, model) in messages" :key="model" class="comparison-column">
+          <header class="comparison-column__header">
+            <Tag :value="model" icon="mdi mdi-chip" severity="primary" />
+            <Tag :value="t('double_chat.modelOutput')" severity="secondary" />
+          </header>
+
+          <Message v-if="errors[model]" severity="error" class="comparison-error">{{ errors[model] }}</Message>
+
+          <div v-else class="message-list">
+            <div
+              v-for="(message, index) in data"
+              v-show="message.role !== 'system'"
+              :key="index"
+              class="message-item"
+              :class="`message-item--${message.role}`"
+            >
+              <div class="message-bubble__header">
+                <span class="message-author-dot"></span>
+                <strong>{{ message.role === 'user' ? t('home.user') : t('home.agent') }}</strong>
               </div>
+              <div class="message-content" v-html="getContentHtml(message.content)"></div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
 
-              <v-alert color="error" v-if="errors[model]" density="comfortable" type="error" variant="tonal" rounded="lg" class="mb-3">
-                {{ errors[model] }}
-              </v-alert>
-
-              <div class="message-list" v-for="(message, idx) in data" :key="idx" v-else>
-                <div
-                    v-if="message.role !== 'system'"
-                    class="message-item mb-3"
-                    :class="`message-item--${message.role}`"
-                >
-                  <div class="message-bubble__header">
-                    <span class="message-author-dot"></span>
-                    <strong>{{ message.role === 'user' ? t('home.user') : t('home.agent') }}</strong>
-                  </div>
-                  <div class="message-content" v-html="getContentHtml(message.content)"></div>
-                </div>
-              </div>
-            </v-card>
-          </template>
-        </div>
-      </template>
-    </v-sheet>
-
-    <!-- Controls & Prompt Card -->
-    <v-sheet class="panel chat-panel pa-5" rounded="xl" border>
-      <v-alert v-if="errorGeneral" type="error" variant="tonal" density="comfortable" rounded="lg" closable class="mb-4" @click:close="errorGeneral = null">
+    <section class="panel chat-panel">
+      <Message v-if="errorGeneral" severity="error" closable class="comparison-general-error" @close="errorGeneral = null">
         {{ errorGeneral }}
-      </v-alert>
+      </Message>
 
-      <!-- Model Selector -->
-      <div class="mb-4">
-        <v-autocomplete
-            clearable
-            v-model="selectedModel"
-            :model-value="selectedModel"
-            multiple
-            :items="filterModels"
-            item-title="text"
-            item-value="value"
-            :label="t('home.model')"
-            variant="outlined"
-            density="comfortable"
-            prepend-inner-icon="mdi-chip"
-            hide-details="auto"
-            :loading="loadModel"
-            chips
-            closable-chips
-            :error="aError.is"
-            :error-messages="aError.text"
-            @update:modelValue="verifyModel"
-            rounded="lg"
-        />
-        <div class="text-caption text-grey-darken-1 mt-2 ml-1 d-flex align-center ga-1">
-          <v-icon icon="mdi-information-outline" size="14"></v-icon>
-          <span>Seleziona esattamente 2 modelli da mettere a confronto.</span>
-        </div>
-      </div>
-
-      <!-- Textarea Input -->
-      <div class="mb-4">
-        <v-textarea
-            v-model="prompt"
-            :label="t('home.message')"
-            :placeholder="t('home.messagePlaceholder')"
-            variant="outlined"
-            rows="3"
-            auto-grow
-            hide-details="auto"
-            :disabled="isLoading"
-            :error="tError.is"
-            :error-messages="tError.text"
-            rounded="lg"
-            @keydown.ctrl.enter.prevent="submitMessage"
-        />
-      </div>
-
-      <!-- Action Buttons Bar -->
-      <div class="d-flex flex-row justify-end align-center ga-3 pt-3 border-t">
-        <v-btn
-            color="error"
-            :loading="isLoading"
-            :disabled="loading"
-            prepend-icon="mdi-refresh"
-            @click="clearChats"
-            variant="tonal"
-            :title="t('home.clear')"
-            class="px-4"
+      <div class="compare-model-field">
+        <label class="compare-field-label" for="compare-model">{{ t('home.model') }}</label>
+        <MultiSelect
+          v-model="selectedModel"
+          input-id="compare-model"
+          :options="modelItems"
+          option-label="text"
+          option-value="value"
+          filter
+          :placeholder="t('home.model')"
+          :loading="loadModel"
+          :disabled="loadModel || isLoading"
+          :selection-limit="2"
+          :max-selected-labels="2"
+          display="chip"
+          class="compare-model-select"
+          @update:model-value="verifyModel"
         >
-          {{ t('home.clear') }}
-        </v-btn>
-
-        <v-btn
-            color="primary"
-            :loading="isLoading"
-            :disabled="loading"
-            append-icon="mdi-send"
-            @click="submitMessage"
-            variant="flat"
-            size="large"
-            class="px-6 font-weight-bold"
-            :title="(isLoading ? t('home.waiting') : t('home.start'))"
-        >
-          {{ (isLoading ? t('home.waiting') : t('home.start')) }}
-        </v-btn>
+          <template #dropdownicon><i class="mdi mdi-chevron-down" aria-hidden="true"></i></template>
+          <template #loadingicon><i class="mdi mdi-loading mdi-spin" aria-hidden="true"></i></template>
+          <template #filtericon><i class="mdi mdi-magnify" aria-hidden="true"></i></template>
+          <template #headercheckboxicon="{ checked }"><i class="mdi" :class="checked ? 'mdi-checkbox-marked' : 'mdi-checkbox-blank-outline'" aria-hidden="true"></i></template>
+          <template #itemcheckboxicon="{ checked }"><i class="mdi" :class="checked ? 'mdi-checkbox-marked' : 'mdi-checkbox-blank-outline'" aria-hidden="true"></i></template>
+        </MultiSelect>
+        <Message v-if="modelError" severity="error" size="small" variant="simple">{{ t('double_chat.max') }}</Message>
+        <small class="compare-help"><i class="mdi mdi-information-outline" aria-hidden="true"></i>{{ t('double_chat.selectTwoModels') }}</small>
       </div>
-    </v-sheet>
+
+      <div class="compare-prompt-field">
+        <label class="compare-field-label" for="compare-prompt">{{ t('home.message') }}</label>
+        <Textarea
+          id="compare-prompt"
+          v-model="prompt"
+          :placeholder="t('home.messagePlaceholder')"
+          rows="3"
+          auto-resize
+          :disabled="isLoading"
+          :invalid="promptError"
+          @update:model-value="promptError = false"
+          @keydown.ctrl.enter.prevent="submitMessage"
+        />
+        <Message v-if="promptError" severity="error" size="small" variant="simple">{{ t('double_chat.required') }}</Message>
+      </div>
+
+      <footer class="compare-actions">
+        <Button
+          :label="t('home.clear')"
+          icon="mdi mdi-refresh"
+          severity="danger"
+          outlined
+          :loading="isLoading"
+          :disabled="isLoading"
+          :title="t('home.clear')"
+          @click="clearChats"
+        />
+        <Button
+          :label="isLoading ? t('home.waiting') : t('home.start')"
+          icon="mdi mdi-send"
+          icon-pos="right"
+          :loading="isLoading"
+          :disabled="isLoading || selectedModel.length !== 2 || !prompt.trim()"
+          :title="isLoading ? t('home.waiting') : t('home.start')"
+          @click="submitMessage"
+        />
+      </footer>
+    </section>
   </section>
 </template>
 
 <style scoped>
-.conversation-panel {
-  overflow: hidden;
-}
-
+.compare-badge { width: fit-content; }
+.comparison-error { margin-bottom: 12px; }
+.comparison-general-error { margin-bottom: 16px; }
+.compare-panel-title { display: flex; align-items: center; gap: 9px; }
+.compare-panel-title > .mdi { color: var(--color-primary); font-size: 1.2rem; }
+.comparison-columns,
+.comparison-loading { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .comparison-column {
-  background: #f8fafc;
+  min-width: 0;
   min-height: 280px;
   max-height: 540px;
+  padding: 16px;
   overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: #f8fafc;
 }
-
-.message-item {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 14px 16px;
-  border-radius: 12px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-}
-
-.message-item--user {
-  border-color: #c7d2fe;
-  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
-}
-
-.message-bubble__header {
+.comparison-column__header {
   display: flex;
   align-items: center;
-  gap: 6px;
-  color: #64748b;
-  font-size: 0.78rem;
-  font-weight: 600;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
 }
-
-.message-author-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: currentColor;
+.comparison-column__header :deep(.p-tag:first-child) { max-width: 70%; overflow-wrap: anywhere; }
+.message-list { display: flex; flex-direction: column; gap: 12px; }
+.message-item { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border: 1px solid var(--color-border); border-radius: 12px; background: #fff; }
+.message-item--user { border-color: #c7d2fe; background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%); }
+.message-bubble__header { display: flex; align-items: center; gap: 6px; color: #64748b; font-size: 0.78rem; }
+.message-author-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.message-content { font-size: 0.9rem; line-height: 1.6; overflow-wrap: anywhere; }
+.compare-model-field,
+.compare-prompt-field { display: grid; gap: 8px; margin-bottom: 18px; }
+.compare-field-label { color: #475569; font-size: 0.875rem; font-weight: 600; }
+.compare-model-select,
+.compare-prompt-field :deep(.p-textarea) { width: 100%; }
+.compare-help { display: flex; align-items: center; gap: 5px; color: var(--color-text-muted); font-size: 0.78rem; }
+.compare-actions { display: flex; justify-content: flex-end; gap: 12px; padding-top: 16px; border-top: 1px solid var(--color-border); }
+@media (max-width: 760px) {
+  .comparison-columns,
+  .comparison-loading { grid-template-columns: 1fr; }
+  .comparison-column { max-height: 460px; }
 }
-
-.message-content {
-  font-size: 0.94rem;
-  line-height: 1.6;
+@media (max-width: 480px) {
+  .compare-actions { align-items: stretch; flex-direction: column-reverse; }
+  .compare-actions :deep(.p-button) { justify-content: center; }
 }
 </style>

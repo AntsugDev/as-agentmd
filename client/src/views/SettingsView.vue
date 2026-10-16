@@ -1,10 +1,25 @@
 <script setup lang="ts">
-import {computed, inject, onMounted, reactive, ref} from 'vue'
+import {computed, onMounted, reactive, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
 import type {AiModel, UserSettings} from '../types/chat'
-import {api, type Payload} from "../services/api.ts";
+import {api, snack, type Payload} from "../services/api.ts";
+import Accordion from 'primevue/accordion'
+import AccordionContent from 'primevue/accordioncontent'
+import AccordionHeader from 'primevue/accordionheader'
+import AccordionPanel from 'primevue/accordionpanel'
+import Button from 'primevue/button'
+import Message from 'primevue/message'
+import Select from 'primevue/select'
+import Skeleton from 'primevue/skeleton'
+import Tag from 'primevue/tag'
+import InputText from 'primevue/inputtext'
 
 const {t, locale} = useI18n()
+
+interface ModelOption {
+  text: string
+  value: string
+}
 
 const settings = ref<UserSettings | null>(null)
 const apiKeys = reactive<Record<string, string>>({})
@@ -12,7 +27,7 @@ const isLoading = ref(true)
 const isSyncing = ref(false)
 const savingProvider = ref<string | null>(null)
 const notice = ref('')
-const modelItems = ref<AiModel[]>([]);
+const modelItems = ref<ModelOption[]>([])
 
 const formattedLastUpdated = computed(() => {
   if (!settings.value?.lastUpdated) {
@@ -35,15 +50,13 @@ const maskApiKey = (apiKey: string) => {
 }
 
 const hydrateApiKeys = () => {
-  if (settings.value?.providers && Array.isArray(settings.value?.providers))
-    settings.value.providers.forEach((provider, key) => {
-      apiKeys[key] = provider.apiKey
-    })
+  settings.value?.providers.forEach((provider) => {
+    apiKeys[provider.name] = provider.apiKey
+  })
 }
-const snack = inject('snack')
 
 const noApiKeyProviders = ['ollama', 'claude-deep-seek', 'openai-deep-seek']
-const requiresApiKey = (providerKey: string | number): boolean => {
+const requiresApiKey = (providerKey: string): boolean => {
   if (!providerKey) return true
   const lowerKey = providerKey.toString().toLowerCase().trim()
   return !noApiKeyProviders.includes(lowerKey)
@@ -143,7 +156,9 @@ const changeDefaultModel = async () => {
 
     if (parseInt(r.status) === 204) {
       snack.value = {
-        view: true, msg: t('settings.up_model', {model: modelName.value})
+        view: true,
+        msg: t('settings.up_model', {model: modelName.value}),
+        error: false
       }
     }
 
@@ -155,14 +170,8 @@ const changeDefaultModel = async () => {
 
 }
 
-const getModels = (providerName: string): AiModel[] | [] => {
-  if (typeof providerName !== 'string')
-    return []
-
-  if (settings.value?.providers && settings.value?.providers.hasOwnProperty(providerName))
-    return settings.value.providers[providerName]?.models ?? []
-
-  return [];
+const getModels = (provider: UserSettings['providers'][number]): AiModel[] => {
+  return provider.models ?? []
 }
 const iconView = ref<{
   icon: string, type: string
@@ -227,200 +236,469 @@ onMounted(() => {
 <template>
   <section class="content-grid">
     <div class="section-heading">
-      <div class="d-flex align-center gap-2">
-        <v-chip color="primary" variant="tonal" size="small" class="font-weight-bold">
-          <v-icon icon="mdi-cog-outline" size="14" class="mr-1"></v-icon>
-          Configuration
-        </v-chip>
-      </div>
+      <Tag :value="t('settings.configuration')" icon="mdi mdi-cog-outline" severity="primary" class="settings-badge" />
       <h1>{{ t('settings.title') }}</h1>
       <p>{{ t('settings.intro') }}</p>
     </div>
 
-    <v-skeleton-loader v-if="isLoading" type="article, actions" rounded="xl"/>
+    <div v-if="isLoading" class="settings-loading" aria-busy="true">
+      <Skeleton height="9rem" border-radius="1rem" />
+      <Skeleton height="24rem" border-radius="1rem" />
+    </div>
 
     <template v-else-if="settings">
-      <!-- Default Model & Sync Card -->
-      <v-sheet class="panel settings-summary" rounded="xl" border>
-        <v-row density="comfortable" align="center">
-          <v-col cols="12" md="6">
-            <v-autocomplete
-                :items="modelItems"
-                item-title="text"
-                item-value="value"
-                :label="t('settings.defaultModel')"
-                variant="outlined"
-                density="comfortable"
-                prepend-inner-icon="mdi-brain"
-                append-inner-icon="mdi-check-circle-outline"
-                hide-details="auto"
-                v-model="modelName"
-                :model-value="modelName"
-                :loading="load"
-                @click:append-inner="changeDefaultModel"
-                rounded="lg"
-            />
-          </v-col>
-
-          <v-col cols="12" sm="6" md="3" class="d-flex align-center gap-2">
-            <v-icon icon="mdi-clock-outline" color="grey" size="18"></v-icon>
-            <div class="summary-meta">
-              <span>{{ t('settings.lastUpdated') }}</span>
-              <strong class="text-caption font-weight-bold">{{ formattedLastUpdated }}</strong>
-            </div>
-          </v-col>
-
-          <v-col cols="12" sm="6" md="3" class="d-flex justify-end">
-            <v-btn
-                color="secondary"
-                variant="flat"
-                prepend-icon="mdi-sync"
-                :loading="isSyncing"
-                @click="synchronizeModels"
-                rounded="lg"
-                class="font-weight-bold w-100 w-sm-auto"
+      <div class="panel settings-summary">
+        <div class="settings-summary__model">
+          <label class="settings-field-label" for="default-model">{{ t('settings.defaultModel') }}</label>
+          <div class="settings-model-control">
+            <Select
+              v-model="modelName"
+              input-id="default-model"
+              :options="modelItems"
+              option-label="text"
+              option-value="value"
+              :loading="load"
+              :placeholder="t('settings.defaultModel')"
+              class="settings-select"
             >
-              {{ isSyncing ? t('settings.syncing') : t('settings.updateModels') }}
-            </v-btn>
-          </v-col>
-        </v-row>
-      </v-sheet>
-
-      <v-alert v-if="notice" type="success" variant="tonal" density="comfortable" rounded="lg" closable @click:close="notice = ''">
-        {{ notice }}
-      </v-alert>
-
-      <!-- Providers Panel -->
-      <v-sheet class="panel" rounded="xl" border>
-        <div class="panel-title">
-          <div class="d-flex align-center gap-2">
-            <v-icon icon="mdi-server-network" color="primary"></v-icon>
-            <h2>{{ t('settings.providers') }}</h2>
+              <template #dropdownicon><i class="mdi mdi-chevron-down" aria-hidden="true"></i></template>
+              <template #loadingicon><i class="mdi mdi-loading mdi-spin" aria-hidden="true"></i></template>
+            </Select>
+            <Button
+              icon="mdi mdi-check-circle-outline"
+              :aria-label="t('settings.saveDefaultModel')"
+              :title="t('settings.saveDefaultModel')"
+              :loading="load"
+              @click="changeDefaultModel"
+            />
           </div>
-          
-          <v-btn
-              variant="tonal"
-              color="primary"
-              prepend-icon="mdi-file-export-outline"
-              size="small"
-              :title="t('settings.download')"
-              @click="download"
-              :loading="loadDownload"
-              rounded="lg"
-              class="font-weight-bold"
-          >
-            Export CSV
-          </v-btn>
         </div>
 
-        <v-expansion-panels variant="inset" class="provider-panels">
-          <v-expansion-panel v-for="(provider, key) in settings.providers" :key="key" rounded="xl" border class="mb-3">
-            <v-expansion-panel-title class="py-3">
-              <div class="provider-title">
-                <div class="d-flex align-center ga-2">
-                  <v-icon icon="mdi-api" color="primary" size="20"></v-icon>
-                  <strong class="text-subtitle-1">{{ key }}</strong>
-                </div>
-                <v-chip size="x-small" variant="tonal" :color="requiresApiKey(key) ? 'grey' : 'info'" class="font-mono font-weight-bold">
-                  {{ requiresApiKey(key) ? maskApiKey(provider.apiKey) : 'Nessuna API Key richiesta' }}
-                </v-chip>
-              </div>
-            </v-expansion-panel-title>
+        <div class="summary-meta">
+          <i class="mdi mdi-clock-outline" aria-hidden="true"></i>
+          <span>{{ t('settings.lastUpdated') }}</span>
+          <strong>{{ formattedLastUpdated }}</strong>
+        </div>
 
-            <v-expansion-panel-text>
-              <div class="provider-body pt-2">
-                <div class="d-flex flex-column flex-md-row ga-4 align-stretch align-md-center" v-if="requiresApiKey(key)">
-                  <v-text-field
-                      v-model="apiKeys[key]"
-                      :label="t('settings.apiKey')"
-                      variant="outlined"
-                      density="comfortable"
-                      :type="iconView.type"
-                      prepend-inner-icon="mdi-key-outline"
-                      hide-details="auto"
-                      :append-inner-icon="iconView.icon"
-                      @click:append-inner="viewApiKey"
-                      rounded="lg"
-                      class="flex-grow-1"
-                  />
-                  <div class="d-flex align-center ga-3">
-                    <v-btn
-                        color="primary"
-                        prepend-icon="mdi-content-save-outline"
-                        :loading="savingProvider === key"
-                        @click="saveApiKey(key)"
-                        rounded="lg"
-                        class="px-4"
-                    >
-                      {{ t('settings.saveApiKey') }}
-                    </v-btn>
-                    <v-btn
-                        color="error"
-                        variant="tonal"
-                        icon="mdi-delete-outline"
-                        :loading="savingProvider === key"
-                        @click="saveApiKey(key, true)"
-                        rounded="lg"
-                        :title="t('settings.delApiKey')"
+        <Button
+          :label="isSyncing ? t('settings.syncing') : t('settings.updateModels')"
+          icon="mdi mdi-sync"
+          :loading="isSyncing"
+          class="settings-sync"
+          @click="synchronizeModels"
+        />
+      </div>
+
+      <Message v-if="notice" severity="success" closable @close="notice = ''">
+        {{ notice }}
+      </Message>
+
+      <div class="panel">
+        <div class="panel-title">
+          <div class="settings-panel-heading">
+            <i class="mdi mdi-server-network" aria-hidden="true"></i>
+            <h2>{{ t('settings.providers') }}</h2>
+          </div>
+
+          <Button
+            :label="t('settings.exportCsv')"
+            icon="mdi mdi-file-export-outline"
+            size="small"
+            severity="secondary"
+            :title="t('settings.download')"
+            :loading="loadDownload"
+            @click="download"
+          />
+        </div>
+
+        <Accordion class="provider-panels">
+          <AccordionPanel v-for="provider in settings.providers" :key="provider.name" :value="provider.name">
+            <AccordionHeader>
+              <div class="provider-title">
+                <div class="provider-name">
+                  <i class="mdi mdi-api" aria-hidden="true"></i>
+                  <strong>{{ provider.name }}</strong>
+                </div>
+                <Tag
+                  :value="requiresApiKey(provider.name) ? maskApiKey(provider.apiKey) : t('settings.noApiKeyRequired')"
+                  :severity="requiresApiKey(provider.name) ? 'secondary' : 'info'"
+                  class="provider-key-status"
+                />
+              </div>
+            </AccordionHeader>
+
+            <AccordionContent>
+              <div class="provider-body">
+                <div v-if="requiresApiKey(provider.name)" class="provider-key-form">
+                  <div class="settings-key-field">
+                    <label class="settings-field-label" :for="`api-key-${provider.name}`">{{ t('settings.apiKey') }}</label>
+                    <div class="settings-key-control">
+                      <i class="mdi mdi-key-outline" aria-hidden="true"></i>
+                      <InputText
+                        :id="`api-key-${provider.name}`"
+                        v-model="apiKeys[provider.name]"
+                        :type="iconView.type"
+                        :aria-label="t('settings.apiKey')"
+                        autocomplete="off"
+                        class="settings-key-input"
+                      />
+                      <Button
+                        :icon="`mdi ${iconView.icon}`"
+                        text
+                        severity="secondary"
+                        :aria-label="iconView.type === 'password' ? t('settings.showApiKey') : t('settings.hideApiKey')"
+                        :title="iconView.type === 'password' ? t('settings.showApiKey') : t('settings.hideApiKey')"
+                        @click="viewApiKey"
+                      />
+                    </div>
+                  </div>
+                  <div class="provider-key-actions">
+                    <Button
+                      :label="t('settings.saveApiKey')"
+                      icon="mdi mdi-content-save-outline"
+                      :loading="savingProvider === provider.name"
+                      @click="saveApiKey(provider.name)"
+                    />
+                    <Button
+                      icon="mdi mdi-delete-outline"
+                      severity="danger"
+                      outlined
+                      :loading="savingProvider === provider.name"
+                      :aria-label="t('settings.delApiKey')"
+                      :title="t('settings.delApiKey')"
+                      @click="saveApiKey(provider.name, true)"
                     />
                   </div>
                 </div>
 
-                <!-- Models list for this provider -->
-                <div class="models-block mt-4">
-                  <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-2 mb-2 d-flex align-center gap-1">
-                    <v-icon icon="mdi-cube-outline" size="16"></v-icon>
+                <div class="models-block">
+                  <h3 class="models-heading">
+                    <i class="mdi mdi-cube-outline" aria-hidden="true"></i>
                     <span>{{ t('settings.models') }}</span>
                   </h3>
 
-                  <div v-if="getModels(key).length === 0" class="empty-state compact">
-                    <span class="text-caption text-grey-darken-1">{{ t('settings.noModels') }}</span>
+                  <div v-if="getModels(provider).length === 0" class="empty-state compact">
+                    <span>{{ t('settings.noModels') }}</span>
                   </div>
 
-                  <v-list v-else lines="two" density="comfortable" class="rounded-lg border pa-1">
-                    <v-list-item v-for="model in getModels(key)" :key="model.name" class="rounded-lg mb-1">
-                      <template #prepend>
-                        <v-avatar color="primary" variant="tonal" size="32">
-                          <v-icon icon="mdi-brain" size="18"></v-icon>
-                        </v-avatar>
-                      </template>
-                      <v-list-item-title class="font-weight-bold text-body-2">
-                        {{ model.displayName ?? model.name }}
-                      </v-list-item-title>
-                      <v-list-item-subtitle class="text-caption text-grey-darken-1">
-                        {{ model.description ?? model.name }}
-                      </v-list-item-subtitle>
-                      <template #append>
-                        <span class="token-pill">
-                          <v-icon icon="mdi-counter" size="12" class="mr-1"></v-icon>
-                          {{ t('settings.tokens') }}: {{ model.inputTokenLimit ?? '-' }} / {{ model.outputTokenLimit ?? '-' }}
-                        </span>
-                      </template>
-                    </v-list-item>
-                  </v-list>
+                  <ul v-else class="provider-model-list">
+                    <li v-for="model in getModels(provider)" :key="model.name" class="provider-model">
+                      <span class="provider-model__icon"><i class="mdi mdi-brain" aria-hidden="true"></i></span>
+                      <span class="provider-model__details">
+                        <strong>{{ model.displayName ?? model.name }}</strong>
+                        <small>{{ model.description ?? model.name }}</small>
+                      </span>
+                      <span class="token-pill">
+                        <i class="mdi mdi-counter" aria-hidden="true"></i>
+                        {{ t('settings.tokens') }}: {{ model.inputTokenLimit ?? '-' }} / {{ model.outputTokenLimit ?? '-' }}
+                      </span>
+                    </li>
+                  </ul>
                 </div>
               </div>
-            </v-expansion-panel-text>
-          </v-expansion-panel>
-        </v-expansion-panels>
-      </v-sheet>
+            </AccordionContent>
+          </AccordionPanel>
+        </Accordion>
+      </div>
     </template>
   </section>
 </template>
 
 <style scoped>
+.settings-badge {
+  width: fit-content;
+}
+
+.settings-badge :deep(.p-tag-icon) {
+  margin-right: 0.4rem;
+}
+
+.settings-loading {
+  display: grid;
+  gap: 20px;
+}
+
+.settings-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(170px, 1fr) auto;
+  align-items: end;
+  gap: 20px;
+}
+
+.settings-summary__model,
+.settings-key-field {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.settings-field-label {
+  color: #475569;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.settings-model-control {
+  display: flex;
+  gap: 8px;
+}
+
+.settings-select {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.settings-sync {
+  white-space: nowrap;
+}
+
 .provider-title {
   display: flex;
   width: 100%;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding-right: 8px;
+  padding-right: 4px;
+}
+
+.provider-name,
+.settings-panel-heading,
+.models-heading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.provider-name {
+  color: var(--color-primary);
+}
+
+.provider-name strong {
+  color: var(--color-text-main);
+  font-size: 1rem;
+}
+
+.provider-key-status {
+  max-width: 55%;
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-overflow: ellipsis;
+}
+
+.settings-panel-heading > .mdi {
+  color: var(--color-primary);
+  font-size: 1.25rem;
+}
+
+.provider-body {
+  display: grid;
+  gap: 22px;
+  padding-top: 8px;
+}
+
+.provider-key-form {
+  display: flex;
+  align-items: end;
+  gap: 16px;
+}
+
+.settings-key-field {
+  flex: 1 1 auto;
+}
+
+.settings-key-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 8px 0 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.settings-key-control:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.settings-key-control > .mdi {
+  color: #64748b;
+}
+
+.settings-key-input {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 0;
+  border: 0;
+  outline: 0;
+  box-shadow: none;
+}
+
+.settings-key-input:focus {
+  box-shadow: none;
+}
+
+.provider-key-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.models-block {
+  display: grid;
+  gap: 10px;
+}
+
+.models-heading {
+  color: #475569;
+  font-size: 0.95rem;
+}
+
+.models-heading > .mdi {
+  font-size: 1rem;
+}
+
+.provider-model-list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  list-style: none;
+}
+
+.provider-model {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 10px;
+  border-radius: 8px;
+}
+
+.provider-model + .provider-model {
+  border-top: 1px solid #f1f5f9;
+}
+
+.provider-model__icon {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--color-primary);
+  background: #eef2ff;
+}
+
+.provider-model__details {
+  display: grid;
+  flex: 1 1 auto;
+  gap: 3px;
+  min-width: 0;
+}
+
+.provider-model__details strong,
+.provider-model__details small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.provider-model__details strong {
+  color: var(--color-text-main);
+  font-size: 0.875rem;
+}
+
+.provider-model__details small {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
 }
 
 .summary-meta {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.summary-meta > .mdi {
+  font-size: 1.1rem;
+}
+
+.summary-meta strong {
+  color: var(--color-text-main);
+  font-size: 0.85rem;
+}
+
+.provider-panels :deep(.p-accordionpanel) {
+  margin-bottom: 10px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.provider-panels :deep(.p-accordionheader) {
+  padding: 14px 16px;
+  background: #fff;
+}
+
+.provider-panels :deep(.p-accordioncontent-content) {
+  padding: 0 16px 16px;
+}
+
+@media (max-width: 760px) {
+  .settings-summary {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .settings-summary__model {
+    grid-column: 1 / -1;
+  }
+
+  .settings-sync {
+    width: 100%;
+  }
+
+  .provider-key-form {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 520px) {
+  .settings-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-summary__model {
+    grid-column: auto;
+  }
+
+  .provider-title {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .provider-key-status {
+    max-width: 100%;
+  }
+
+  .provider-model {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .provider-model__details {
+    flex-basis: calc(100% - 50px);
+  }
+
+  .provider-model .token-pill {
+    margin-left: 44px;
+  }
 }
 </style>

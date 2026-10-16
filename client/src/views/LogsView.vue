@@ -1,83 +1,83 @@
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import Button from 'primevue/button'
+import Column from 'primevue/column'
+import DataTable from 'primevue/datatable'
+import Dialog from 'primevue/dialog'
+import InputText from 'primevue/inputtext'
+import Skeleton from 'primevue/skeleton'
+import Tag from 'primevue/tag'
 import { api, type Payload } from '../services/api.ts'
 
-const { t } = useI18n()
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 interface LogEntry {
   id: number
   date: string
   type: 'info' | 'exception'
+  tag: string
   message: string
   stack?: string | null
 }
 
-// ─── State ────────────────────────────────────────────────────────────────────
+const { t, locale } = useI18n()
 const logs = ref<LogEntry[]>([])
-const loading = ref<boolean>(false)
-const search = ref<string>('')
-const filterType = ref<string | null>(null)
-const stackDialog = ref<boolean>(false)
+const loading = ref(false)
+const search = ref('')
+const filterType = ref<LogEntry['type'] | null>(null)
+const stackDialog = ref(false)
 const selectedStack = ref<string | null>(null)
-const selectedMessage = ref<string>('')
+const selectedMessage = ref('')
 
-
-// ─── API ──────────────────────────────────────────────────────────────────────
 const fetchLogs = async () => {
   try {
     loading.value = true
-    // TODO: sostituire con l'endpoint reale quando disponibile
     const response = await api({
       url: 'worked/log',
       method: 'GET',
     } as Payload)
-    if (response && response.data) {
-      logs.value = response.data
+    if (response && Array.isArray(response.data)) {
+      logs.value = response.data.map((entry: Record<string, unknown>, index: number) => ({
+        id: Number(entry.id ?? entry.ID ?? index),
+        date: String(entry.date ?? entry.CREATED_AT ?? ''),
+        type: String(entry.type ?? entry.TYPE ?? '').toLowerCase() === 'exception' ? 'exception' : 'info',
+        tag: String(entry.tag ?? entry.TAG ?? ''),
+        message: String(entry.message ?? entry.MESSAGE ?? ''),
+        stack: typeof (entry.stack ?? entry.STACK) === 'string' ? String(entry.stack ?? entry.STACK) : null,
+      }))
     } else {
-      logs.value = mockLogs
+      logs.value = []
     }
-  } catch(err:any) {
-    console.log(err)
+  } catch (err) {
+    console.error('Errore caricamento log', err)
   } finally {
     loading.value = false
   }
 }
 
-// ─── Computed ─────────────────────────────────────────────────────────────────
-const filteredLogs = computed(() => {
-  return logs.value.filter((log) => {
-    const matchType = !filterType.value || log.type === filterType.value
-    const matchSearch =
-      !search.value ||
-      log.message.toLowerCase().includes(search.value.toLowerCase())
-    return matchType && matchSearch
+const filteredLogs = computed(() => logs.value.filter((log) => {
+  const matchesType = !filterType.value || log.type === filterType.value
+  const matchesSearch = !search.value || log.message.toLowerCase().includes(search.value.toLowerCase())
+  return matchesType && matchesSearch
+}))
+
+const infoCount = computed(() => logs.value.filter((log) => log.type === 'info').length)
+const exceptionCount = computed(() => logs.value.filter((log) => log.type === 'exception').length)
+
+const formatDate = (value: string): string => {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleString(locale.value, {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
   })
-})
-
-const infoCount = computed(() => logs.value.filter((l) => l.type === 'info').length)
-const exceptionCount = computed(() => logs.value.filter((l) => l.type === 'exception').length)
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-const formatDate = (iso: string): string => {
-  try {
-    const d = new Date(iso)
-    return d.toLocaleString('it-IT', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    })
-  } catch {
-    return iso
-  }
 }
 
 const openStack = (log: LogEntry) => {
-  selectedStack.value = log.stack ?? null
+  selectedStack.value = log.stack ?? ''
   selectedMessage.value = log.message
   stackDialog.value = true
 }
@@ -88,238 +88,208 @@ const closeStack = () => {
   selectedMessage.value = ''
 }
 
-// ─── Table headers ────────────────────────────────────────────────────────────
-const headers = [
-  { title: t('logs.date'), key: 'CREATED_AT', sortable: true, width: '190px' },
-  { title: t('logs.type'), key: 'TYPE', sortable: true, width: '130px' },
-  { title: t('logs.tag'), key: 'TAG', sortable: true, width: '130px' },
-  { title: t('logs.message'), key: 'MESSAGE', sortable: false },
-]
-
-// ─── Lifecycle ────────────────────────────────────────────────────────────────
-onMounted(() => {
-  fetchLogs()
-})
+onMounted(fetchLogs)
 </script>
 
 <template>
-  <div class="content-grid">
-
-    <!-- Page heading -->
+  <section class="content-grid">
     <div class="section-heading">
-      <div class="d-flex align-center ga-2 mb-1">
-        <v-chip color="warning" variant="flat" size="small" rounded="pill" class="font-weight-bold text-uppercase">
-          <v-icon icon="mdi-text-box-search-outline" size="14" class="mr-1"></v-icon>
-          {{ t('logs.badge') }}
-        </v-chip>
-      </div>
+      <Tag :value="t('logs.badge')" icon="mdi mdi-text-box-search-outline" severity="warn" class="logs-badge" />
       <h1>{{ t('logs.title') }}</h1>
       <p>{{ t('logs.intro') }}</p>
     </div>
 
-    <!-- Summary chips -->
-    <div class="d-flex flex-wrap align-center ga-3">
-      <v-chip color="primary" variant="tonal" rounded="pill" size="small" class="font-weight-bold">
-        <v-icon icon="mdi-format-list-bulleted" size="14" class="mr-1"></v-icon>
-        {{ t('logs.total') }}: {{ logs.length }}
-      </v-chip>
-      <v-chip color="info" variant="tonal" rounded="pill" size="small" class="font-weight-bold">
-        <v-icon icon="mdi-information-outline" size="14" class="mr-1"></v-icon>
-        {{ t('logs.info') }}: {{ infoCount }}
-      </v-chip>
-      <v-chip color="error" variant="tonal" rounded="pill" size="small" class="font-weight-bold">
-        <v-icon icon="mdi-alert-circle-outline" size="14" class="mr-1"></v-icon>
-        {{ t('logs.exception') }}: {{ exceptionCount }}
-      </v-chip>
+    <div class="logs-summary">
+      <Tag :value="`${t('logs.total')}: ${logs.length}`" icon="mdi mdi-format-list-bulleted" severity="primary" />
+      <Tag :value="`${t('logs.info')}: ${infoCount}`" icon="mdi mdi-information-outline" severity="info" />
+      <Tag :value="`${t('logs.exception')}: ${exceptionCount}`" icon="mdi mdi-alert-circle-outline" severity="danger" />
     </div>
 
-    <!-- Filters bar -->
-    <v-sheet class="panel pa-4" rounded="xl" border>
-      <div class="d-flex flex-wrap align-center ga-3">
-        <v-text-field
-            v-model="search"
-            :label="t('logs.search')"
-            prepend-inner-icon="mdi-magnify"
-            variant="outlined"
-            density="compact"
-            hide-details
-            rounded="lg"
-            clearable
-            class="flex-grow-1"
-            style="min-width: 200px; max-width: 400px;"
+    <div class="panel logs-filters">
+      <label class="logs-search">
+        <i class="mdi mdi-magnify" aria-hidden="true"></i>
+        <InputText v-model="search" :placeholder="t('logs.search')" :aria-label="t('logs.search')" />
+        <Button
+          v-if="search"
+          icon="mdi mdi-close"
+          text
+          rounded
+          severity="secondary"
+          :aria-label="t('logs.clearSearch')"
+          @click="search = ''"
         />
-        <v-btn-toggle
-            v-model="filterType"
-            density="compact"
-            rounded="lg"
-            variant="outlined"
-            color="primary"
-        >
-          <v-btn value="" class="text-caption font-weight-bold px-4 mr-2">
-            {{ t('logs.all') }}
-          </v-btn>
-          <v-btn value="info" class="text-caption font-weight-bold px-4 mr-2">
-            <v-icon icon="mdi-information-outline" size="16" class="mr-2"></v-icon>
-            Info
-          </v-btn>
-          <v-btn value="exception" class="text-caption font-weight-bold px-4 mr-2">
-            <v-icon icon="mdi-alert-circle-outline" size="16" class="mr-2"></v-icon>
-            Exception
-          </v-btn>
-        </v-btn-toggle>
+      </label>
 
-        <v-spacer />
-
-        <v-btn
-            variant="tonal"
-            color="primary"
-            size="small"
-            prepend-icon="mdi-refresh"
-            :loading="loading"
-            rounded="lg"
-            class="font-weight-bold"
-            @click="fetchLogs"
-        >
-          {{ t('logs.refresh') }}
-        </v-btn>
+      <div class="logs-filter-group" role="group" :aria-label="t('logs.type')">
+        <Button :label="t('logs.all')" :severity="filterType === null ? 'primary' : 'secondary'" :outlined="filterType !== null" @click="filterType = null" />
+        <Button :label="t('logs.info')" icon="mdi mdi-information-outline" :severity="filterType === 'info' ? 'info' : 'secondary'" :outlined="filterType !== 'info'" @click="filterType = 'info'" />
+        <Button :label="t('logs.exception')" icon="mdi mdi-alert-circle-outline" :severity="filterType === 'exception' ? 'danger' : 'secondary'" :outlined="filterType !== 'exception'" @click="filterType = 'exception'" />
       </div>
-    </v-sheet>
 
-    <!-- Data Table -->
-    <v-sheet class="panel pa-0" rounded="xl" border>
-      <div class="panel-title px-5 pt-4 pb-3">
-        <div class="d-flex align-center ga-2">
-          <v-icon icon="mdi-table-search" color="primary"></v-icon>
+      <Button
+        :label="t('logs.refresh')"
+        icon="mdi mdi-refresh"
+        severity="secondary"
+        :loading="loading"
+        @click="fetchLogs"
+      />
+    </div>
+
+    <div class="panel logs-table-panel">
+      <header class="panel-title">
+        <div class="logs-table-title">
+          <i class="mdi mdi-table-search" aria-hidden="true"></i>
           <h2>{{ t('logs.tableTitle') }}</h2>
         </div>
-        <v-chip v-if="filteredLogs.length !== logs.length" color="warning" size="small" variant="flat" rounded="pill">
-          {{ filteredLogs.length }} / {{ logs.length }}
-        </v-chip>
+        <Tag v-if="filteredLogs.length !== logs.length" :value="`${filteredLogs.length} / ${logs.length}`" severity="warn" />
+      </header>
+
+      <div v-if="loading" class="logs-loading" aria-busy="true">
+        <Skeleton v-for="row in 6" :key="row" height="2.75rem" border-radius="0.5rem" />
       </div>
 
-      <v-skeleton-loader v-if="loading" type="table-row-divider@6" class="mx-4 mb-4" rounded="lg" />
-
-      <v-data-table
-          v-else
-          :headers="headers"
-          :items="filteredLogs"
-          :items-per-page="15"
-          item-value="id"
-          class="logs-table"
-          hover
+      <DataTable
+        v-else
+        :value="filteredLogs"
+        data-key="id"
+        paginator
+        :rows="15"
+        :rows-per-page-options="[15, 30, 50]"
+        striped-rows
+        class="logs-table"
       >
-        <!-- Date column -->
-        <template #item.CREATED_AT="{ item }">
-          <span class="text-caption font-weight-medium text-mono">
-            {{ formatDate(item.CREATED_AT) }}
-          </span>
-        </template>
-
-        <!-- Type chip column -->
-        <template #item.TYPE="{ item }">
-          <v-chip
-              :color="item.TYPE === 'exception' ? 'error' : 'info'"
-              variant="flat"
-              size="small"
-              rounded="pill"
-              class="font-weight-bold text-uppercase"
-          >
-            <v-icon
-                :icon="item.TYPE === 'exception' ? 'mdi-alert-circle-outline' : 'mdi-information-outline'"
-                size="13"
-                class="mr-1"
-            ></v-icon>
-            {{ item.TYPE === 'exception' ? t('logs.exception') : t('logs.info') }}
-          </v-chip>
-        </template>
-
-        <!-- Message column -->
-        <template #item.MESSAGE="{ item }">
-          <span :class="item.TYPE === 'exception' ? 'text-error font-weight-medium' : 'text-medium-emphasis'">
-            {{ item.MESSAGE }}
-          </span>
-        </template>
-
-        <!-- Stack column -->
-
-        <!-- Empty state -->
-        <template #no-data>
-          <div class="empty-state compact ma-4">
-            <v-icon icon="mdi-text-box-remove-outline" size="40" class="mb-2 text-grey"></v-icon>
-            <div class="font-weight-bold text-grey-darken-1">{{ t('logs.empty') }}</div>
+        <template #empty>
+          <div class="empty-state compact">
+            <i class="mdi mdi-text-box-remove-outline logs-empty-icon" aria-hidden="true"></i>
+            <strong>{{ t('logs.empty') }}</strong>
           </div>
         </template>
-      </v-data-table>
-    </v-sheet>
 
-    <!-- Stack Trace Dialog -->
-    <v-dialog v-model="stackDialog" max-width="720" scrollable>
-      <v-card rounded="xl" border elevation="8">
-        <v-card-title class="d-flex align-center justify-space-between pa-4 border-b">
-          <div class="d-flex align-center ga-2">
-            <v-icon icon="mdi-code-braces" color="warning"></v-icon>
-            <span class="font-weight-bold text-subtitle-1">Stack Trace</span>
+        <Column field="date" :header="t('logs.date')" sortable class="logs-date-column">
+          <template #body="{ data }"><span class="logs-date">{{ formatDate(data.date) }}</span></template>
+        </Column>
+        <Column field="type" :header="t('logs.type')" sortable>
+          <template #body="{ data }">
+            <Tag
+              :value="data.type === 'exception' ? t('logs.exception') : t('logs.info')"
+              :icon="data.type === 'exception' ? 'mdi mdi-alert-circle-outline' : 'mdi mdi-information-outline'"
+              :severity="data.type === 'exception' ? 'danger' : 'info'"
+            />
+          </template>
+        </Column>
+        <Column field="tag" :header="t('logs.tag')" sortable />
+        <Column field="message" :header="t('logs.message')" class="logs-message-column">
+          <template #body="{ data }">
+            <span :class="{ 'logs-message--exception': data.type === 'exception' }">{{ data.message }}</span>
+          </template>
+        </Column>
+        <Column :header="t('logs.stack')" class="logs-action-column">
+          <template #body="{ data }">
+            <Button
+              v-if="data.stack"
+              icon="mdi mdi-code-braces"
+              text
+              rounded
+              :aria-label="t('logs.viewStack')"
+              :title="t('logs.viewStack')"
+              @click="openStack(data)"
+            />
+          </template>
+        </Column>
+      </DataTable>
+    </div>
+
+    <Dialog
+      v-model:visible="stackDialog"
+      modal
+      :draggable="false"
+      :style="{ width: 'min(720px, calc(100vw - 2rem))' }"
+      :breakpoints="{ '640px': '100vw' }"
+      class="stack-dialog"
+    >
+      <template #header>
+        <div class="stack-dialog__header">
+          <div class="stack-dialog__title">
+            <i class="mdi mdi-code-braces" aria-hidden="true"></i>
+            <strong>{{ t('logs.stack') }}</strong>
           </div>
-          <v-btn icon="mdi-close" variant="text" size="small" color="grey" @click="closeStack"></v-btn>
-        </v-card-title>
-
-        <v-card-text class="pa-4">
-          <!-- Trigger message recap -->
-          <v-alert
-              variant="tonal"
-              color="error"
-              rounded="lg"
-              density="comfortable"
-              icon="mdi-alert-circle-outline"
-              class="mb-4 text-caption"
-          >
-            {{ selectedMessage }}
-          </v-alert>
-
-          <!-- Stack trace block -->
-          <pre class="stack-trace-block">{{ selectedStack }}</pre>
-        </v-card-text>
-
-        <v-card-actions class="pa-4 pt-0 justify-end">
-          <v-btn
-              variant="tonal"
-              color="primary"
-              rounded="lg"
-              class="font-weight-bold"
-              @click="closeStack"
-          >
-            {{ t('logs.close') }}
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-  </div>
+          <Button icon="mdi mdi-close" text rounded severity="secondary" :aria-label="t('logs.close')" @click="closeStack" />
+        </div>
+      </template>
+      <Message severity="error" class="stack-message">{{ selectedMessage }}</Message>
+      <pre class="stack-trace-block">{{ selectedStack }}</pre>
+      <template #footer>
+        <Button :label="t('logs.close')" severity="secondary" @click="closeStack" />
+      </template>
+    </Dialog>
+  </section>
 </template>
 
 <style scoped>
-.logs-table {
-  border-radius: 0 0 16px 16px;
-  overflow: hidden;
+.logs-badge { width: fit-content; }
+.logs-summary,
+.logs-filters,
+.logs-filter-group,
+.logs-table-title,
+.stack-dialog__header,
+.stack-dialog__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.text-mono {
-  font-family: var(--font-mono, 'JetBrains Mono', monospace);
-  font-size: 0.8rem;
+.logs-summary { flex-wrap: wrap; }
+.logs-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; padding: 16px; }
+.logs-search {
+  display: flex;
+  flex: 1 1 240px;
+  align-items: center;
+  gap: 8px;
+  max-width: 400px;
+  min-height: 42px;
+  padding: 0 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #fff;
 }
-
+.logs-search > .mdi { color: #64748b; }
+.logs-search :deep(.p-inputtext) { width: 100%; min-width: 0; padding: 8px 0; border: 0; box-shadow: none; }
+.logs-filter-group { flex-wrap: wrap; }
+.logs-table-panel { padding: 0; overflow: hidden; }
+.logs-table-panel > .panel-title { margin: 0; padding: 18px 20px; }
+.logs-table-title > .mdi { color: var(--color-primary); font-size: 1.2rem; }
+.logs-loading { display: grid; gap: 8px; padding: 0 20px 20px; }
+.logs-table { border-top: 1px solid var(--color-border); }
+.logs-table :deep(.p-datatable-thead > tr > th) { padding: 12px 14px; color: #475569; background: #f8fafc; font-size: 0.8rem; white-space: nowrap; }
+.logs-table :deep(.p-datatable-tbody > tr > td) { padding: 12px 14px; font-size: 0.82rem; }
+.logs-date { font-family: var(--font-mono); font-size: 0.78rem; white-space: nowrap; }
+.logs-message-column { min-width: 260px; }
+.logs-message--exception { color: #dc2626; font-weight: 600; }
+.logs-action-column { width: 5rem; }
+.logs-empty-icon { margin-bottom: 8px; color: #94a3b8; font-size: 2.25rem; }
+.stack-dialog__header { width: 100%; justify-content: space-between; }
+.stack-dialog__title { color: #92400e; font-size: 1rem; }
+.stack-dialog__title > .mdi { font-size: 1.2rem; }
+.stack-message { margin-bottom: 16px; }
 .stack-trace-block {
+  max-height: min(55vh, 520px);
   margin: 0;
   padding: 16px 18px;
+  overflow: auto;
   border-radius: 12px;
-  background: #0f172a;
   color: #f1f5f9;
-  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  background: #0f172a;
+  font-family: var(--font-mono);
   font-size: 0.82rem;
   line-height: 1.7;
-  overflow-x: auto;
   white-space: pre-wrap;
-  word-break: break-all;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 680px) {
+  .logs-filters { align-items: stretch; flex-direction: column; }
+  .logs-search { max-width: none; }
+  .logs-filter-group { justify-content: flex-start; }
+  .logs-table-panel > .panel-title { padding: 16px; }
 }
 </style>

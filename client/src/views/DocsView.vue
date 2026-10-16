@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import {onBeforeMount, ref} from "vue";
+import Accordion from 'primevue/accordion'
+import AccordionContent from 'primevue/accordioncontent'
+import AccordionHeader from 'primevue/accordionheader'
+import AccordionPanel from 'primevue/accordionpanel'
+import Tag from 'primevue/tag'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const pathBase = "http://localhost:1010/api/"
 type ApiRoute = {
   path: string,
@@ -26,10 +33,10 @@ const routeUrl = (route: ApiRoute) => `${pathBase}${route.path}`
 
 const methodColor = (method: ApiRoute['method']) => {
   const colors = {
-    GET: 'info',
+    GET: 'info' as const,
     POST: 'success',
-    PUT: 'warning',
-    DELETE: 'error',
+    PUT: 'warn',
+    DELETE: 'danger',
   }
 
   return colors[method]
@@ -38,10 +45,10 @@ const methodColor = (method: ApiRoute['method']) => {
 const formatValue = (value: any) => JSON.stringify(value, null, 2)
 
 const routeDetails = (route: ApiRoute) => [
-  {label: 'Path params', value: route.path_params},
-  {label: 'Query string', value: route.queryString},
-  {label: 'Payload', value: route.payload},
-  {label: 'Response', value: route.response},
+  {labelKey: 'pathParams', value: route.path_params},
+  {labelKey: 'queryString', value: route.queryString},
+  {labelKey: 'payload', value: route.payload},
+  {labelKey: 'response', value: route.response},
 ].filter((item) => item.value)
 
 onBeforeMount(() => {
@@ -295,120 +302,98 @@ onBeforeMount(() => {
 <template>
   <section class="content-grid">
     <div class="section-heading">
-      <div class="d-flex align-center gap-2">
-        <v-chip color="info" variant="tonal" size="small" class="font-weight-bold">
-          <v-icon icon="mdi-api" size="14" class="mr-1"></v-icon>
-          API Reference
-        </v-chip>
-      </div>
-      <h1>Documents Api</h1>
-      <p>Interactive API Endpoint documentation and middleware overview</p>
+      <Tag :value="t('docs.apiReference')" icon="mdi mdi-api" severity="info" class="docs-badge" />
+      <h1>{{ t('docs.title') }}</h1>
+      <p>{{ t('docs.intro') }}</p>
     </div>
 
-    <!-- Docs Summary Card -->
-    <v-sheet class="panel docs-summary" rounded="xl" border>
-      <div>
-        <h2 class="text-subtitle-2 text-grey-darken-1 mb-1 font-weight-bold">Base Endpoint URL</h2>
-        <code class="font-mono px-3 py-1 bg-slate-100 rounded-lg text-primary font-weight-bold">{{ pathBase }}</code>
+    <div class="panel docs-summary">
+      <div class="docs-base-url">
+        <h2>{{ t('docs.baseEndpoint') }}</h2>
+        <code>{{ pathBase }}</code>
       </div>
 
-      <div class="d-flex align-center gap-4">
+      <div class="docs-stats">
         <div class="summary-meta">
-          <span class="text-caption text-grey-darken-1">Total Routes</span>
-          <strong class="text-h6 font-weight-bold text-primary">{{ routes.length }}</strong>
+          <span>{{ t('docs.totalRoutes') }}</span>
+          <strong>{{ routes.length }}</strong>
         </div>
 
         <div class="summary-meta">
-          <span class="text-caption text-grey-darken-1">Middleware</span>
-          <strong class="text-h6 font-weight-bold text-secondary">{{ middleware.length }}</strong>
+          <span>{{ t('docs.middleware') }}</span>
+          <strong>{{ middleware.length }}</strong>
         </div>
       </div>
-    </v-sheet>
+    </div>
 
-    <!-- Middleware Panel -->
-    <v-sheet class="panel" rounded="xl" border>
+    <div class="panel">
       <div class="panel-title">
-        <div class="d-flex align-center gap-2">
-          <v-icon icon="mdi-shield-check-outline" color="primary"></v-icon>
-          <h2>Middleware Guard Pipeline</h2>
+        <div class="docs-panel-heading">
+          <i class="mdi mdi-shield-check-outline" aria-hidden="true"></i>
+          <h2>{{ t('docs.middlewarePipeline') }}</h2>
         </div>
       </div>
 
-      <v-list lines="two" density="comfortable" class="rounded-lg border pa-1">
-        <v-list-item v-for="item in middleware" :key="item.name" class="rounded-lg mb-1">
-          <template #prepend>
-            <v-avatar color="success" variant="tonal" size="32">
-              <v-icon icon="mdi-shield-lock-outline" size="18"></v-icon>
-            </v-avatar>
-          </template>
-          <v-list-item-title class="font-weight-bold text-body-2">{{ item.name }}</v-list-item-title>
-          <v-list-item-subtitle class="text-caption text-grey-darken-1">{{ item.description }}</v-list-item-subtitle>
-        </v-list-item>
-      </v-list>
-    </v-sheet>
+      <ul class="middleware-list">
+        <li v-for="item in middleware" :key="item.name" class="middleware-list__item">
+          <span class="middleware-list__icon"><i class="mdi mdi-shield-lock-outline" aria-hidden="true"></i></span>
+          <span class="middleware-list__details">
+            <strong>{{ item.name }}</strong>
+            <small>{{ item.description }}</small>
+          </span>
+        </li>
+      </ul>
+    </div>
 
-    <!-- Routes Panel -->
-    <v-sheet class="panel" rounded="xl" border>
+    <div class="panel">
       <div class="panel-title">
-        <div class="d-flex align-center gap-2">
-          <v-icon icon="mdi-routes" color="primary"></v-icon>
-          <h2>API Endpoints</h2>
+        <div class="docs-panel-heading">
+          <i class="mdi mdi-routes" aria-hidden="true"></i>
+          <h2>{{ t('docs.endpoints') }}</h2>
         </div>
       </div>
 
-      <v-expansion-panels variant="inset">
-        <v-expansion-panel v-for="route in routes" :key="`${route.method}-${route.path}`" rounded="xl" border class="mb-3">
-          <v-expansion-panel-title class="py-3">
+      <Accordion class="docs-accordion">
+        <AccordionPanel v-for="(route, index) in routes" :key="`${route.method}-${route.path}-${index}`" :value="index">
+          <AccordionHeader>
             <div class="route-title">
-              <v-chip
-                  :color="methodColor(route.method)"
-                  variant="flat"
-                  label
-                  size="small"
-                  class="font-weight-bold text-uppercase"
-              >
-                {{ route.method }}
-              </v-chip>
+              <Tag :value="route.method" :severity="methodColor(route.method)" class="route-method" />
               <div class="route-heading">
-                <strong class="font-mono text-body-2">/{{ route.path }}</strong>
-                <small class="text-caption text-grey-darken-1">{{ route.description }}</small>
+                <strong>/{{ route.path }}</strong>
+                <small>{{ route.description }}</small>
               </div>
-              <v-chip
-                  :color="route.authorization ? 'warning' : 'success'"
-                  variant="tonal"
-                  label
-                  size="x-small"
-                  class="font-weight-bold"
-              >
-                {{ route.authorization ? 'Auth Required' : 'Public' }}
-              </v-chip>
+              <Tag
+                :value="route.authorization ? t('docs.authRequired') : t('docs.public')"
+                :severity="route.authorization ? 'warn' : 'success'"
+                class="route-auth"
+              />
             </div>
-          </v-expansion-panel-title>
+          </AccordionHeader>
 
-          <v-expansion-panel-text class="pt-2">
+          <AccordionContent>
             <div class="route-body">
               <div class="route-url">
-                <span class="text-caption font-weight-bold text-grey-darken-1">Full Request URL</span>
-                <code class="font-mono text-caption pa-2 bg-slate-100 rounded-lg border">{{ routeUrl(route) }}</code>
+                <span>{{ t('docs.fullRequestUrl') }}</span>
+                <code>{{ routeUrl(route) }}</code>
               </div>
 
-              <div
-                  v-for="detail in routeDetails(route)"
-                  :key="detail.label"
-                  class="doc-block"
-              >
-                <h3 class="text-caption font-weight-bold text-grey-darken-2">{{ detail.label }}</h3>
-                <pre class="font-mono text-caption pa-3 bg-slate-900 text-slate-100 rounded-lg overflow-x-auto">{{ formatValue(detail.value) }}</pre>
+              <div v-for="detail in routeDetails(route)" :key="detail.labelKey" class="doc-block">
+                <h3>{{ t(`docs.${detail.labelKey}`) }}</h3>
+                <pre>{{ formatValue(detail.value) }}</pre>
               </div>
             </div>
-          </v-expansion-panel-text>
-        </v-expansion-panel>
-      </v-expansion-panels>
-    </v-sheet>
+          </AccordionContent>
+        </AccordionPanel>
+      </Accordion>
+    </div>
   </section>
 </template>
 
 <style scoped>
+.docs-badge {
+  width: fit-content;
+}
+
 .docs-summary {
   display: flex;
   align-items: center;
@@ -417,13 +402,137 @@ onBeforeMount(() => {
   flex-wrap: wrap;
 }
 
+.docs-base-url {
+  display: grid;
+  gap: 8px;
+}
+
+.docs-base-url h2 {
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+}
+
+.docs-base-url code,
+.route-url code {
+  display: inline-block;
+  width: fit-content;
+  max-width: 100%;
+  padding: 8px 12px;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  color: var(--color-primary);
+  background: #f8fafc;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.docs-stats {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.summary-meta {
+  display: grid;
+  gap: 3px;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.summary-meta strong {
+  color: var(--color-primary);
+  font-size: 1.35rem;
+}
+
+.docs-panel-heading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.docs-panel-heading > .mdi {
+  color: var(--color-primary);
+  font-size: 1.2rem;
+}
+
+.middleware-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  list-style: none;
+}
+
+.middleware-list__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+}
+
+.middleware-list__icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  color: #059669;
+  background: #d1fae5;
+}
+
+.middleware-list__details {
+  display: grid;
+  gap: 3px;
+}
+
+.middleware-list__details strong {
+  font-size: 0.88rem;
+}
+
+.middleware-list__details small {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.docs-accordion :deep(.p-accordionpanel) {
+  margin-bottom: 10px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.docs-accordion :deep(.p-accordionheader) {
+  padding: 14px;
+}
+
+.docs-accordion :deep(.p-accordioncontent-content) {
+  padding: 0 14px 14px;
+}
+
 .route-title {
   display: grid;
-  grid-template-columns: 76px minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   width: 100%;
   gap: 12px;
-  padding-right: 8px;
+  padding-right: 4px;
+}
+
+.route-method {
+  min-width: 64px;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}
+
+.route-auth {
+  font-size: 0.68rem;
 }
 
 .route-heading {
@@ -433,20 +542,60 @@ onBeforeMount(() => {
   gap: 2px;
 }
 
+.route-heading strong {
+  overflow-wrap: anywhere;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+}
+
+.route-heading small {
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+}
+
 .route-body {
   display: grid;
   gap: 14px;
 }
 
+.route-url {
+  display: grid;
+  gap: 6px;
+}
+
+.route-url > span,
+.doc-block h3 {
+  color: #475569;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.doc-block {
+  display: grid;
+  gap: 7px;
+}
+
 .doc-block pre {
-  background: #0f172a;
-  color: #f8fafc;
-  border-radius: 10px;
+  max-height: 420px;
+  margin: 0;
+  padding: 12px;
+  overflow: auto;
   border: 1px solid #1e293b;
+  border-radius: 10px;
+  color: #f8fafc;
+  background: #0f172a;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 780px) {
-  .docs-summary,
+  .docs-summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
   .route-title {
     grid-template-columns: 1fr;
     align-items: flex-start;

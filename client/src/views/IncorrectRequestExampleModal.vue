@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import {nextTick, onBeforeUnmount, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
+import Button from 'primevue/button'
+import Dialog from 'primevue/dialog'
+import Message from 'primevue/message'
+import ProgressSpinner from 'primevue/progressspinner'
 
 const {t} = useI18n()
 const model = defineModel<boolean>({default: false})
@@ -49,24 +53,40 @@ onBeforeUnmount(clearSequence)
 </script>
 
 <template>
-  <v-dialog v-model="model" max-width="840" scrollable>
-    <v-card rounded="xl" border>
-      <v-card-title class="d-flex align-center justify-space-between py-3 px-4 border-b">
-        <div class="d-flex align-center ga-2">
-          <v-icon icon="mdi-message-alert-outline" color="warning"></v-icon>
-          <span class="text-subtitle-1 font-weight-bold">{{ t('home.incorrectRequestExample.title') }}</span>
+  <Dialog
+    v-model:visible="model"
+    modal
+    :draggable="false"
+    :style="{ width: 'min(840px, calc(100vw - 2rem))' }"
+    :breakpoints="{ '640px': '100vw' }"
+    class="incorrect-request-dialog"
+  >
+    <template #header>
+      <div class="incorrect-request-dialog__header">
+        <div class="incorrect-request-dialog__title">
+          <i class="mdi mdi-message-alert-outline" aria-hidden="true"></i>
+          <span class="incorrect-request-dialog__heading">{{ t('home.incorrectRequestExample.title') }}</span>
         </div>
-        <v-btn icon="mdi-close" variant="text" size="32" @click="model = false"></v-btn>
-      </v-card-title>
+        <Button
+          icon="mdi mdi-close"
+          text
+          rounded
+          severity="secondary"
+          :aria-label="t('home.incorrectRequestExample.close')"
+          @click="model = false"
+        />
+      </div>
+    </template>
 
-      <v-card-text class="pa-4">
-        <v-alert color="info" variant="tonal" density="comfortable" class="mb-4" icon="mdi-information-outline">
+      <div class="incorrect-request-dialog__content">
+        <Message severity="info" class="example-intro">
+          <template #icon><i class="mdi mdi-information-outline" aria-hidden="true"></i></template>
           {{ t('home.incorrectRequestExample.intro') }}
-        </v-alert>
+        </Message>
 
         <div class="example-chat" :aria-label="t('home.incorrectRequestExample.title')">
           <div v-if="exampleStage === 0" class="example-status example-status--user">
-            <v-icon icon="mdi-account" size="16"></v-icon>
+            <i class="mdi mdi-account" aria-hidden="true"></i>
             <span>{{ t('home.incorrectRequestExample.userTyping') }}</span>
             <span class="typing-dots" aria-hidden="true"><i></i><i></i><i></i></span>
           </div>
@@ -74,7 +94,7 @@ onBeforeUnmount(clearSequence)
           <Transition name="example-message">
             <div v-if="exampleStage >= 1" class="example-message example-message--user">
               <div class="example-message__header">
-                <v-icon icon="mdi-account" size="16"></v-icon>
+                <i class="mdi mdi-account" aria-hidden="true"></i>
                 <strong>{{ t('home.user') }}</strong>
               </div>
               <p>{{ t('home.incorrectRequestExample.firstQuestion') }}</p>
@@ -82,14 +102,14 @@ onBeforeUnmount(clearSequence)
           </Transition>
 
           <div v-if="exampleStage === 2" class="example-status example-status--assistant">
-            <v-progress-circular indeterminate size="16" width="2"></v-progress-circular>
+            <ProgressSpinner class="example-progress" stroke-width="8" />
             <span>{{ t('home.incorrectRequestExample.assistantThinking') }}</span>
           </div>
 
           <Transition name="example-message">
             <div v-if="exampleStage >= 3" class="example-message example-message--assistant">
               <div class="example-message__header">
-                <v-icon icon="mdi-robot-outline" size="16"></v-icon>
+                <i class="mdi mdi-robot-outline" aria-hidden="true"></i>
                 <strong>{{ t('home.agent') }}</strong>
               </div>
               <p>{{ t('home.incorrectRequestExample.trafficAnswer') }}</p>
@@ -97,7 +117,7 @@ onBeforeUnmount(clearSequence)
           </Transition>
 
           <div v-if="exampleStage === 4" class="example-status example-status--user">
-            <v-icon icon="mdi-account" size="16"></v-icon>
+            <i class="mdi mdi-account" aria-hidden="true"></i>
             <span>{{ t('home.incorrectRequestExample.userTyping') }}</span>
             <span class="typing-dots" aria-hidden="true"><i></i><i></i><i></i></span>
           </div>
@@ -105,7 +125,7 @@ onBeforeUnmount(clearSequence)
           <Transition name="example-message">
             <div v-if="exampleStage >= 5" class="example-message example-message--user">
               <div class="example-message__header">
-                <v-icon icon="mdi-account" size="16"></v-icon>
+                <i class="mdi mdi-account" aria-hidden="true"></i>
                 <strong>{{ t('home.user') }}</strong>
               </div>
               <p>{{ t('home.incorrectRequestExample.secondQuestion') }}</p>
@@ -113,14 +133,14 @@ onBeforeUnmount(clearSequence)
           </Transition>
 
           <div v-if="exampleStage === 6" class="example-status example-status--assistant">
-            <v-progress-circular indeterminate size="16" width="2"></v-progress-circular>
+            <ProgressSpinner class="example-progress" stroke-width="8" />
             <span>{{ t('home.incorrectRequestExample.assistantThinking') }}</span>
           </div>
 
           <Transition name="example-message">
             <div v-if="exampleStage >= 7" class="example-message example-message--assistant">
               <div class="example-message__header">
-                <v-icon icon="mdi-robot-outline" size="16"></v-icon>
+                <i class="mdi mdi-robot-outline" aria-hidden="true"></i>
                 <strong>{{ t('home.agent') }}</strong>
               </div>
               <p>{{ t('home.incorrectRequestExample.incorrectAnswer') }}</p>
@@ -131,20 +151,21 @@ onBeforeUnmount(clearSequence)
         </div>
 
         <Transition name="example-message">
-          <v-alert v-if="exampleStage >= 7" color="warning" variant="tonal" density="comfortable" class="mt-4" icon="mdi-alert-outline">
+          <Message v-if="exampleStage >= 7" severity="warn" class="example-outcome">
+            <template #icon><i class="mdi mdi-alert-outline" aria-hidden="true"></i></template>
             {{ t('home.incorrectRequestExample.outcome') }}
-          </v-alert>
+          </Message>
         </Transition>
 
-        <section v-if="exampleStage >= 7" class="correct-request mt-5" :aria-label="t('home.incorrectRequestExample.correctRequestTitle')">
-          <div class="d-flex align-center ga-2 mb-3">
-            <v-icon icon="mdi-check-decagram-outline" color="success"></v-icon>
-            <h3 class="text-subtitle-1 font-weight-bold">{{ t('home.incorrectRequestExample.correctRequestTitle') }}</h3>
+        <section v-if="exampleStage >= 7" class="correct-request" :aria-label="t('home.incorrectRequestExample.correctRequestTitle')">
+          <div class="correct-request__heading">
+            <i class="mdi mdi-check-decagram-outline correct-request__icon" aria-hidden="true"></i>
+            <h3>{{ t('home.incorrectRequestExample.correctRequestTitle') }}</h3>
           </div>
 
           <div class="example-chat">
             <div v-if="exampleStage === 8" class="example-status example-status--user">
-              <v-icon icon="mdi-account" size="16"></v-icon>
+              <i class="mdi mdi-account" aria-hidden="true"></i>
               <span>{{ t('home.incorrectRequestExample.userTyping') }}</span>
               <span class="typing-dots" aria-hidden="true"><i></i><i></i><i></i></span>
             </div>
@@ -152,7 +173,7 @@ onBeforeUnmount(clearSequence)
             <Transition name="example-message">
               <div v-if="exampleStage >= 9" class="example-message example-message--user">
                 <div class="example-message__header">
-                  <v-icon icon="mdi-account" size="16"></v-icon>
+                  <i class="mdi mdi-account" aria-hidden="true"></i>
                   <strong>{{ t('home.user') }}</strong>
                 </div>
                 <p>{{ t('home.incorrectRequestExample.correctQuestion') }}</p>
@@ -160,14 +181,14 @@ onBeforeUnmount(clearSequence)
             </Transition>
 
             <div v-if="exampleStage === 10" class="example-status example-status--assistant">
-              <v-progress-circular indeterminate size="16" width="2"></v-progress-circular>
+              <ProgressSpinner class="example-progress" stroke-width="8" />
               <span>{{ t('home.incorrectRequestExample.assistantThinking') }}</span>
             </div>
 
             <Transition name="example-message">
               <div v-if="exampleStage >= 11" class="example-message example-message--assistant">
                 <div class="example-message__header">
-                  <v-icon icon="mdi-robot-outline" size="16"></v-icon>
+                  <i class="mdi mdi-robot-outline" aria-hidden="true"></i>
                   <strong>{{ t('home.agent') }}</strong>
                 </div>
                 <p>{{ t('home.incorrectRequestExample.correctAnswer') }}</p>
@@ -177,15 +198,12 @@ onBeforeUnmount(clearSequence)
             <div ref="latestContent" class="scroll-anchor"></div>
           </div>
         </section>
-      </v-card-text>
+      </div>
 
-      <v-card-actions class="pa-3 border-t justify-end">
-        <v-btn variant="text" color="primary" @click="model = false">
-          {{ t('home.incorrectRequestExample.close') }}
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+    <template #footer>
+      <Button :label="t('home.incorrectRequestExample.close')" text @click="model = false" />
+    </template>
+  </Dialog>
 </template>
 
 <style scoped>
@@ -193,6 +211,54 @@ onBeforeUnmount(clearSequence)
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.incorrect-request-dialog__header {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.incorrect-request-dialog__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #b45309;
+}
+
+.incorrect-request-dialog__title > .mdi {
+  font-size: 1.25rem;
+}
+
+.incorrect-request-dialog__heading {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.example-intro {
+  margin-bottom: 16px;
+}
+
+.example-outcome {
+  margin-top: 16px;
+}
+
+.incorrect-request-dialog__content {
+  max-height: min(70vh, 680px);
+  padding: 4px;
+  overflow-y: auto;
+}
+
+.example-progress {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+
+.correct-request__icon {
+  color: #10b981;
 }
 
 .example-message {
@@ -229,12 +295,22 @@ onBeforeUnmount(clearSequence)
 }
 
 .correct-request {
+  margin-top: 20px;
   padding-top: 20px;
   border-top: 1px solid #e2e8f0;
 }
 
+.correct-request__heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
 .correct-request h3 {
   color: #1e293b;
+  font-size: 1rem;
+  font-weight: 700;
 }
 
 .example-status {

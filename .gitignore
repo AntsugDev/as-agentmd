@@ -14,3 +14,5 @@ src/database/rag.db-wal
 /src/gguf
 /dist
 /img
+/.agent
+/_client

@@ -1,10 +1,18 @@
 <script setup lang="ts">
-import {computed, inject, onMounted, ref, watch} from 'vue'
+import {computed, onMounted, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
-import type {AiModel, ChatMessage} from '../types/chat'
 import {api, type Payload} from "../services/api.ts";
 import MarkdownIt from "markdown-it";
 import IncorrectRequestExampleModal from './IncorrectRequestExampleModal.vue'
+import AutoComplete from 'primevue/autocomplete'
+import Button from 'primevue/button'
+import Chip from 'primevue/chip'
+import Dialog from 'primevue/dialog'
+import FileUpload from 'primevue/fileupload'
+import Message from 'primevue/message'
+import Skeleton from 'primevue/skeleton'
+import Tag from 'primevue/tag'
+import Textarea from 'primevue/textarea'
 
 const {t} = useI18n()
 
@@ -15,20 +23,28 @@ const props = defineProps({
   }
 })
 
-const models = ref<AiModel[]>([])
+interface ModelOption {
+  text: string
+  value: string
+}
+
 const selectedModel = ref<string | null>(null)
+const modelInput = ref<ModelOption | string | null>(null)
 const selectedTag = ref<string | null>(null)
+const tagInput = ref<{ title: string, value: string } | string | null>(null)
 const prompt = ref('')
-const selectedFile = ref([])
+const selectedFile = ref<File[]>([])
 const isLoading = ref(false)
 const messages = ref<any[]>([])
 const formError = ref('')
 
-const modelItems = ref([])
-const tagsItems = ref([])
+const modelItems = ref<ModelOption[]>([])
+const modelSuggestions = ref<ModelOption[]>([])
+const tagsItems = ref<{ title: string, value: string }[]>([])
+const tagSuggestions = ref<{ title: string, value: string }[]>([])
 const dialog = ref<boolean>(false)
+const fileUploadKey = ref(0)
 const incorrectRequestExampleDialog = ref(false)
-const snack = inject('snack')
 
 const loadModel = ref<boolean>(false)
 const loadTag = ref<boolean>(false)
@@ -46,6 +62,7 @@ const loadTags = async () => {
         value: e.TAG,
       }
     })
+    tagSuggestions.value = tagsItems.value
   } catch (err) {
     console.log(err)
   } finally {
@@ -60,6 +77,7 @@ const loadModels = async () => {
     } as Payload)
     if (response) {
       modelItems.value = response.data
+      modelSuggestions.value = modelItems.value
       setTimeout(() => settingsModel(), 1500)
     }
   } catch (err) {
@@ -74,7 +92,10 @@ const settingsModel = async () => {
     const response = await api({
       url: 'settings/model', method: 'GET'
     } as Payload)
-    if (response) selectedModel.value = response.data.modelSelected
+    if (response) {
+      selectedModel.value = response.data.modelSelected
+      modelInput.value = modelItems.value.find((item) => item.value === selectedModel.value) ?? null
+    }
   } catch (e) {
     console.error(e)
   }
@@ -97,6 +118,35 @@ const scrollToBottom = () => {
       messageListContainer.value.scrollTop = messageListContainer.value.scrollHeight
     }
   }, 100)
+}
+
+const searchModels = (event: { query: string }) => {
+  const query = event.query.trim().toLowerCase()
+  modelSuggestions.value = query
+    ? modelItems.value.filter((item) => item.text?.toLowerCase().includes(query))
+    : modelItems.value
+}
+
+const searchTags = (event: { query: string }) => {
+  const query = event.query.trim().toLowerCase()
+  tagSuggestions.value = query
+    ? tagsItems.value.filter((item) => item.title.toLowerCase().includes(query))
+    : tagsItems.value
+}
+
+const updateModelInput = (value: ModelOption | string | null) => {
+  modelInput.value = value
+  if (typeof value === 'object' && value) {
+    selectedModel.value = value.value
+    void changeModel()
+  } else {
+    selectedModel.value = null
+  }
+}
+
+const updateTagInput = (value: { title: string, value: string } | string | null) => {
+  tagInput.value = value
+  selectedTag.value = typeof value === 'object' && value ? value.value : null
 }
 
 watch(messages, () => {
@@ -180,28 +230,29 @@ const submitMessage = async () => {
   }
 }
 const openDialog = () => {
-  dialog.value = true
-  if (selectedFile.value && selectedFile.value?.length > 0)
+  if (selectedFile.value.length > 0) {
     selectedFile.value = []
+  }
+  fileUploadKey.value += 1
+  errorAccept.value = false
+  dialog.value = true
 }
 
+const onFilesSelected = (event: { files: File[] }) => {
+  selectedFile.value = event.files
+  closeDialog()
+}
 
 const closeDialog = () => {
-  let stop = false;
   errorAccept.value = false
-  if (accept.value)
-    selectedFile.value.map((e: any) => {
-      const mimeType = e.type
-      if (!accept.value.includes(mimeType)) {
-        stop = true;
-        return;
-      }
-    })
-  if (!stop)
+  const hasInvalidFile = accept.value.length > 0
+    && selectedFile.value.some((file) => !accept.value.includes(file.type))
+  if (!hasInvalidFile) {
     dialog.value = false
-  else {
+  } else {
     errorAccept.value = true
     selectedFile.value = []
+    fileUploadKey.value += 1
   }
 }
 
@@ -276,37 +327,37 @@ onMounted(() => {
 <template>
   <section class="content-grid">
     <div class="section-heading">
-      <div class="d-flex align-center ga-2">
-        <v-chip color="primary" variant="tonal" size="small" class="font-weight-bold">
-          <v-icon icon="mdi-creation" size="14" class="mr-1"></v-icon>
-          AI Chat
-        </v-chip>
+      <div class="home-heading-badge">
+        <span class="home-badge"><i class="mdi mdi-creation" aria-hidden="true"></i>AI Chat</span>
       </div>
       <h1>{{ t('home.title') }}</h1>
       <p>{{ t('home.intro') }}</p>
     </div>
 
     <!-- Conversation Container -->
-    <v-sheet class="panel conversation-panel" rounded="xl" border>
+    <div class="panel conversation-panel">
       <div class="panel-title">
-        <div class="d-flex align-center ga-2">
-          <v-icon icon="mdi-forum-outline" color="primary"></v-icon>
+        <div class="home-panel-heading">
+          <i class="mdi mdi-forum-outline home-section-icon" aria-hidden="true"></i>
           <h2>{{ t('home.conversation') }}</h2>
         </div>
-        <v-chip v-if="messages.length > 0" color="primary" size="small" variant="flat" rounded="pill">
+        <Tag v-if="messages.length > 0" severity="primary" rounded>
           {{ messages.length }} {{ messages.length === 1 ? 'msg' : 'msgs' }}
-        </v-chip>
+        </Tag>
       </div>
 
-      <v-skeleton-loader v-if="isLoading && messages.length === 0" type="article, actions" rounded="xl"/>
+      <div v-if="isLoading && messages.length === 0" class="conversation-skeleton" aria-busy="true">
+        <Skeleton height="6rem" border-radius="1rem" />
+        <Skeleton height="4rem" border-radius="1rem" />
+      </div>
 
       <template v-else>
         <div v-if="messages.length === 0" class="empty-state">
-          <v-icon icon="mdi-message-text-outline" size="48" class="empty-state-icon mb-2"></v-icon>
-          <div class="font-weight-bold text-subtitle-1 text-grey-darken-2">
+          <i class="mdi mdi-message-text-outline empty-state-icon" aria-hidden="true"></i>
+          <div class="empty-state__title">
             {{ t('home.emptyConversation') }}
           </div>
-          <small class="text-grey-darken-1">Seleziona un modello in basso e invia la tua domanda.</small>
+          <small class="empty-state__hint">Seleziona un modello in basso e invia la tua domanda.</small>
         </div>
 
         <div v-else class="message-list" ref="messageListContainer">
@@ -318,7 +369,7 @@ onMounted(() => {
             >
               <div class="message-bubble__header">
                 <span class="message-avatar">
-                  <v-icon :icon="message.role === 'user' ? 'mdi-account' : 'mdi-robot-outline'" size="14"></v-icon>
+                  <i :class="['mdi', message.role === 'user' ? 'mdi-account' : 'mdi-robot-outline']" aria-hidden="true"></i>
                 </span>
                 <strong>{{ message.role === 'user' ? t('home.user') : t('home.agent') }}</strong>
               </div>
@@ -326,213 +377,275 @@ onMounted(() => {
             </div>
           </template>
 
-          <v-skeleton-loader v-if="isLoading" type="paragraph" class="mt-2" rounded="lg"/>
+          <div v-if="isLoading" class="message-skeleton" aria-busy="true">
+            <Skeleton height="4rem" border-radius="0.75rem" />
+          </div>
         </div>
       </template>
-    </v-sheet>
+    </div>
 
     <!-- Chat Controls & Prompt Card -->
-    <v-sheet class="panel chat-panel pa-5" rounded="xl" border>
-      <v-alert v-if="formError" type="error" variant="tonal" density="comfortable" rounded="lg" closable class="mb-4"
-               @click:close="formError = ''">
-        {{ formError }}
-      </v-alert>
+    <div class="panel chat-panel">
+      <Message v-if="formError" severity="error" closable class="chat-error-message" @close="formError = ''">
+      <template #closeicon="{ class: iconClass }">
+        <i :class="[iconClass, 'mdi', 'mdi-close']" aria-hidden="true"></i>
+      </template>
+      {{ formError }}
+      </Message>
 
       <!-- Models & Tag Selectors Row -->
-      <div class="row-selectors mb-4">
-        <v-autocomplete
-            v-model="selectedModel"
-            :model-value="selectedModel"
-            :items="modelItems"
-            item-title="text"
-            item-value="value"
-            :label="t('home.model')"
-            variant="outlined"
-            density="comfortable"
-            prepend-inner-icon="mdi-chip"
-            hide-details="auto"
+      <div class="row-selectors">
+        <div class="prime-field">
+          <i class="mdi mdi-chip" aria-hidden="true"></i>
+          <AutoComplete
+            :model-value="modelInput"
+            @update:model-value="updateModelInput"
+            :suggestions="modelSuggestions"
+            option-label="text"
+            :placeholder="t('home.model')"
+            input-id="chat-model"
+            :aria-label="t('home.model')"
             :loading="loadModel"
-            @update:model-value="changeModel"
-            rounded="lg"
-            class="flex-grow-1"
-        />
-        <v-autocomplete
-            v-model="selectedTag"
-            :model-value="selectedTag"
-            :items="tagsItems"
-            :label="t('home.tag')"
-            variant="outlined"
-            density="comfortable"
-            prepend-inner-icon="mdi-tag-multiple-outline"
-            hide-details="auto"
+            loading-icon="mdi mdi-loading mdi-spin"
+            force-selection
+            dropdown
+            fluid
+            :disabled="isLoading"
+            @complete="searchModels"
+          >
+            <template #dropdownicon="{ class: iconClass }">
+              <i :class="[iconClass, 'mdi', 'mdi-chevron-down']" aria-hidden="true"></i>
+            </template>
+            <template #clearicon>
+              <i class="mdi mdi-close" aria-hidden="true"></i>
+            </template>
+            <template #loadingicon="{ class: iconClass }">
+              <i :class="[iconClass, 'mdi', 'mdi-loading', 'mdi-spin']" aria-hidden="true"></i>
+            </template>
+          </AutoComplete>
+        </div>
+        <div class="prime-field">
+          <i class="mdi mdi-tag-multiple-outline" aria-hidden="true"></i>
+          <AutoComplete
+            :model-value="tagInput"
+            @update:model-value="updateTagInput"
+            :suggestions="tagSuggestions"
+            option-label="title"
+            :placeholder="t('home.tag')"
+            input-id="chat-tag"
+            :aria-label="t('home.tag')"
             :loading="loadTag"
-            rounded="lg"
-            clearable
-            class="flex-grow-1"
-        />
+            loading-icon="mdi mdi-loading mdi-spin"
+            force-selection
+            dropdown
+            show-clear
+            fluid
+            :disabled="isLoading"
+            @complete="searchTags"
+          >
+            <template #dropdownicon="{ class: iconClass }">
+              <i :class="[iconClass, 'mdi', 'mdi-chevron-down']" aria-hidden="true"></i>
+            </template>
+            <template #clearicon>
+              <i class="mdi mdi-close" aria-hidden="true"></i>
+            </template>
+            <template #loadingicon="{ class: iconClass }">
+              <i :class="[iconClass, 'mdi', 'mdi-loading', 'mdi-spin']" aria-hidden="true"></i>
+            </template>
+          </AutoComplete>
+        </div>
       </div>
 
-      <div v-if="selectedTag" class="tag-detail-reminder mb-4">
-        <v-icon icon="mdi-information-outline" size="16"></v-icon>
+      <div v-if="selectedTag" class="tag-detail-reminder">
+        <i class="mdi mdi-information-outline" aria-hidden="true"></i>
         <span>{{ t('home.tagDetailReminder') }}</span>
-        <v-btn
-            color="primary"
-            variant="text"
-            density="compact"
-            append-icon="mdi-open-in-new"
-            @click="incorrectRequestExampleDialog = true"
+        <Button
+          :label="t('home.incorrectRequestExample.open')"
+          icon="mdi mdi-open-in-new"
+          text
+          size="small"
+          @click="incorrectRequestExampleDialog = true"
         >
-          {{ t('home.incorrectRequestExample.open') }}
-        </v-btn>
+        </Button>
       </div>
 
       <!-- Attached Files Preview -->
-      <div class="attached-files-container mb-4" v-if="selectedFile.length > 0">
-        <div class="text-caption font-weight-bold mb-2 text-primary d-flex align-center ga-1">
-          <v-icon icon="mdi-paperclip" size="14"></v-icon>
+      <div class="attached-files-container" v-if="selectedFile.length > 0">
+        <div class="attached-files-label">
+          <i class="mdi mdi-paperclip" aria-hidden="true"></i>
           <span>{{ t('home.fileAttached') }}:</span>
         </div>
-        <div class="d-flex flex-wrap ga-2">
-          <v-chip
-              v-for="(e, i) in selectedFile"
-              :key="i"
-              size="small"
-              color="primary"
-              variant="tonal"
-              closable
-              class="ma-1"
-              @click:close="selectedFile.splice(i, 1)"
+        <div class="attached-file-list">
+          <Chip
+            v-for="(file, i) in selectedFile"
+            :key="`${file.name}-${i}`"
+            :label="file.name"
+            :title="t('home.removeFile', {name: file.name})"
+            removable
+            class="attached-file-chip"
+            @remove="selectedFile.splice(i, 1)"
           >
-            {{ e.name }}
-          </v-chip>
+            <template #removeicon>
+              <i class="mdi mdi-close" aria-hidden="true"></i>
+            </template>
+          </Chip>
         </div>
       </div>
 
       <!-- Textarea Input Area -->
-      <div class="prompt-input-wrapper mb-4">
-        <v-textarea
+      <div class="prompt-input-wrapper">
+        <label class="sr-only" for="chat-prompt">{{ t('home.message') }}</label>
+        <Textarea
+            id="chat-prompt"
             v-model="prompt"
-            :label="t('home.message')"
             :placeholder="t('home.messagePlaceholder')"
-            variant="outlined"
             rows="3"
-            auto-grow
-            hide-details="auto"
+            auto-resize
             :disabled="isLoading"
             @keydown.ctrl.enter.prevent="submitMessage"
-            rounded="lg"
+            class="chat-prompt"
         />
-        <div class="shortcut-tip mt-1">
-          <v-icon icon="mdi-keyboard-return" size="14" class="mr-1"></v-icon>
+        <div class="shortcut-tip">
+          <i class="mdi mdi-keyboard-return" aria-hidden="true"></i>
           <span>Press <strong>Ctrl + Enter</strong> to send</span>
         </div>
       </div>
 
       <!-- Footer Actions & Token Chips -->
-      <div class="d-flex flex-column flex-sm-row align-center justify-space-between ga-4 pt-2 border-t mt-2">
-        <div class="d-flex align-center ga-2">
-          <div class="d-flex align-center ga-2"
+      <div class="chat-footer">
+        <div class="chat-token-summary">
+          <div class="chat-token-list"
                v-if="(token?.input && token?.output && token.input > 0 && token.output > 0)">
             <span class="token-pill">
-              <v-icon icon="mdi-tray-arrow-up" size="12"></v-icon>
+              <i class="mdi mdi-tray-arrow-up" aria-hidden="true"></i>
               {{ t('home.tokenIn', {t: token.input}) }}
             </span>
             <span class="token-pill">
-              <v-icon icon="mdi-tray-arrow-down" size="12"></v-icon>
+              <i class="mdi mdi-tray-arrow-down" aria-hidden="true"></i>
               {{ t('home.tokenOut', {t: token.output}) }}
             </span>
           </div>
         </div>
 
-        <div class="d-flex align-center ga-3 w-100 w-sm-auto justify-end">
-          <v-btn
-              color="error"
-              :loading="isLoading"
-              prepend-icon="mdi-message-plus-outline"
-              @click="archivia"
-              :disabled="messages.length === 0"
-              variant="tonal"
-              :title="t('home.clear')"
-              class="px-4"
+        <div class="chat-actions">
+          <Button
+            :label="t('home.clear')"
+            icon="mdi mdi-message-plus-outline"
+            severity="danger"
+            outlined
+            :loading="isLoading"
+            loading-icon="mdi mdi-loading mdi-spin"
+            @click="archivia"
+            :disabled="messages.length === 0"
+            :title="t('home.clear')"
           >
-            {{ t('home.clear') }}
-          </v-btn>
+          </Button>
 
-          <v-btn
-              v-if="isAttachement"
-              color="secondary"
-              :loading="isLoading"
-              @click="openDialog"
-              prepend-icon="mdi-file-document-plus-outline"
-              variant="tonal"
-              :title="t('home.file')"
-              :disabled="blockChat"
-              class="px-4"
+          <Button
+            v-if="isAttachement"
+            :label="t('home.file')"
+            icon="mdi mdi-file-document-plus-outline"
+            severity="secondary"
+            outlined
+            :loading="isLoading"
+            loading-icon="mdi mdi-loading mdi-spin"
+            @click="openDialog"
+            :title="t('home.file')"
+            :disabled="blockChat"
           >
-            {{ t('home.file') }}
-          </v-btn>
+          </Button>
 
-          <v-btn
-              color="primary"
-              :loading="isLoading"
-              append-icon="mdi-send"
-              @click="submitMessage"
-              variant="flat"
-              size="large"
-              class="px-6 font-weight-bold"
-              :disabled="blockChat"
+          <Button
+            :label="isLoading ? t('home.waiting') : t('home.start')"
+            icon="mdi mdi-send"
+            icon-pos="right"
+            :loading="isLoading"
+            loading-icon="mdi mdi-loading mdi-spin"
+            @click="submitMessage"
+            size="large"
+            :disabled="blockChat"
           >
-            {{ (isLoading ? t('home.waiting') : t('home.start')) }}
-          </v-btn>
+          </Button>
         </div>
       </div>
 
       <!-- Privacy Notice Footer -->
-      <div class="d-flex align-center ga-1 text-grey-darken-1 text-caption mt-3 pt-2 border-t">
-        <v-icon icon="mdi-shield-check-outline" size="14" color="grey"></v-icon>
+      <div class="privacy-notice">
+        <i class="mdi mdi-shield-check-outline privacy-icon" aria-hidden="true"></i>
         <span class="privacy-text">{{ t('privacy') }}</span>
       </div>
-    </v-sheet>
+    </div>
 
     <IncorrectRequestExampleModal v-model="incorrectRequestExampleDialog"/>
 
     <!-- File Upload Dialog -->
-    <v-dialog v-model="dialog" persistent max-width="520">
-      <v-card rounded="xl" border class="elevation-6">
-        <v-card-title class="d-flex align-center justify-space-between py-3 px-4 border-b">
-          <div class="d-flex align-center gap-2">
-            <v-icon icon="mdi-cloud-upload-outline" color="primary"></v-icon>
-            <span class="text-subtitle-1 font-weight-bold">{{ t('home.file') }}</span>
+    <Dialog
+      v-model:visible="dialog"
+      modal
+      :closable="false"
+      :draggable="false"
+      :style="{ width: 'min(520px, calc(100vw - 2rem))' }"
+      class="file-dialog"
+    >
+      <template #header>
+        <div class="file-dialog__header">
+          <div class="file-dialog__title">
+            <i class="mdi mdi-cloud-upload-outline" aria-hidden="true"></i>
+            <span>{{ t('home.file') }}</span>
           </div>
-          <v-btn size="32" icon="mdi-close" variant="text" color="grey" @click="closeDialog"></v-btn>
-        </v-card-title>
-
-        <v-card-text class="pa-4">
-          <v-alert variant="tonal" rounded="lg" class="mb-3" density="comfortable" v-if="errorAccept" color="warning"
-                   icon="mdi-alert">
-            {{ t('home.accept', {format: accept}) }}
-          </v-alert>
-
-          <v-file-upload
-              density="comfortable"
-              browse-text="Upload Files"
-              icon="mdi-cloud-upload"
-              title="Drag & drop files here"
-              clearable
-              inset-file-list
-              multiple
-              show-size
-              v-model="selectedFile"
-              @update:modelValue="closeDialog"
+          <Button
+            icon="mdi mdi-close"
+            text
+            severity="secondary"
+            rounded
+            :aria-label="t('home.close')"
+            @click="closeDialog"
           />
-        </v-card-text>
+        </div>
+      </template>
 
-        <v-card-actions class="pa-3 border-t justify-end">
-          <v-btn variant="text" color="grey" @click="closeDialog">Chiudi</v-btn>
-          <v-btn variant="flat" color="primary" @click="closeDialog">Conferma</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+      <div class="file-dialog__body">
+        <Message v-if="errorAccept" severity="warn" class="upload-error-message">
+          <template #icon><i class="mdi mdi-alert" aria-hidden="true"></i></template>
+          <template #closeicon="{ class: iconClass }">
+            <i :class="[iconClass, 'mdi', 'mdi-close']" aria-hidden="true"></i>
+          </template>
+            {{ t('home.accept', {format: accept}) }}
+        </Message>
+
+        <FileUpload
+          :key="fileUploadKey"
+          mode="advanced"
+          :multiple="true"
+          :custom-upload="true"
+          :show-upload-button="false"
+          :show-cancel-button="false"
+          :choose-label="t('home.chooseFiles')"
+          choose-icon="mdi mdi-cloud-upload"
+          :cancel-label="t('home.close')"
+          @select="onFilesSelected"
+          @clear="selectedFile = []"
+          @remove="selectedFile = $event.files"
+        >
+          <template #chooseicon><i class="mdi mdi-cloud-upload" aria-hidden="true"></i></template>
+          <template #cancelicon><i class="mdi mdi-close" aria-hidden="true"></i></template>
+          <template #fileremoveicon><i class="mdi mdi-close" aria-hidden="true"></i></template>
+          <template #empty>
+            <div class="file-upload-empty">
+              <i class="mdi mdi-cloud-upload-outline" aria-hidden="true"></i>
+              <span>{{ t('home.dragDropFiles') }}</span>
+            </div>
+          </template>
+        </FileUpload>
+      </div>
+
+      <template #footer>
+        <div class="file-dialog__footer">
+          <Button :label="t('home.close')" severity="secondary" text @click="closeDialog" />
+          <Button :label="t('home.confirm')" @click="closeDialog" />
+        </div>
+      </template>
+    </Dialog>
   </section>
 </template>
 
@@ -548,6 +661,144 @@ onMounted(() => {
   max-height: 520px;
   overflow-y: auto;
   padding-right: 4px;
+}
+
+.home-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  color: var(--color-primary);
+  background: rgba(79, 70, 229, 0.1);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.home-section-icon {
+  color: var(--color-primary);
+  font-size: 1.25rem;
+}
+
+.empty-state-icon {
+  font-size: 3rem;
+}
+
+.conversation-skeleton {
+  display: grid;
+  gap: 14px;
+}
+
+.message-skeleton {
+  width: min(100%, 680px);
+  margin-top: 8px;
+}
+
+.prime-field {
+  position: relative;
+  min-width: 0;
+}
+
+.prime-field > .mdi {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 0.9rem;
+  color: #64748b;
+  font-size: 1rem;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.prime-field :deep(.p-autocomplete),
+.prime-field :deep(.p-autocomplete-input) {
+  width: 100%;
+}
+
+.prime-field :deep(.p-autocomplete-input) {
+  padding-left: 2.6rem;
+}
+
+.chat-prompt {
+  width: 100%;
+  min-height: 6rem;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.file-dialog__header {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.file-dialog__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-text-main);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.file-dialog__title > .mdi {
+  color: var(--color-primary);
+  font-size: 1.25rem;
+}
+
+.file-dialog__body {
+  display: grid;
+  gap: 12px;
+}
+
+.file-dialog__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.file-upload-empty {
+  display: flex;
+  min-height: 100px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.file-upload-empty .mdi {
+  color: var(--color-primary);
+  font-size: 2rem;
+}
+
+.attached-file-chip {
+  max-width: 100%;
+}
+
+.attached-file-chip :deep(.p-chip-label) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.privacy-icon {
+  flex: 0 0 auto;
+  color: #64748b;
+  font-size: 0.875rem;
 }
 
 .message-item {
@@ -601,6 +852,33 @@ onMounted(() => {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+  margin-bottom: 16px;
+}
+
+.home-heading-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.home-panel-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.empty-state__title {
+  color: #334155;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.empty-state__hint {
+  color: #64748b;
+}
+
+.chat-error-message {
+  margin-bottom: 16px;
 }
 
 .tag-detail-reminder {
@@ -608,19 +886,38 @@ onMounted(() => {
   align-items: center;
   flex-wrap: wrap;
   gap: 6px;
+  margin-bottom: 16px;
   color: #64748b;
   font-size: 0.78rem;
 }
 
 .attached-files-container {
+  margin-bottom: 16px;
   padding: 10px 14px;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
 }
 
+.attached-files-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+  color: var(--color-primary);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.attached-file-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .prompt-input-wrapper {
   position: relative;
+  margin-bottom: 16px;
 }
 
 .shortcut-tip {
@@ -643,6 +940,54 @@ onMounted(() => {
   overflow: hidden;
 }
 
+.chat-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-border);
+}
+
+.chat-token-summary,
+.chat-token-list,
+.chat-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-token-summary {
+  width: 100%;
+}
+
+.chat-token-list {
+  flex-wrap: wrap;
+}
+
+.chat-actions {
+  width: 100%;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.privacy-notice {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border);
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.upload-error-message {
+  margin-bottom: 12px;
+}
+
 @media (max-width: 768px) {
   .row-selectors {
     grid-template-columns: 1fr;
@@ -651,6 +996,20 @@ onMounted(() => {
   .message-item--assistant,
   .message-item--user {
     width: 100%;
+  }
+}
+
+@media (min-width: 600px) {
+  .chat-footer {
+    flex-direction: row;
+  }
+
+  .chat-token-summary {
+    width: auto;
+  }
+
+  .chat-actions {
+    width: auto;
   }
 }
 </style>

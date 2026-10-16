@@ -1,88 +1,135 @@
-<template>
-    <v-dialog v-model="model" max-width="840" scrollable>
-        <v-card rounded="xl" border>
-            <v-card-title class="d-flex align-center justify-space-between py-3 px-4 border-b">
-                <div class="d-flex align-center ga-2">
-                    <span class="text-subtitle-1 font-weight-bold">Chunks 
-                        <strong>{{ fileName ? `(${fileName})` : '' }}</strong>
-                    </span>
-                </div>
-                <div class="d-flex flex-row justify-end">
-                    <!--<v-btn icon="mdi-redo-variant" color="error" variant="flat" class="mr-2" size="32" @click="resetChunk"></v-btn>-->
-                    <v-btn icon="mdi-close" variant="flat" color="info"  size="32" @click="model = false"></v-btn>
-                </div>
-            </v-card-title>
-            <v-card-text class="pa-4">
-                <v-alert v-if="notice" type="success" variant="tonal" density="comfortable" rounded="lg" class="mb-4">
-                    {{ notice }}
-                </v-alert>
-                <v-list density="compact" class="pa-4">
-                    <v-list-item border rounded="5" v-for="(e, i) of list" :key="i" class="pa-2 mb-4">
-                        <v-list-item-title class="mb-2 pa-3"><span
-                                style="font-weight: 700;border-bottom: 1px solid;">Chunk
-                                nr. {{ i + 1
-                                }}</span><br />
-                        </v-list-item-title>
-                        <code>{{ e }}</code>
-                    </v-list-item>
-                </v-list>
-            </v-card-text>
-        </v-card>
-    </v-dialog>
-</template>
 <script setup lang="ts">
-import MarkdownIt from 'markdown-it';
-import { onUpdated, ref, watch } from 'vue'
-import { api, type Payload } from '../services/api';
-import { useI18n } from "vue-i18n";
+import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import Button from 'primevue/button'
+import Dialog from 'primevue/dialog'
 
-
-const notice = ref<string | null>(null)
-const { t } = useI18n();
-const props = defineProps({
-    item: {
-        type: [String, null], required: true
-    },
-    fileId: {
-        type: [Number, null], required: true
-    },
-    fileName:{
-        type:[String,null], required:false, default: null
-    }
-})
-
+const { t } = useI18n()
+const props = defineProps<{
+  item: string | null
+  fileId: number | null
+  fileName?: string | null
+}>()
 const model = defineModel<boolean>({ default: false })
+const list = ref<string[]>([])
 
-const resetChunk = async () => {
-    try {
-        if (!props.fileId) throw new Error("Not file reset")
-        const response = await api({
-            method: 'GET',
-            url: `rag/reset/${props.fileId}`
+watch(() => props.item, (value) => {
+  list.value = value ? value.split('~').slice(0, 30) : []
+}, { immediate: true })
+</script>
 
-        } as Payload)
-        if (response) {
-            notice.value = t("rag.notice")
-            setTimeout(() => {
-                model.value = false
-                notice.value = null
-            }, 5000)
-        }
+<template>
+  <Dialog
+    v-model:visible="model"
+    modal
+    :draggable="false"
+    :style="{ width: 'min(840px, calc(100vw - 2rem))' }"
+    :breakpoints="{ '640px': '100vw' }"
+    class="chunks-dialog"
+  >
+    <template #header>
+      <div class="chunks-dialog__header">
+        <span class="chunks-dialog__title">
+          <i class="mdi mdi-view-grid-outline" aria-hidden="true"></i>
+          <span>{{ t('rag.chunks') }}</span>
+          <strong v-if="fileName">({{ fileName }})</strong>
+        </span>
+        <Button
+          icon="mdi mdi-close"
+          text
+          rounded
+          severity="secondary"
+          :aria-label="t('rag.close')"
+          :title="t('rag.close')"
+          @click="model = false"
+        />
+      </div>
+    </template>
 
-    } catch (e: any) {
-        console.log('eccezione reset chunks', e)
-    }
+    <div class="chunks-dialog__content">
+      <ol v-if="list.length" class="chunks-list">
+        <li v-for="(chunk, index) in list" :key="index" class="chunks-list__item">
+          <h3 class="chunks-list__title">{{ t('rag.chunkNumber', { number: index + 1 }) }}</h3>
+          <pre class="chunks-list__text">{{ chunk }}</pre>
+        </li>
+      </ol>
+      <div v-else class="chunks-dialog__empty">
+        {{ t('rag.noChunks') }}
+      </div>
+    </div>
+  </Dialog>
+</template>
 
+<style scoped>
+.chunks-dialog__header {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-const list = ref<any[]>([])
-const mdRender = new MarkdownIt();
+.chunks-dialog__title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: #334155;
+  font-size: 1rem;
+  font-weight: 700;
+}
 
-watch(() => props.item, (v) => {
-    if (v) {
-        list.value = v.split('~').slice(0,30)
-    }
-})
+.chunks-dialog__title > .mdi {
+  color: var(--color-primary);
+  font-size: 1.2rem;
+}
 
+.chunks-dialog__title strong {
+  overflow-wrap: anywhere;
+}
 
-</script>
+.chunks-dialog__content {
+  max-height: min(70vh, 680px);
+  overflow-y: auto;
+}
+
+.chunks-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+}
+
+.chunks-list__item {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.chunks-list__title {
+  display: inline-block;
+  margin-bottom: 10px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--color-border);
+  color: #334155;
+  font-size: 0.9rem;
+}
+
+.chunks-list__text {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  color: #475569;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.chunks-dialog__empty {
+  padding: 28px 12px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+</style>
